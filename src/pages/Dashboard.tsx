@@ -2,7 +2,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LogOut, Dumbbell, Trophy, Users } from "lucide-react";
-import logo from "@/assets/martial-athletic-logo.png";
+import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -11,7 +11,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="Martial Athletic" className="w-10 h-10 object-contain" />
+          <img src={logoCompact} alt="Martial Athletic" className="w-10 h-10 object-contain" />
           <span className="text-lg font-bold text-foreground tracking-tight">MARTIAL ATHLETIC</span>
         </div>
         <div className="flex items-center gap-2">
