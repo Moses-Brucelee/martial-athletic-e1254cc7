@@ -1,97 +1,38 @@
 
-# Complete Password Reset Flow Implementation
+# Update Forgot Password Page Styling
 
-## Overview
-This plan implements the `/reset-password` route to handle password recovery when users click the reset link in their email. The feature completes the forgot password flow with proper token validation and new password creation.
+## What Changes
 
-## Architecture & Design
+Restyle `src/pages/ForgotPassword.tsx` to match the Login and Reset Password pages. Currently it uses a generic Card-based layout with a gradient background, while the other auth pages use the Martial Athletic branding pattern.
 
-### User Flow
-1. User clicks "Forgot password?" link on Login page ✓ (already implemented)
-2. User enters email on `/forgot-password` page ✓ (already implemented)
-3. User receives reset email with recovery link
-4. User clicks recovery link and lands on `/reset-password` page (NEW)
-5. System validates the recovery token
-6. User enters and confirms new password
-7. Password is updated via `supabase.auth.updateUser()`
-8. User is redirected to login page
+## Specific Changes (single file: `src/pages/ForgotPassword.tsx`)
 
-### Technical Implementation
+**Add imports:**
+- `ThemeToggle` component
+- `Label` component  
+- `ArrowLeft`, `Mail`, `CheckCircle` icons from lucide-react
+- `logoCompact` asset
 
-#### 1. Create `src/pages/ResetPassword.tsx`
+**Remove imports:**
+- `Card`, `CardContent`, `CardDescription`, `CardHeader`, `CardTitle` (no longer needed)
 
-**Features:**
-- Token Validation: Checks for valid recovery session on mount using `supabase.auth.getSession()`
-- Three State Views:
-  - **Loading State**: Shows spinner while validating token
-  - **Invalid Token State**: Shows error message if token is expired/invalid with option to request new link
-  - **Success State**: Shows confirmation after password reset with auto-redirect to login
+**Update layout structure to match Login page pattern:**
+- Replace gradient background with `min-h-screen bg-background flex flex-col`
+- Add header bar with back arrow ("Back" linking to /login) and ThemeToggle
+- Add centered logo (compact, 20x20) and bold uppercase title "FORGOT PASSWORD"
+- Replace Card wrapper with `bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg`
+- Use `Label` for form fields and `h-12` height inputs matching Login page
+- Style the submit button with the same `h-12 text-base font-semibold tracking-wide shadow-lg shadow-primary/20` treatment
 
-- Form with:
-  - New Password field with show/hide toggle
-  - Confirm Password field with show/hide toggle
-  - Password requirements display
-  - Zod validation schema ensuring:
-    - Minimum 6 characters
-    - Passwords match
-  - Error handling with user-friendly messages
+**Update the "submitted" confirmation view:**
+- Same header/logo pattern
+- Card with a `CheckCircle` icon, "Check Your Email" title, and instructions
+- Consistent button styling for "Back to Login" and "Try Again"
 
-- Styling: Matches Login page design (logo, header, card layout, theme toggle, back button)
+## No Other Files Changed
 
-- Password Update: Uses `supabase.auth.updateUser({ password })` which works automatically with recovery tokens
+The route is already registered in `App.tsx` and the Login page already has the "Forgot password?" link. Only the styling of `ForgotPassword.tsx` needs updating.
 
-#### 2. Update `src/App.tsx`
+## Publishing
 
-- Add import: `import ResetPassword from "./pages/ResetPassword";`
-- Register route: `<Route path="/reset-password" element={<ResetPassword />} />`
-- Position route before the catch-all `*` route
-
-## Security Considerations
-
-1. **Token Validation**: The Supabase auth client automatically handles recovery token validation via URL hash. No manual token parsing needed.
-2. **Session-Based**: Only users with valid recovery session can update their password
-3. **Password Requirements**: Enforced minimum 6 characters (Supabase default)
-4. **Auto-Redirect**: After success, user is redirected to login to verify password works
-5. **Expired Token Handling**: Users get clear guidance to request new reset link
-
-## Files Modified
-
-- **New File**: `src/pages/ResetPassword.tsx` (~280 lines)
-  - Token validation logic
-  - Password reset form with validation
-  - Three-state UI (validating, invalid, success)
-  - Styling matching Login page
-
-- **Modified**: `src/App.tsx`
-  - Add import for ResetPassword
-  - Add route registration for `/reset-password`
-
-## Dependencies Used
-
-- `supabase.auth.getSession()` - Verify recovery token validity
-- `supabase.auth.updateUser()` - Update password
-- Zod validation schema
-- Existing UI components (Input, Label, Button, ThemeToggle)
-- Existing icons (Eye, EyeOff, ArrowLeft, AlertCircle, CheckCircle, Lock)
-- Existing logo asset
-
-## Testing Steps After Implementation
-
-1. Navigate to `/forgot-password`
-2. Enter a valid test email and submit
-3. Check your email for reset link (or check logs)
-4. Click the reset link - should land on `/reset-password` with valid token
-5. Enter matching new passwords (min 6 chars) and submit
-6. Verify success message appears
-7. Wait for auto-redirect to login or click "Go to Login" button
-8. Login with new password to confirm it works
-9. Test invalid token: Manually navigate to `/reset-password` without valid token - should show error state
-10. Test expired token: Wait 24 hours (or force token expiry) and click old reset link - should show error
-
-## Edge Cases Handled
-
-- Missing or expired recovery token
-- Password validation failures (too short, don't match)
-- Successful password update
-- Network errors during update
-- Auto-redirect to login after success
+After approving this plan and the styling is applied, click "Publish" in the top-right corner to push all changes (forgot password, reset password, and branding updates) live to production.
