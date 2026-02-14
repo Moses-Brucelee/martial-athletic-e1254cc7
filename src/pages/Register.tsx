@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Eye, EyeOff, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
-import logo from "@/assets/martial-athletic-logo.png";
+import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import { z } from "zod";
 
 const registerSchema = z.object({
@@ -86,7 +86,7 @@ export default function Register() {
       <main className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <img src={logo} alt="Martial Athletic" className="w-20 h-20 mx-auto mb-4 object-contain" />
+            <img src={logoCompact} alt="Martial Athletic" className="w-20 h-20 mx-auto mb-4 object-contain" />
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">CREATE ACCOUNT</h1>
             <p className="text-muted-foreground mt-2 text-sm">Join the Martial Athletic community</p>
           </div>

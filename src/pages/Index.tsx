@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Dumbbell, Trophy, Users, Zap } from "lucide-react";
-import logo from "@/assets/martial-athletic-logo.png";
+import logoWide from "@/assets/martial-athletic-logo-wide.png";
+import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -13,9 +14,14 @@ const Index = () => {
         {/* Logo */}
         <div className="mb-8 sm:mb-10">
           <img
-            src={logo}
+            src={logoCompact}
             alt="Martial Athletic logo"
-            className="w-48 sm:w-64 md:w-72 h-auto mx-auto drop-shadow-2xl"
+            className="w-36 h-auto mx-auto drop-shadow-2xl sm:hidden"
+          />
+          <img
+            src={logoWide}
+            alt="Martial Athletic logo"
+            className="hidden sm:block sm:w-80 md:w-96 h-auto mx-auto drop-shadow-2xl"
           />
         </div>
 
