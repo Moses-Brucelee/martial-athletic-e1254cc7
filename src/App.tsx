@@ -11,9 +11,11 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MainMenu from "./pages/MainMenu";
 import CreateProfile from "./pages/CreateProfile";
+import ViewProfile from "./pages/ViewProfile";
 import CompetitionCreate from "./pages/CompetitionCreate";
 import CompetitionWorkouts from "./pages/CompetitionWorkouts";
 import CompetitionDashboard from "./pages/CompetitionDashboard";
+import CompetitionList from "./pages/CompetitionList";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -36,6 +38,8 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/create-profile" element={<ProtectedRoute><CreateProfile /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><MainMenu /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ViewProfile /></ProtectedRoute>} />
+              <Route path="/competitions" element={<ProtectedRoute><CompetitionList /></ProtectedRoute>} />
               <Route path="/competition/create" element={<ProtectedRoute><CompetitionCreate /></ProtectedRoute>} />
               <Route path="/competition/:id/workouts" element={<ProtectedRoute><CompetitionWorkouts /></ProtectedRoute>} />
               <Route path="/competition/:id" element={<ProtectedRoute><CompetitionDashboard /></ProtectedRoute>} />

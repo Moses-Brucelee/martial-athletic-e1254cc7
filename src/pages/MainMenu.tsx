@@ -96,18 +96,18 @@ export default function MainMenu() {
       icon: Trophy,
       onClick: () =>
         hasCompetitions
-          ? navigate("/dashboard") // TODO: navigate to competition list
+          ? navigate("/competitions")
           : navigate("/competition/create"),
     },
     {
       label: "VIEW COMPETITIONS",
       icon: Eye,
-      onClick: () => navigate("/dashboard"), // TODO: competition list
+      onClick: () => navigate("/competitions"),
     },
     {
       label: "VIEW PROFILE",
       icon: User,
-      onClick: () => navigate("/create-profile"),
+      onClick: () => navigate("/profile"),
     },
     {
       label: "UPGRADE PACKAGE",
