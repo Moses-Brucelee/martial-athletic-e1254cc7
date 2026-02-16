@@ -14,28 +14,158 @@ export type Database = {
   }
   public: {
     Tables: {
+      competition_teams: {
+        Row: {
+          competition_id: string
+          created_at: string
+          division: string | null
+          id: string
+          team_name: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          division?: string | null
+          id?: string
+          team_name: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          division?: string | null
+          id?: string
+          team_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_teams_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_workouts: {
+        Row: {
+          competition_id: string
+          created_at: string
+          id: string
+          measurement_type: string
+          name: string | null
+          workout_number: number
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          id?: string
+          measurement_type?: string
+          name?: string | null
+          workout_number: number
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          id?: string
+          measurement_type?: string
+          name?: string | null
+          workout_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_workouts_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitions: {
+        Row: {
+          created_at: string
+          created_by: string
+          date: string | null
+          divisions: string | null
+          host_gym: string | null
+          id: string
+          name: string
+          status: string
+          type: string | null
+          updated_at: string
+          venue: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          date?: string | null
+          divisions?: string | null
+          host_gym?: string | null
+          id?: string
+          name: string
+          status?: string
+          type?: string | null
+          updated_at?: string
+          venue?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          date?: string | null
+          divisions?: string | null
+          host_gym?: string | null
+          id?: string
+          name?: string
+          status?: string
+          type?: string | null
+          updated_at?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          about_me: string | null
+          affiliation: string | null
+          age: number | null
           avatar_url: string | null
           created_at: string
           display_name: string | null
+          full_name: string | null
+          gender: string | null
           id: string
+          profile_completed: boolean
+          subscription_tier: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          about_me?: string | null
+          affiliation?: string | null
+          age?: number | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          full_name?: string | null
+          gender?: string | null
           id?: string
+          profile_completed?: boolean
+          subscription_tier?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          about_me?: string | null
+          affiliation?: string | null
+          age?: number | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          full_name?: string | null
+          gender?: string | null
           id?: string
+          profile_completed?: boolean
+          subscription_tier?: string
           updated_at?: string
           user_id?: string
         }

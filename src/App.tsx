@@ -9,7 +9,11 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
+import MainMenu from "./pages/MainMenu";
+import CreateProfile from "./pages/CreateProfile";
+import CompetitionCreate from "./pages/CompetitionCreate";
+import CompetitionWorkouts from "./pages/CompetitionWorkouts";
+import CompetitionDashboard from "./pages/CompetitionDashboard";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -30,7 +34,11 @@ const App = () => (
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/create-profile" element={<ProtectedRoute><CreateProfile /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><MainMenu /></ProtectedRoute>} />
+              <Route path="/competition/create" element={<ProtectedRoute><CompetitionCreate /></ProtectedRoute>} />
+              <Route path="/competition/:id/workouts" element={<ProtectedRoute><CompetitionWorkouts /></ProtectedRoute>} />
+              <Route path="/competition/:id" element={<ProtectedRoute><CompetitionDashboard /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
