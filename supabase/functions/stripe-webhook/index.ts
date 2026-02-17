@@ -69,7 +69,8 @@ Deno.serve(async (req) => {
   const { data: insertedEvent } = await supabaseAdmin
     .from("subscription_events")
     .insert({
-      stripe_event_id: event.id,
+      provider_event_id: event.id,
+      billing_provider: "stripe",
       event_type: event.type,
       payload: event as unknown as Record<string, unknown>,
       stripe_api_version: (event as any).api_version ?? null,
@@ -363,13 +364,14 @@ async function lookupUserId(
   stripeCustomerId: string
 ): Promise<string> {
   const { data, error } = await supabase
-    .from("stripe_customers")
+    .from("billing_customers")
     .select("user_id")
-    .eq("stripe_customer_id", stripeCustomerId)
+    .eq("provider_customer_id", stripeCustomerId)
+    .eq("billing_provider", "stripe")
     .single();
 
   if (error || !data) {
-    throw new SyncError("stripe_customer not found in database", {
+    throw new SyncError("billing_customer not found in database", {
       stripeCustomerId,
     });
   }
@@ -384,26 +386,31 @@ async function matchTier(
     throw new SyncError("No price ID on subscription item");
   }
 
-  // Check monthly first, then yearly
-  const { data: monthlyTier } = await supabase
-    .from("pricing_tiers")
-    .select("id, key")
-    .eq("stripe_price_id_monthly", priceId)
+  // Use tier_prices as the sole source of provider↔price mapping
+  const { data: tierPrice } = await supabase
+    .from("tier_prices")
+    .select("tier_id")
+    .eq("provider_price_id", priceId)
+    .eq("billing_provider", "stripe")
     .eq("is_active", true)
     .single();
 
-  if (monthlyTier) return monthlyTier;
+  if (!tierPrice) {
+    throw new SyncError("No tier_prices row matches Stripe price ID", { priceId });
+  }
 
-  const { data: yearlyTier } = await supabase
+  const { data: tier } = await supabase
     .from("pricing_tiers")
     .select("id, key")
-    .eq("stripe_price_id_yearly", priceId)
+    .eq("id", tierPrice.tier_id)
     .eq("is_active", true)
     .single();
 
-  if (yearlyTier) return yearlyTier;
+  if (!tier) {
+    throw new SyncError("Pricing tier not found for tier_id", { tier_id: tierPrice.tier_id });
+  }
 
-  throw new SyncError("No pricing tier matches Stripe price ID", { priceId });
+  return tier;
 }
 
 async function cancelOtherActiveSubs(
@@ -434,6 +441,8 @@ async function upsertSubscription(
       tier_id: tier.id,
       stripe_subscription_id: freshSub.id,
       stripe_customer_id: stripeCustomerId,
+      billing_provider: "stripe",
+      provider_subscription_id: freshSub.id,
       status: mapStatus(freshSub.status),
       billing_interval: interval === "year" ? "yearly" : "monthly",
       current_period_start: new Date(
