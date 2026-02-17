@@ -18,6 +18,7 @@ import CompetitionDashboard from "./pages/CompetitionDashboard";
 import CompetitionList from "./pages/CompetitionList";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import UpgradePackage from "./pages/UpgradePackage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/competition/create" element={<ProtectedRoute><CompetitionCreate /></ProtectedRoute>} />
               <Route path="/competition/:id/workouts" element={<ProtectedRoute><CompetitionWorkouts /></ProtectedRoute>} />
               <Route path="/competition/:id" element={<ProtectedRoute><CompetitionDashboard /></ProtectedRoute>} />
+              <Route path="/upgrade" element={<ProtectedRoute><UpgradePackage /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

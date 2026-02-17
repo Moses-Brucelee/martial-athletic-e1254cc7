@@ -112,7 +112,7 @@ export default function MainMenu() {
     {
       label: "UPGRADE PACKAGE",
       icon: ArrowUp,
-      onClick: () => {}, // TODO: upgrade flow
+      onClick: () => navigate("/upgrade"),
     },
   ];
 
