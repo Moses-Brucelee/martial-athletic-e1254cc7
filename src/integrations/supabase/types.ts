@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      billing_customers: {
+        Row: {
+          billing_provider: string
+          created_at: string
+          id: string
+          provider_customer_id: string
+          stripe_customer_id: string
+          user_id: string
+        }
+        Insert: {
+          billing_provider: string
+          created_at?: string
+          id?: string
+          provider_customer_id: string
+          stripe_customer_id: string
+          user_id: string
+        }
+        Update: {
+          billing_provider?: string
+          created_at?: string
+          id?: string
+          provider_customer_id?: string
+          stripe_customer_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_customers_billing_provider_fkey"
+            columns: ["billing_provider"]
+            isOneToOne: false
+            referencedRelation: "billing_providers"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       billing_provider_rules: {
         Row: {
           billing_provider: string
@@ -348,59 +383,49 @@ export type Database = {
           },
         ]
       }
-      stripe_customers: {
-        Row: {
-          created_at: string
-          id: string
-          stripe_customer_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          stripe_customer_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          stripe_customer_id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       subscription_events: {
         Row: {
+          billing_provider: string
           created_at: string
           event_type: string
           id: string
           payload: Json
           processed_at: string | null
           processing_error: string | null
+          provider_event_id: string
           stripe_api_version: string | null
-          stripe_event_id: string
         }
         Insert: {
+          billing_provider: string
           created_at?: string
           event_type: string
           id?: string
           payload: Json
           processed_at?: string | null
           processing_error?: string | null
+          provider_event_id: string
           stripe_api_version?: string | null
-          stripe_event_id: string
         }
         Update: {
+          billing_provider?: string
           created_at?: string
           event_type?: string
           id?: string
           payload?: Json
           processed_at?: string | null
           processing_error?: string | null
+          provider_event_id?: string
           stripe_api_version?: string | null
-          stripe_event_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subscription_events_billing_provider_fkey"
+            columns: ["billing_provider"]
+            isOneToOne: false
+            referencedRelation: "billing_providers"
+            referencedColumns: ["key"]
+          },
+        ]
       }
       tier_prices: {
         Row: {
@@ -450,11 +475,13 @@ export type Database = {
       user_subscriptions: {
         Row: {
           billing_interval: string
+          billing_provider: string
           cancel_at_period_end: boolean
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
           id: string
+          provider_subscription_id: string
           status: string
           stripe_customer_id: string
           stripe_subscription_id: string
@@ -464,11 +491,13 @@ export type Database = {
         }
         Insert: {
           billing_interval?: string
+          billing_provider: string
           cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
           id?: string
+          provider_subscription_id: string
           status?: string
           stripe_customer_id: string
           stripe_subscription_id: string
@@ -478,11 +507,13 @@ export type Database = {
         }
         Update: {
           billing_interval?: string
+          billing_provider?: string
           cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
           id?: string
+          provider_subscription_id?: string
           status?: string
           stripe_customer_id?: string
           stripe_subscription_id?: string
@@ -491,6 +522,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_billing_provider_fkey"
+            columns: ["billing_provider"]
+            isOneToOne: false
+            referencedRelation: "billing_providers"
+            referencedColumns: ["key"]
+          },
           {
             foreignKeyName: "user_subscriptions_tier_id_fkey"
             columns: ["tier_id"]
