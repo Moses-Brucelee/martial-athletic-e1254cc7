@@ -123,6 +123,83 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_features: {
+        Row: {
+          created_at: string
+          id: string
+          included: boolean
+          label: string
+          sort_order: number
+          tier_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          included?: boolean
+          label: string
+          sort_order?: number
+          tier_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          included?: boolean
+          label?: string
+          sort_order?: number
+          tier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_features_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_tiers: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_popular: boolean
+          is_public: boolean
+          key: string
+          name: string
+          period: string
+          price: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_popular?: boolean
+          is_public?: boolean
+          key: string
+          name: string
+          period?: string
+          price?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_popular?: boolean
+          is_public?: boolean
+          key?: string
+          name?: string
+          period?: string
+          price?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           about_me: string | null
