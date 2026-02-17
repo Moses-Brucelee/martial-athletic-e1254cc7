@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      billing_provider_rules: {
+        Row: {
+          billing_provider: string
+          country_codes: string[] | null
+          created_at: string
+          currency_codes: string[] | null
+          id: string
+          is_active: boolean
+          priority: number
+          risk_level: string | null
+        }
+        Insert: {
+          billing_provider: string
+          country_codes?: string[] | null
+          created_at?: string
+          currency_codes?: string[] | null
+          id?: string
+          is_active?: boolean
+          priority: number
+          risk_level?: string | null
+        }
+        Update: {
+          billing_provider?: string
+          country_codes?: string[] | null
+          created_at?: string
+          currency_codes?: string[] | null
+          id?: string
+          is_active?: boolean
+          priority?: number
+          risk_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_provider_rules_billing_provider_fkey"
+            columns: ["billing_provider"]
+            isOneToOne: false
+            referencedRelation: "billing_providers"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      billing_providers: {
+        Row: {
+          created_at: string
+          is_active: boolean
+          is_default: boolean
+          key: string
+        }
+        Insert: {
+          created_at?: string
+          is_active?: boolean
+          is_default?: boolean
+          key: string
+        }
+        Update: {
+          created_at?: string
+          is_active?: boolean
+          is_default?: boolean
+          key?: string
+        }
+        Relationships: []
+      }
       competition_teams: {
         Row: {
           competition_id: string
@@ -260,6 +322,32 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_health_status: {
+        Row: {
+          billing_provider: string
+          last_checked_at: string
+          status: string
+        }
+        Insert: {
+          billing_provider: string
+          last_checked_at?: string
+          status?: string
+        }
+        Update: {
+          billing_provider?: string
+          last_checked_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_health_status_billing_provider_fkey"
+            columns: ["billing_provider"]
+            isOneToOne: true
+            referencedRelation: "billing_providers"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       stripe_customers: {
         Row: {
           created_at: string
@@ -313,6 +401,51 @@ export type Database = {
           stripe_event_id?: string
         }
         Relationships: []
+      }
+      tier_prices: {
+        Row: {
+          billing_interval: string
+          billing_provider: string
+          created_at: string
+          id: string
+          is_active: boolean
+          provider_price_id: string
+          tier_id: string
+        }
+        Insert: {
+          billing_interval: string
+          billing_provider: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          provider_price_id: string
+          tier_id: string
+        }
+        Update: {
+          billing_interval?: string
+          billing_provider?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          provider_price_id?: string
+          tier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tier_prices_billing_provider_fkey"
+            columns: ["billing_provider"]
+            isOneToOne: false
+            referencedRelation: "billing_providers"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "tier_prices_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_subscriptions: {
         Row: {
