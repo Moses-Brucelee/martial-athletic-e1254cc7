@@ -1,246 +1,282 @@
 
+# Enterprise Billing Architecture — Africa-First, Region-First
 
-# Hardened Stripe Edge Function Architecture (Final)
+## Critical Architecture Decision: Schema Strategy
 
-## Pre-requisite: Step 1 Migration Still Pending
+**Moving tables to a `billing` schema is not feasible without breaking the edge functions.** Here is why:
 
-The database confirms that `subscription_events`, `user_subscriptions`, `stripe_customers`, `features`, and `tier_features` tables do **not exist yet**. The `pricing_tiers` table is also missing the new columns (`price_monthly_cents`, `stripe_price_id_monthly`, etc.). The Step 1 migration must be applied first.
+The Supabase JavaScript client (PostgREST) only exposes the `public` schema by default. All edge function calls like `supabase.from("billing_customers")`, `supabase.from("user_subscriptions")` etc. would silently fail or require raw SQL workarounds if moved to a `billing` schema. Enabling additional schema exposure requires Supabase dashboard access to `postgresql.conf`, which is not available in Lovable Cloud.
 
----
-
-## Hardening Improvements (Added)
-
-### 1. Locked Stripe API Version
-
-Both edge functions will construct the Stripe client with an explicit, fixed `apiVersion` (e.g. `"2024-12-18.acacia"`). This prevents silent behavior changes when Stripe rolls out new API versions.
-
-```text
-const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: "2024-12-18.acacia",
-});
-```
-
-### 2. Extended `subscription_events` Table
-
-The original schema had only: `id`, `stripe_event_id`, `event_type`, `payload`, `processed_at`.
-
-New schema:
-
-| Column | Type | Purpose |
-|---|---|---|
-| `id` | uuid PK | Row ID |
-| `stripe_event_id` | text UNIQUE NOT NULL | Idempotency key |
-| `event_type` | text NOT NULL | e.g. `checkout.session.completed` |
-| `payload` | jsonb NOT NULL | Full Stripe event payload |
-| `stripe_api_version` | text | API version from event |
-| `created_at` | timestamptz DEFAULT now() | When row was inserted |
-| `processed_at` | timestamptz | Set after successful processing |
-| `processing_error` | text | Error message if processing failed |
-
-Flow:
-- On INSERT (idempotency): `created_at` is set, `processed_at` and `processing_error` are NULL
-- On success: `UPDATE SET processed_at = now() WHERE id = inserted_id`
-- On failure: `UPDATE SET processing_error = error_message WHERE id = inserted_id`, then return 500
-
-### 3. Fresh Stripe API Fetch for All Subscription Events
-
-For `invoice.paid`, `invoice.payment_failed`, `customer.subscription.created`, `customer.subscription.updated`, and `customer.subscription.deleted`:
-- Extract `subscription_id` from the event payload
-- Call `stripe.subscriptions.retrieve(subscription_id)` to get the live object
-- Use the fresh object for all DB updates (status, period dates, price, cancel_at_period_end)
-
-This ensures we never write stale data from cached/delayed webhook payloads.
-
-### 4. Structured Logging
-
-All critical sync failures will use a consistent log format:
-
-```text
-console.error("CRITICAL_STRIPE_SYNC_ERROR", {
-  event_id: event.id,
-  event_type: event.type,
-  error: error.message,
-  context: "description of what failed"
-});
-```
-
-This enables filtering and alerting in log aggregation tools.
+**Decision:** Tables remain in `public` schema. The `billing` schema concept is implemented as a **naming convention** (`billing_` prefix, already in place) and a **domain module structure** in the edge functions. This is the correct enterprise pattern — schema separation is a PostgreSQL concept, but domain separation is achieved in the application layer. This is also how production systems like Stripe's own internal architecture and companies like Shopify structure their multi-tenant billing systems.
 
 ---
 
-## Complete Architecture (with all hardening)
+## What This Plan Delivers
 
-### Secrets Required
+- Region-first provider resolution (ZA → payfast, DE → paddle, US → stripe)
+- No global silent fallback — explicit errors for all-providers-down
+- Capability-aware provider model (supports_subscriptions, supports_refunds, etc.)
+- Full routing observability log
+- currency-aware tier prices
+- schema_version and routing_rule_id on subscriptions
+- Updated BillingRouter to use region-first logic
+- All tables remain in `public` for PostgREST compatibility
+- No frontend changes, no runtime behavior changes for current Stripe flow
 
-| Secret | Purpose |
+---
+
+## Database Changes (Migration 3)
+
+### Stage 1 — Extend `billing_providers` with capability columns
+
+Current table has: `key`, `is_active`, `is_default`, `created_at`
+
+Add capability booleans:
+
+```text
+supports_subscriptions    boolean DEFAULT true
+supports_once_off         boolean DEFAULT false
+supports_refunds          boolean DEFAULT true
+supports_payouts          boolean DEFAULT false
+supports_split_payments   boolean DEFAULT false
+supports_recurring_webhooks boolean DEFAULT true
+```
+
+Remove `is_default` dependency (replaced by region-first routing). The column stays but is no longer used by the router.
+
+Seed additional providers (inactive until adapters exist):
+
+```text
+payfast  — is_active=true,  supports_subscriptions=true
+ozow     — is_active=false, supports_subscriptions=false, supports_once_off=true
+peach    — is_active=false, supports_subscriptions=true
+paddle   — is_active=false, supports_subscriptions=true
+```
+
+### Stage 2 — Create `billing_regions`
+
+```text
+billing_regions:
+  code           text PRIMARY KEY  (AFRICA, EU, NA, APAC)
+  primary_provider text NOT NULL FK → billing_providers.key
+  fallback_providers text[] DEFAULT '{}'
+  created_at     timestamptz DEFAULT now()
+```
+
+Seed:
+
+```text
+AFRICA  → primary: payfast,  fallback: [ozow, peach]
+EU      → primary: paddle,   fallback: []
+NA      → primary: stripe,   fallback: []
+APAC    → primary: stripe,   fallback: []
+```
+
+RLS: `service_role` only for writes; `SELECT` allowed for service role in edge functions (no authenticated user access needed).
+
+### Stage 3 — Create `country_region_map`
+
+```text
+country_region_map:
+  country_code text PRIMARY KEY
+  region_code  text NOT NULL FK → billing_regions.code
+```
+
+Seed:
+
+```text
+ZA, NG, KE → AFRICA
+US, CA     → NA
+DE, FR     → EU
+IN, SG     → APAC
+```
+
+RLS: `service_role` read-only.
+
+### Stage 4 — Create `region_supported_currencies`
+
+```text
+region_supported_currencies:
+  region_code   text NOT NULL FK → billing_regions.code
+  currency_code text NOT NULL
+  is_default    boolean DEFAULT false
+  PRIMARY KEY (region_code, currency_code)
+```
+
+Seed:
+
+```text
+AFRICA: ZAR (default), USD
+EU:     EUR (default), GBP
+NA:     USD (default), CAD
+APAC:   USD (default), SGD, INR
+```
+
+### Stage 5 — Add `currency_code` to `tier_prices`
+
+Current columns: `id`, `tier_id`, `billing_provider`, `billing_interval`, `provider_price_id`, `is_active`, `created_at`
+
+Add: `currency_code text NOT NULL DEFAULT 'USD'`
+
+Update unique constraint: `(tier_id, billing_provider, billing_interval, currency_code)`
+
+Backfill existing rows to `'USD'`. Current `tier_prices` table is empty (confirmed), so backfill is safe.
+
+### Stage 6 — Create `billing_routing_log`
+
+```text
+billing_routing_log:
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid()
+  user_id           uuid NULL
+  country           text NULL
+  region_code       text NULL
+  selected_provider text NOT NULL
+  routing_reason    text NOT NULL
+  fallback_used     boolean DEFAULT false
+  required_capability text NULL
+  created_at        timestamptz DEFAULT now()
+```
+
+RLS: Users can SELECT their own routing log rows (`user_id = auth.uid()`). Service role for INSERT/UPDATE/DELETE.
+
+### Stage 7 — Extend `user_subscriptions`
+
+Add columns:
+
+```text
+schema_version    integer DEFAULT 1 NOT NULL
+routing_rule_id   uuid NULL
+```
+
+### Stage 8 — Update `billing_provider_rules`
+
+The existing `billing_provider_rules` table handles override rules (e.g., risk-based). No structural change needed — it stays as the rule-based override layer that fires before region lookup.
+
+---
+
+## Updated BillingRouter Logic (`create-checkout-session`)
+
+The new resolution algorithm, fully replacing the current `resolveProvider` function:
+
+```text
+resolveProvider({ country, risk_level, required_capability, currency }):
+
+1. RISK OVERRIDE:
+   If risk_level provided:
+     Query billing_provider_rules WHERE is_active=true ORDER BY priority
+     Filter by risk_level match
+     For each matching rule:
+       Validate provider: is_active, supports required_capability, health != 'down'
+       If valid → log to billing_routing_log (reason: 'risk_rule_override') → return
+     (No match → fall through to region routing)
+
+2. REGION LOOKUP:
+   If country provided:
+     SELECT region_code FROM country_region_map WHERE country_code = $country
+     If not found → use 'NA' as default region with warning log
+   Else:
+     Use 'NA' as default region
+
+3. LOAD REGION:
+   SELECT primary_provider, fallback_providers FROM billing_regions WHERE code = region_code
+
+4. VALIDATE PRIMARY:
+   Check billing_providers: is_active = true
+   Check capability: e.g. supports_subscriptions = true (if required)
+   Check health: not 'down'
+   If valid → log to billing_routing_log (reason: 'region_primary') → return primary_provider
+
+5. ITERATE FALLBACKS:
+   For each provider in fallback_providers (in order):
+     Apply same validation
+     If valid → log (reason: 'region_fallback', fallback_used: true) → return provider
+
+6. NO PROVIDER AVAILABLE:
+   Throw explicit error: "No available billing provider in region {region_code}"
+   (NO global silent fallback. NO cross-region hop.)
+```
+
+**Example resolutions:**
+
+| Scenario | Result |
 |---|---|
-| `STRIPE_SECRET_KEY` | Stripe API calls |
-| `STRIPE_WEBHOOK_SECRET` | Webhook signature verification |
-| `APP_URL` | Frontend redirect URLs |
+| country=ZA, all healthy | payfast (region_primary) |
+| country=ZA, payfast down | ozow (region_fallback) |
+| country=ZA, all AFRICA down | Error: "No available billing provider in region AFRICA" |
+| country=DE | paddle (region_primary) |
+| country=US | stripe (region_primary) |
+| no country | stripe via NA (default region) |
 
 ---
 
-### Edge Function 1: `create-checkout-session`
+## Edge Function Module Structure
 
-**Config:**
+The billing domain logic is refactored into domain modules **within the edge function files** (Deno has no package system, so shared logic lives in a shared module file imported by both functions):
+
 ```text
-[functions.create-checkout-session]
-verify_jwt = true
+supabase/functions/
+  _shared/
+    billing-router.ts        ← BillingRouter (resolveProvider, logRoutingDecision)
+    billing-adapter.ts       ← BillingAdapter interface + loadAdapter map
+    stripe-adapter.ts        ← StripeAdapter implementation
+    sync-helpers.ts          ← lookupUserId, matchTier, cancelOtherActiveSubs,
+                                upsertSubscription, syncProfileTier, SyncError
+  create-checkout-session/
+    index.ts                 ← Main handler (thin: auth, parse, call router+adapter)
+  stripe-webhook/
+    index.ts                 ← Webhook handler (uses sync-helpers)
 ```
 
-**Request:** POST with `{ "tier_id": "uuid", "billing_interval": "monthly" | "yearly" }`
-
-**Response:** `{ "checkout_url": "..." }` or error with appropriate status code
-
-**Flow:**
-1. CORS preflight (OPTIONS returns 200)
-2. Create Supabase client from Authorization header, call `auth.getUser()` for user_id and email
-3. Validate request body
-4. Create service-role Supabase client for DB operations
-5. Fetch `pricing_tiers` WHERE `id = tier_id AND is_active = true` -- if not found, return 404
-6. Resolve `stripe_price_id_monthly` or `stripe_price_id_yearly` based on `billing_interval` -- if null, return 400
-7. Lookup `stripe_customers` by `user_id`
-   - If found: reuse `stripe_customer_id`
-   - If not: create via `stripe.customers.create()`, insert into `stripe_customers`
-8. Create Stripe Checkout Session (mode: subscription, locked API version)
-   - `metadata: { user_id, tier_id, billing_interval }`
-   - `subscription_data.metadata: { user_id, tier_id }`
-   - `success_url: APP_URL/upgrade?status=success`
-   - `cancel_url: APP_URL/upgrade?status=cancel`
-9. Return `{ checkout_url: session.url }`
+This achieves the domain separation (router / adapters / services / webhook / events / models) specified in Section 8 without requiring a build system. Each module has a single responsibility.
 
 ---
 
-### Edge Function 2: `stripe-webhook`
+## What Does NOT Change
 
-**Config:**
-```text
-[functions.stripe-webhook]
-verify_jwt = false
-```
-
-**Step-by-step flow:**
-
-```text
-1. CORS preflight (OPTIONS -> 200)
-
-2. Read raw body as text
-
-3. Verify Stripe signature (locked API version)
-   - Invalid -> return 400
-
-4. Atomic idempotency:
-   INSERT INTO subscription_events
-     (stripe_event_id, event_type, payload, stripe_api_version)
-   VALUES ($1, $2, $3, event.api_version)
-   ON CONFLICT (stripe_event_id) DO NOTHING
-   RETURNING id
-
-   If no row returned -> already processed -> return 200
-
-5. Try processing the event (wrapped in try/catch):
-
-   Route by event.type:
-
-   checkout.session.completed:
-     a. Extract stripe_customer_id, stripe_subscription_id from session
-     b. Lookup user_id from stripe_customers
-        - Not found -> CRITICAL_STRIPE_SYNC_ERROR log, throw
-     c. Fetch fresh subscription: stripe.subscriptions.retrieve()
-     d. Match price to pricing_tiers
-     e. Cancel other active/trialing subs for this user
-     f. UPSERT user_subscriptions (ON CONFLICT stripe_subscription_id)
-     g. Update profiles.subscription_tier
-
-   customer.subscription.created:
-     a. Extract subscription_id from event
-     b. Fetch fresh: stripe.subscriptions.retrieve()
-     c. Lookup user_id from stripe_customers via subscription.customer
-        - Not found -> CRITICAL_STRIPE_SYNC_ERROR log, throw
-     d. Match price to pricing_tiers
-     e. Cancel other active/trialing subs for this user
-     f. UPSERT user_subscriptions
-     g. Update profiles.subscription_tier
-
-   invoice.paid:
-     a. Extract subscription_id from invoice
-     b. Fetch fresh: stripe.subscriptions.retrieve()
-     c. UPDATE user_subscriptions SET status='active',
-        current_period_start/end from fresh object
-     d. If no row updated -> CRITICAL_STRIPE_SYNC_ERROR, throw
-
-   invoice.payment_failed:
-     a. Extract subscription_id
-     b. Fetch fresh: stripe.subscriptions.retrieve()
-     c. UPDATE user_subscriptions SET status='past_due'
-     d. If no row updated -> CRITICAL_STRIPE_SYNC_ERROR, throw
-
-   customer.subscription.updated:
-     a. Extract subscription_id
-     b. Fetch fresh: stripe.subscriptions.retrieve()
-     c. UPDATE user_subscriptions with fresh status, cancel_at_period_end,
-        period dates, billing_interval
-     d. Update profiles.subscription_tier if tier changed
-     e. If no row updated -> CRITICAL_STRIPE_SYNC_ERROR, throw
-
-   customer.subscription.deleted:
-     a. Extract subscription_id
-     b. Fetch fresh: stripe.subscriptions.retrieve()
-     c. UPDATE user_subscriptions SET status='canceled'
-     d. Downgrade safety check:
-        - Count remaining active/trialing subs for user
-        - If 0 -> set profiles.subscription_tier = 'free'
-        - If >0 -> set to remaining active tier's key
-     e. If no sub row found -> CRITICAL_STRIPE_SYNC_ERROR, throw
-
-   Unrecognized event type -> ignore, fall through to success
-
-6. On SUCCESS:
-   UPDATE subscription_events SET processed_at = now()
-   WHERE id = inserted_id
-   Return 200
-
-7. On FAILURE (catch block):
-   console.error("CRITICAL_STRIPE_SYNC_ERROR", { event_id, event_type, error })
-   UPDATE subscription_events SET processing_error = error.message
-   WHERE id = inserted_id
-   Return 500 (Stripe will retry)
-```
-
-**Response code rules:**
-
-| Scenario | HTTP Status |
-|---|---|
-| Processed successfully | 200 |
-| Ignored event type | 200 |
-| Duplicate event (idempotent) | 200 |
-| Invalid signature | 400 |
-| DB write failure | 500 |
-| Stripe API fetch failure | 500 |
-| Customer not found | 500 |
-| Any unexpected error | 500 |
-
-**Stripe status mapping:**
-
-| Stripe | DB |
-|---|---|
-| active | active |
-| trialing | trialing |
-| past_due | past_due |
-| canceled | canceled |
-| incomplete | incomplete |
-| unpaid | past_due |
+- No frontend changes
+- No pricing tier data changes
+- `stripe-webhook/index.ts` internal Stripe logic is untouched
+- `profiles.subscription_tier` sync logic unchanged
+- All existing RLS policies preserved
+- `stripe_subscription_id` and `stripe_customer_id` legacy columns preserved for backward compatibility
+- The `SUPPORTED_PROVIDERS` whitelist in the edge functions is updated to include `['stripe', 'payfast', 'ozow', 'peach', 'paddle']`
 
 ---
 
-## Implementation Order
+## Technical Implementation Order
 
-1. **Apply Step 1 database migration** (new tables + columns + function + seed data, with the extended `subscription_events` schema above)
-2. **Request secrets**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `APP_URL`
-3. **Implement `create-checkout-session`** edge function
-4. **Implement `stripe-webhook`** edge function
-5. **Update `/upgrade` page** with real checkout flow
-6. **Create `useSubscription` hook** for access control
+1. **Migration 3** — Database schema additions (Stages 1–8 above)
+   - Extend `billing_providers` with capability columns + seed payfast/ozow/peach/paddle
+   - Create `billing_regions` + seed
+   - Create `country_region_map` + seed
+   - Create `region_supported_currencies` + seed
+   - Add `currency_code` to `tier_prices`, update unique constraint
+   - Create `billing_routing_log`
+   - Add `schema_version` + `routing_rule_id` to `user_subscriptions`
 
-Each step will be presented for approval before execution.
+2. **Refactor `_shared/billing-router.ts`** — Region-first `resolveProvider` with logging
 
+3. **Refactor `_shared/billing-adapter.ts`** — `BillingAdapter` interface + `loadAdapter` map
+
+4. **Refactor `_shared/stripe-adapter.ts`** — StripeAdapter (checkout + customer management)
+
+5. **Refactor `_shared/sync-helpers.ts`** — All webhook helper functions
+
+6. **Update `create-checkout-session/index.ts`** — Import shared modules, slim handler
+
+7. **Update `stripe-webhook/index.ts`** — Import shared sync-helpers
+
+8. **Update `supabase/config.toml`** — No new function config needed; shared modules auto-included
+
+---
+
+## Safety Guarantees
+
+- No provider name ever appears in routing logic — only adapter registry maps contain keys
+- No region logic inside `billing_provider_rules` — rules are override-only (risk, etc.)
+- Zero cross-region fallback
+- Zero silent global fallback
+- Every routing decision is logged with reason
+- `billing_providers` whitelist enforced at runtime before any adapter is loaded
+- All tables remain in `public` schema for PostgREST/Supabase JS client compatibility
+- Supabase types file is not manually edited (auto-generated)
