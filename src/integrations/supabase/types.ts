@@ -96,18 +96,113 @@ export type Database = {
           is_active: boolean
           is_default: boolean
           key: string
+          priority_weight: number
+          supports_once_off: boolean
+          supports_payouts: boolean
+          supports_recurring_webhooks: boolean
+          supports_refunds: boolean
+          supports_split_payments: boolean
+          supports_subscriptions: boolean
+          transaction_fee_fixed: number | null
+          transaction_fee_percent: number | null
         }
         Insert: {
           created_at?: string
           is_active?: boolean
           is_default?: boolean
           key: string
+          priority_weight?: number
+          supports_once_off?: boolean
+          supports_payouts?: boolean
+          supports_recurring_webhooks?: boolean
+          supports_refunds?: boolean
+          supports_split_payments?: boolean
+          supports_subscriptions?: boolean
+          transaction_fee_fixed?: number | null
+          transaction_fee_percent?: number | null
         }
         Update: {
           created_at?: string
           is_active?: boolean
           is_default?: boolean
           key?: string
+          priority_weight?: number
+          supports_once_off?: boolean
+          supports_payouts?: boolean
+          supports_recurring_webhooks?: boolean
+          supports_refunds?: boolean
+          supports_split_payments?: boolean
+          supports_subscriptions?: boolean
+          transaction_fee_fixed?: number | null
+          transaction_fee_percent?: number | null
+        }
+        Relationships: []
+      }
+      billing_regions: {
+        Row: {
+          code: string
+          created_at: string
+          fallback_providers: string[]
+          primary_provider: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          fallback_providers?: string[]
+          primary_provider: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          fallback_providers?: string[]
+          primary_provider?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_regions_primary_provider_fkey"
+            columns: ["primary_provider"]
+            isOneToOne: false
+            referencedRelation: "billing_providers"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      billing_routing_log: {
+        Row: {
+          country: string | null
+          created_at: string
+          fallback_used: boolean
+          id: string
+          idempotency_key: string | null
+          region_code: string | null
+          required_capability: string | null
+          routing_reason: string
+          selected_provider: string
+          user_id: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          fallback_used?: boolean
+          id?: string
+          idempotency_key?: string | null
+          region_code?: string | null
+          required_capability?: string | null
+          routing_reason: string
+          selected_provider: string
+          user_id?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          fallback_used?: boolean
+          id?: string
+          idempotency_key?: string | null
+          region_code?: string | null
+          required_capability?: string | null
+          routing_reason?: string
+          selected_provider?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -219,6 +314,29 @@ export type Database = {
           venue?: string | null
         }
         Relationships: []
+      }
+      country_region_map: {
+        Row: {
+          country_code: string
+          region_code: string
+        }
+        Insert: {
+          country_code: string
+          region_code: string
+        }
+        Update: {
+          country_code?: string
+          region_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "country_region_map_region_code_fkey"
+            columns: ["region_code"]
+            isOneToOne: false
+            referencedRelation: "billing_regions"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       pricing_features: {
         Row: {
@@ -362,16 +480,19 @@ export type Database = {
           billing_provider: string
           last_checked_at: string
           status: string
+          ttl_seconds: number
         }
         Insert: {
           billing_provider: string
           last_checked_at?: string
           status?: string
+          ttl_seconds?: number
         }
         Update: {
           billing_provider?: string
           last_checked_at?: string
           status?: string
+          ttl_seconds?: number
         }
         Relationships: [
           {
@@ -383,12 +504,39 @@ export type Database = {
           },
         ]
       }
+      region_supported_currencies: {
+        Row: {
+          currency_code: string
+          is_default: boolean
+          region_code: string
+        }
+        Insert: {
+          currency_code: string
+          is_default?: boolean
+          region_code: string
+        }
+        Update: {
+          currency_code?: string
+          is_default?: boolean
+          region_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "region_supported_currencies_region_code_fkey"
+            columns: ["region_code"]
+            isOneToOne: false
+            referencedRelation: "billing_regions"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       subscription_events: {
         Row: {
           billing_provider: string
           created_at: string
           event_type: string
           id: string
+          idempotency_key: string | null
           payload: Json
           processed_at: string | null
           processing_error: string | null
@@ -400,6 +548,7 @@ export type Database = {
           created_at?: string
           event_type: string
           id?: string
+          idempotency_key?: string | null
           payload: Json
           processed_at?: string | null
           processing_error?: string | null
@@ -411,6 +560,7 @@ export type Database = {
           created_at?: string
           event_type?: string
           id?: string
+          idempotency_key?: string | null
           payload?: Json
           processed_at?: string | null
           processing_error?: string | null
@@ -432,6 +582,7 @@ export type Database = {
           billing_interval: string
           billing_provider: string
           created_at: string
+          currency_code: string
           id: string
           is_active: boolean
           provider_price_id: string
@@ -441,6 +592,7 @@ export type Database = {
           billing_interval: string
           billing_provider: string
           created_at?: string
+          currency_code?: string
           id?: string
           is_active?: boolean
           provider_price_id: string
@@ -450,6 +602,7 @@ export type Database = {
           billing_interval?: string
           billing_provider?: string
           created_at?: string
+          currency_code?: string
           id?: string
           is_active?: boolean
           provider_price_id?: string
@@ -482,6 +635,8 @@ export type Database = {
           current_period_start: string | null
           id: string
           provider_subscription_id: string
+          routing_rule_id: string | null
+          schema_version: number
           status: string
           stripe_customer_id: string
           stripe_subscription_id: string
@@ -498,6 +653,8 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           provider_subscription_id: string
+          routing_rule_id?: string | null
+          schema_version?: number
           status?: string
           stripe_customer_id: string
           stripe_subscription_id: string
@@ -514,6 +671,8 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           provider_subscription_id?: string
+          routing_rule_id?: string | null
+          schema_version?: number
           status?: string
           stripe_customer_id?: string
           stripe_subscription_id?: string
