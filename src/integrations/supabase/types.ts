@@ -206,6 +206,58 @@ export type Database = {
         }
         Relationships: []
       }
+      competition_scores: {
+        Row: {
+          competition_id: string
+          created_at: string
+          id: string
+          score: number
+          team_id: string
+          updated_at: string
+          workout_id: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          id?: string
+          score?: number
+          team_id: string
+          updated_at?: string
+          workout_id: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          id?: string
+          score?: number
+          team_id?: string
+          updated_at?: string
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_scores_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_scores_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "competition_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_scores_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "competition_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_teams: {
         Row: {
           competition_id: string
