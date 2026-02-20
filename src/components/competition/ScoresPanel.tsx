@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Save } from "lucide-react";
+import { ClipboardList, Save, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { upsertScores } from "@/data/scoring";
 
 interface Team {
   id?: string;
@@ -16,17 +17,18 @@ interface Workout {
   workout_number: number;
   measurement_type: string;
   name: string | null;
+  is_locked?: boolean;
 }
 
 interface ScoresPanelProps {
   competitionId: string;
   teams: Team[];
   workouts: Workout[];
-  isOwner: boolean;
+  canScore: boolean;
+  judgeId?: string;
 }
 
-export function ScoresPanel({ competitionId, teams, workouts, isOwner }: ScoresPanelProps) {
-  // scores keyed by `${teamId}-${workoutId}`
+export function ScoresPanel({ competitionId, teams, workouts, canScore, judgeId }: ScoresPanelProps) {
   const [scores, setScores] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -54,23 +56,18 @@ export function ScoresPanel({ competitionId, teams, workouts, isOwner }: ScoresP
 
   const saveScores = async () => {
     setSaving(true);
-    const upserts = Object.entries(scores)
-      .filter(([, val]) => val !== "" && !isNaN(Number(val)))
-      .map(([key, val]) => {
-        const [team_id, workout_id] = key.split("-");
-        return { competition_id: competitionId, team_id, workout_id, score: Number(val) };
-      });
+    try {
+      const upserts = Object.entries(scores)
+        .filter(([, val]) => val !== "" && !isNaN(Number(val)))
+        .map(([key, val]) => {
+          const [team_id, workout_id] = key.split("-");
+          return { competition_id: competitionId, team_id, workout_id, score: Number(val), judge_id: judgeId || null };
+        });
 
-    if (upserts.length > 0) {
-      const { error } = await supabase
-        .from("competition_scores")
-        .upsert(upserts, { onConflict: "team_id,workout_id" });
-
-      if (error) {
-        toast.error("Failed to save scores");
-      } else {
-        toast.success("Scores saved!");
-      }
+      await upsertScores(upserts);
+      toast.success("Scores saved!");
+    } catch {
+      toast.error("Failed to save scores");
     }
     setSaving(false);
   };
@@ -94,7 +91,7 @@ export function ScoresPanel({ competitionId, teams, workouts, isOwner }: ScoresP
           <ClipboardList className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-bold text-foreground uppercase">Scores</h3>
         </div>
-        {isOwner && (
+        {canScore && (
           <Button size="sm" onClick={saveScores} disabled={saving} className="bg-accent hover:bg-accent/90 text-accent-foreground">
             <Save className="h-4 w-4 mr-1" />
             {saving ? "Saving..." : "Save"}
@@ -110,6 +107,7 @@ export function ScoresPanel({ competitionId, teams, workouts, isOwner }: ScoresP
               {workouts.map((w) => (
                 <th key={w.id} className="text-center py-2 px-2 font-bold text-foreground uppercase text-xs whitespace-nowrap">
                   WOD {w.workout_number}
+                  {w.is_locked && <Lock className="inline h-3 w-3 ml-1 text-destructive" />}
                 </th>
               ))}
             </tr>
@@ -120,9 +118,10 @@ export function ScoresPanel({ competitionId, teams, workouts, isOwner }: ScoresP
                 <td className="py-2 px-2 font-semibold text-foreground text-xs whitespace-nowrap">{team.team_name}</td>
                 {workouts.map((w) => {
                   const key = `${team.id}-${w.id}`;
+                  const isLocked = w.is_locked;
                   return (
                     <td key={w.id} className="py-2 px-1 text-center">
-                      {isOwner ? (
+                      {canScore && !isLocked ? (
                         <Input
                           type="number"
                           value={scores[key] || ""}

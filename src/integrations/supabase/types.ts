@@ -206,11 +206,117 @@ export type Database = {
         }
         Relationships: []
       }
+      competition_divisions: {
+        Row: {
+          competition_id: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_divisions_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_judges: {
+        Row: {
+          competition_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_judges_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_participants: {
+        Row: {
+          athlete_name: string
+          competition_id: string
+          created_at: string
+          id: string
+          team_id: string
+          user_id: string | null
+        }
+        Insert: {
+          athlete_name: string
+          competition_id: string
+          created_at?: string
+          id?: string
+          team_id: string
+          user_id?: string | null
+        }
+        Update: {
+          athlete_name?: string
+          competition_id?: string
+          created_at?: string
+          id?: string
+          team_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_participants_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_participants_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "competition_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_scores: {
         Row: {
           competition_id: string
           created_at: string
           id: string
+          judge_id: string | null
+          locked: boolean
+          locked_at: string | null
           score: number
           team_id: string
           updated_at: string
@@ -220,6 +326,9 @@ export type Database = {
           competition_id: string
           created_at?: string
           id?: string
+          judge_id?: string | null
+          locked?: boolean
+          locked_at?: string | null
           score?: number
           team_id: string
           updated_at?: string
@@ -229,6 +338,9 @@ export type Database = {
           competition_id?: string
           created_at?: string
           id?: string
+          judge_id?: string | null
+          locked?: boolean
+          locked_at?: string | null
           score?: number
           team_id?: string
           updated_at?: string
@@ -263,6 +375,7 @@ export type Database = {
           competition_id: string
           created_at: string
           division: string | null
+          division_id: string | null
           id: string
           team_name: string
         }
@@ -270,6 +383,7 @@ export type Database = {
           competition_id: string
           created_at?: string
           division?: string | null
+          division_id?: string | null
           id?: string
           team_name: string
         }
@@ -277,6 +391,7 @@ export type Database = {
           competition_id?: string
           created_at?: string
           division?: string | null
+          division_id?: string | null
           id?: string
           team_name?: string
         }
@@ -288,6 +403,13 @@ export type Database = {
             referencedRelation: "competitions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "competition_teams_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "competition_divisions"
+            referencedColumns: ["id"]
+          },
         ]
       }
       competition_workouts: {
@@ -295,6 +417,7 @@ export type Database = {
           competition_id: string
           created_at: string
           id: string
+          is_locked: boolean
           measurement_type: string
           name: string | null
           workout_number: number
@@ -303,6 +426,7 @@ export type Database = {
           competition_id: string
           created_at?: string
           id?: string
+          is_locked?: boolean
           measurement_type?: string
           name?: string | null
           workout_number: number
@@ -311,6 +435,7 @@ export type Database = {
           competition_id?: string
           created_at?: string
           id?: string
+          is_locked?: boolean
           measurement_type?: string
           name?: string | null
           workout_number?: number
@@ -334,6 +459,7 @@ export type Database = {
           host_gym: string | null
           id: string
           name: string
+          season_id: string | null
           status: string
           type: string | null
           updated_at: string
@@ -347,6 +473,7 @@ export type Database = {
           host_gym?: string | null
           id?: string
           name: string
+          season_id?: string | null
           status?: string
           type?: string | null
           updated_at?: string
@@ -360,12 +487,21 @@ export type Database = {
           host_gym?: string | null
           id?: string
           name?: string
+          season_id?: string | null
           status?: string
           type?: string | null
           updated_at?: string
           venue?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "competitions_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       country_region_map: {
         Row: {
@@ -582,6 +718,93 @@ export type Database = {
           },
         ]
       }
+      scoring_events: {
+        Row: {
+          competition_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          judge_id: string | null
+          payload: Json | null
+          score_id: string | null
+          team_id: string | null
+        }
+        Insert: {
+          competition_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          judge_id?: string | null
+          payload?: Json | null
+          score_id?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          competition_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          judge_id?: string | null
+          payload?: Json | null
+          score_id?: string | null
+          team_id?: string | null
+        }
+        Relationships: []
+      }
+      season_competitions: {
+        Row: {
+          competition_id: string
+          id: string
+          season_id: string
+        }
+        Insert: {
+          competition_id: string
+          id?: string
+          season_id: string
+        }
+        Update: {
+          competition_id?: string
+          id?: string
+          season_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_competitions_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "season_competitions_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seasons: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          year?: number
+        }
+        Relationships: []
+      }
       subscription_events: {
         Row: {
           billing_provider: string
@@ -628,6 +851,21 @@ export type Database = {
             referencedColumns: ["key"]
           },
         ]
+      }
+      super_users: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       tier_prices: {
         Row: {
@@ -754,7 +992,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_competition_leaderboard: {
+        Args: { p_competition_id: string }
+        Returns: {
+          division_id: string
+          division_name: string
+          team_id: string
+          team_name: string
+          total_points: number
+        }[]
+      }
+      get_season_leaderboard: {
+        Args: { p_season_id: string }
+        Returns: {
+          team_id: string
+          team_name: string
+          total_points: number
+        }[]
+      }
+      is_competition_judge: {
+        Args: { p_competition_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_competition_owner: {
+        Args: { p_competition_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_super_user: { Args: { p_user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

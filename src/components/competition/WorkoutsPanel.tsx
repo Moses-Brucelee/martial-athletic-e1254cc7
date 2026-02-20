@@ -1,13 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Dumbbell } from "lucide-react";
+import { Plus, Trash2, Dumbbell, Lock } from "lucide-react";
 
 interface Workout {
   id: string;
   workout_number: number;
   measurement_type: string;
   name: string | null;
+  is_locked?: boolean;
 }
 
 const MEASUREMENT_OPTIONS = ["time", "reps", "weight", "points", "distance"];
@@ -29,7 +30,7 @@ export function WorkoutsPanel({ competitionId, workouts, setWorkouts, isOwner }:
       .single();
 
     if (!error && data) {
-      setWorkouts((prev) => [...prev, data as Workout]);
+      setWorkouts((prev) => [...prev, { ...data, is_locked: false } as Workout]);
     }
   };
 
@@ -57,36 +58,27 @@ export function WorkoutsPanel({ competitionId, workouts, setWorkouts, isOwner }:
       <div className="space-y-3 mb-4">
         {workouts.map((workout) => (
           <div key={workout.id} className="rounded-lg border border-border overflow-hidden">
-            <div className="bg-destructive/80 text-destructive-foreground text-xs font-bold uppercase tracking-wider px-3 py-1.5 text-center">
+            <div className="bg-destructive/80 text-destructive-foreground text-xs font-bold uppercase tracking-wider px-3 py-1.5 text-center flex items-center justify-center gap-1">
               Workout #{workout.workout_number}
+              {workout.is_locked && <Lock className="h-3 w-3" />}
             </div>
             <div className="p-3 bg-background space-y-2">
               <p className="text-xs text-muted-foreground">
                 Total: <span className="capitalize font-medium text-foreground">{workout.measurement_type}</span> (Scoring Opportunity)
               </p>
-              {isOwner ? (
+              {isOwner && !workout.is_locked ? (
                 <div className="flex items-center gap-2">
-                  <Select
-                    value={workout.measurement_type}
-                    onValueChange={(val) => updateMeasurement(workout.id, val)}
-                  >
+                  <Select value={workout.measurement_type} onValueChange={(val) => updateMeasurement(workout.id, val)}>
                     <SelectTrigger className="h-8 bg-card text-sm flex-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {MEASUREMENT_OPTIONS.map((opt) => (
-                        <SelectItem key={opt} value={opt} className="capitalize">
-                          {opt}
-                        </SelectItem>
+                        <SelectItem key={opt} value={opt} className="capitalize">{opt}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => removeWorkout(workout.id)}
-                  >
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeWorkout(workout.id)}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -97,11 +89,7 @@ export function WorkoutsPanel({ competitionId, workouts, setWorkouts, isOwner }:
       </div>
 
       {isOwner && (
-        <Button
-          variant="outline"
-          onClick={addWorkout}
-          className="w-full border-dashed border-accent text-accent hover:bg-accent/10"
-        >
+        <Button variant="outline" onClick={addWorkout} className="w-full border-dashed border-accent text-accent hover:bg-accent/10">
           <Plus className="h-4 w-4 mr-2" />
           Add Workout
         </Button>

@@ -3,6 +3,10 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
+import { useCompetitionRole } from "@/hooks/useCompetitionRole";
+import { useSuperUserAccess } from "@/hooks/useSuperUserAccess";
+import { fetchDivisions } from "@/data/divisions";
+import { fetchJudges } from "@/data/judges";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,11 +15,18 @@ import { TeamsPanel } from "@/components/competition/TeamsPanel";
 import { WorkoutsPanel } from "@/components/competition/WorkoutsPanel";
 import { ScoresPanel } from "@/components/competition/ScoresPanel";
 import { LeaderboardPanel } from "@/components/competition/LeaderboardPanel";
+import { DivisionsPanel } from "@/components/competition/DivisionsPanel";
+import { JudgesPanel } from "@/components/competition/JudgesPanel";
+import { ParticipantsPanel } from "@/components/competition/ParticipantsPanel";
+import { ScoreLockControls } from "@/components/competition/ScoreLockControls";
+import type { Division, Team as DomainTeam, Workout as DomainWorkout } from "@/domain/competition";
+import type { Judge } from "@/domain/judges";
 
 interface Team {
   id?: string;
   team_name: string;
   division: string;
+  division_id?: string | null;
 }
 
 interface Workout {
@@ -23,20 +34,26 @@ interface Workout {
   workout_number: number;
   measurement_type: string;
   name: string | null;
+  is_locked?: boolean;
 }
 
 export default function CompetitionDashboard() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
+  const { isOwner, isJudge, role, loading: roleLoading } = useCompetitionRole(id);
+  const { isSuperUser } = useSuperUserAccess();
 
   const [competition, setCompetition] = useState<{ name: string; created_by: string } | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [judges, setJudges] = useState<Judge[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const isOwner = !!(user && competition && competition.created_by === user.id);
+  const canAdmin = isOwner || isSuperUser;
+  const canScore = isOwner || isJudge || isSuperUser;
 
   useEffect(() => {
     if (!id) return;
@@ -50,14 +67,25 @@ export default function CompetitionDashboard() {
       if (compRes.error) setError(compRes.error.message);
       else setCompetition(compRes.data);
 
-      if (teamsRes.data) setTeams(teamsRes.data.map((t) => ({ id: t.id, team_name: t.team_name, division: t.division || "" })));
-      if (workoutsRes.data) setWorkouts(workoutsRes.data as Workout[]);
+      if (teamsRes.data) setTeams(teamsRes.data.map((t: any) => ({ id: t.id, team_name: t.team_name, division: t.division || "", division_id: t.division_id })));
+      if (workoutsRes.data) setWorkouts(workoutsRes.data.map((w: any) => ({ ...w, is_locked: w.is_locked || false })));
+
+      // Load divisions and judges
+      try {
+        const [divs, jdgs] = await Promise.all([
+          fetchDivisions(id),
+          fetchJudges(id),
+        ]);
+        setDivisions(divs);
+        setJudges(jdgs);
+      } catch {}
+
       setLoading(false);
     };
     load();
   }, [id]);
 
-  if (profileLoading || loading) {
+  if (profileLoading || loading || roleLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Skeleton className="h-14 w-full" />
@@ -69,8 +97,101 @@ export default function CompetitionDashboard() {
     );
   }
 
-  // Free users (non-owners) see only leaderboard
-  const showManagement = isOwner;
+  // Determine tabs based on role
+  const renderOwnerTabs = () => (
+    <Tabs defaultValue="setup" className="w-full">
+      <TabsList className="w-full grid grid-cols-6 mb-6">
+        <TabsTrigger value="setup">Setup</TabsTrigger>
+        <TabsTrigger value="judges">Judges</TabsTrigger>
+        <TabsTrigger value="scores">Scores</TabsTrigger>
+        <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+        <TabsTrigger value="roster">Roster</TabsTrigger>
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="setup">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <DivisionsPanel competitionId={id!} divisions={divisions} setDivisions={setDivisions} canAdmin={canAdmin} />
+          <TeamsPanel competitionId={id!} teams={teams} setTeams={setTeams} isOwner={canAdmin} divisions={divisions} />
+          <WorkoutsPanel competitionId={id!} workouts={workouts} setWorkouts={setWorkouts} isOwner={canAdmin} />
+          <div className="bg-card border border-border rounded-xl p-6">
+            <h3 className="text-lg font-bold text-foreground uppercase mb-4">Score Locks</h3>
+            <ScoreLockControls workouts={workouts as DomainWorkout[]} setWorkouts={setWorkouts as any} canAdmin={canAdmin} isSuperUser={isSuperUser} />
+          </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="judges">
+        <JudgesPanel competitionId={id!} judges={judges} setJudges={setJudges} canAdmin={canAdmin} />
+      </TabsContent>
+
+      <TabsContent value="scores">
+        <ScoresPanel competitionId={id!} teams={teams} workouts={workouts} canScore={canScore} judgeId={user?.id} />
+      </TabsContent>
+
+      <TabsContent value="leaderboard">
+        <LeaderboardPanel competitionId={id!} />
+      </TabsContent>
+
+      <TabsContent value="roster">
+        <ParticipantsPanel competitionId={id!} teams={teams as DomainTeam[]} canAdmin={canAdmin} />
+      </TabsContent>
+
+      <TabsContent value="overview">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TeamsPanel competitionId={id!} teams={teams} setTeams={setTeams} isOwner={false} divisions={divisions} />
+          <WorkoutsPanel competitionId={id!} workouts={workouts} setWorkouts={setWorkouts} isOwner={false} />
+        </div>
+      </TabsContent>
+    </Tabs>
+  );
+
+  const renderJudgeTabs = () => (
+    <Tabs defaultValue="scores" className="w-full">
+      <TabsList className="w-full grid grid-cols-3 mb-6">
+        <TabsTrigger value="scores">Scores</TabsTrigger>
+        <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+        <TabsTrigger value="roster">Roster</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="scores">
+        <ScoresPanel competitionId={id!} teams={teams} workouts={workouts} canScore={true} judgeId={user?.id} />
+      </TabsContent>
+
+      <TabsContent value="leaderboard">
+        <LeaderboardPanel competitionId={id!} />
+      </TabsContent>
+
+      <TabsContent value="roster">
+        <ParticipantsPanel competitionId={id!} teams={teams as DomainTeam[]} canAdmin={false} />
+      </TabsContent>
+    </Tabs>
+  );
+
+  const renderViewerTabs = () => (
+    <Tabs defaultValue="leaderboard" className="w-full">
+      <TabsList className="w-full grid grid-cols-3 mb-6">
+        <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+        <TabsTrigger value="roster">Roster</TabsTrigger>
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="leaderboard">
+        <LeaderboardPanel competitionId={id!} />
+      </TabsContent>
+
+      <TabsContent value="roster">
+        <ParticipantsPanel competitionId={id!} teams={teams as DomainTeam[]} canAdmin={false} />
+      </TabsContent>
+
+      <TabsContent value="overview">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TeamsPanel competitionId={id!} teams={teams} setTeams={setTeams} isOwner={false} divisions={divisions} />
+          <WorkoutsPanel competitionId={id!} workouts={workouts} setWorkouts={setWorkouts} isOwner={false} />
+        </div>
+      </TabsContent>
+    </Tabs>
+  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -96,47 +217,7 @@ export default function CompetitionDashboard() {
           </div>
         )}
 
-        {showManagement ? (
-          <Tabs defaultValue="setup" className="w-full">
-            <TabsList className="w-full grid grid-cols-4 mb-6">
-              <TabsTrigger value="setup">Setup</TabsTrigger>
-              <TabsTrigger value="scores">Scores</TabsTrigger>
-              <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="setup">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <TeamsPanel competitionId={id!} teams={teams} setTeams={setTeams} isOwner={isOwner} />
-                <WorkoutsPanel competitionId={id!} workouts={workouts} setWorkouts={setWorkouts} isOwner={isOwner} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="scores">
-              <ScoresPanel competitionId={id!} teams={teams} workouts={workouts} isOwner={isOwner} />
-            </TabsContent>
-
-            <TabsContent value="leaderboard">
-              <LeaderboardPanel competitionId={id!} teams={teams} workouts={workouts} />
-            </TabsContent>
-
-            <TabsContent value="overview">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <TeamsPanel competitionId={id!} teams={teams} setTeams={setTeams} isOwner={false} />
-                <WorkoutsPanel competitionId={id!} workouts={workouts} setWorkouts={setWorkouts} isOwner={false} />
-              </div>
-            </TabsContent>
-          </Tabs>
-        ) : (
-          /* Non-owner / free user: read-only leaderboard + overview */
-          <div className="space-y-6">
-            <LeaderboardPanel competitionId={id!} teams={teams} workouts={workouts} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <TeamsPanel competitionId={id!} teams={teams} setTeams={setTeams} isOwner={false} />
-              <WorkoutsPanel competitionId={id!} workouts={workouts} setWorkouts={setWorkouts} isOwner={false} />
-            </div>
-          </div>
-        )}
+        {canAdmin ? renderOwnerTabs() : isJudge ? renderJudgeTabs() : renderViewerTabs()}
       </main>
     </div>
   );
