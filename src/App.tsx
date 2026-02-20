@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SuperUserGuard } from "@/components/super/SuperUserGuard";
+import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -43,8 +44,8 @@ const App = () => (
               <Route path="/dashboard" element={<ProtectedRoute><MainMenu /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ViewProfile /></ProtectedRoute>} />
               <Route path="/competitions" element={<ProtectedRoute><CompetitionList /></ProtectedRoute>} />
-              <Route path="/competition/create" element={<ProtectedRoute><CompetitionCreate /></ProtectedRoute>} />
-              <Route path="/competition/:id/workouts" element={<ProtectedRoute><CompetitionWorkouts /></ProtectedRoute>} />
+              <Route path="/competition/create" element={<ProtectedRoute><SubscriptionGuard requiredFeature="create_competitions"><CompetitionCreate /></SubscriptionGuard></ProtectedRoute>} />
+              <Route path="/competition/:id/workouts" element={<ProtectedRoute><SubscriptionGuard requiredFeature="create_competitions"><CompetitionWorkouts /></SubscriptionGuard></ProtectedRoute>} />
               <Route path="/competition/:id" element={<ProtectedRoute><CompetitionDashboard /></ProtectedRoute>} />
               <Route path="/upgrade" element={<ProtectedRoute><UpgradePackage /></ProtectedRoute>} />
               <Route path="/super-dashboard" element={<ProtectedRoute><SuperUserGuard><SuperDashboard /></SuperUserGuard></ProtectedRoute>} />

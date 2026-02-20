@@ -1010,6 +1010,7 @@ export type Database = {
           total_points: number
         }[]
       }
+      has_competition_access: { Args: { p_user_id: string }; Returns: boolean }
       is_competition_judge: {
         Args: { p_competition_id: string; p_user_id: string }
         Returns: boolean
