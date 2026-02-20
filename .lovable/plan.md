@@ -1,197 +1,273 @@
 
-# Subscription-Gated Home Screen (MainMenu Redesign)
 
-## What We're Building
+# Enterprise Competition Platform V2 -- Implementation Plan
 
-The Main Menu (`/dashboard`) will be redesigned to render different feature sets based on the user's subscription tier. Instead of a flat list of generic menu items, the screen becomes a **personalized home hub** that shows exactly what the user can do — and upsells locked features with a preview of what they'd unlock.
-
----
-
-## Tier Feature Matrix
-
-| Feature | Free | Affiliate Pro | Tournament Pro |
-|---|---|---|---|
-| View Your Profile | YES | YES | YES |
-| View Competition Leaderboards | YES | YES | YES |
-| Create & Manage Competitions | NO (locked) | YES | YES |
-| Get Members Linked to Account | NO (locked) | YES | YES |
-| Link Gym Website | NO (locked) | YES | YES |
-| Manage Your Affiliation | NO (locked) | YES | YES |
-| Track Member Performances | NO (locked) | YES | YES |
-| Advanced Analytics | NO (locked) | NO (locked) | YES |
-| Custom Branding | NO (locked) | NO (locked) | YES |
+This is a 4-phase sequential upgrade. No billing, stripe, entitlement, region routing, auth, or profile logic will be touched.
 
 ---
 
-## Architecture
+## Phase 1: Database Foundation (Single Migration)
 
-### New Hook: `src/hooks/useSubscription.ts`
-This hook reads `user_subscriptions` from the database and exposes:
-- `tier` — the resolved subscription tier key (`'free'`, `'affiliate_pro'`, `'tournament_pro'`)
-- `isAffiliatePro` — boolean convenience flag
-- `isTournamentPro` — boolean convenience flag
-- `canAccess(feature: string)` — feature-gating function
+One large SQL migration covering all schema changes, functions, triggers, RLS policies, indexes, and realtime.
 
-The hook **falls back to `profile.subscription_tier`** (already populated and synced by the webhook) when `user_subscriptions` has no active row. This makes it resilient and non-breaking for existing sessions.
+### Critical Column Name Corrections
 
-### Updated: `src/pages/MainMenu.tsx`
-The page is rebuilt around three visually distinct sections:
+The spec references `s.points` and `t.name` but the actual schema uses `s.score` and `t.team_name`. All SQL below uses the correct existing column names.
 
-**Section 1 — Always Available (Free tier)**
-- View Your Profile
-- View Competition Leaderboards
+### New Tables
 
-**Section 2 — Affiliate Pro Features**
-Shown as active buttons for Affiliate Pro and Tournament Pro users.
-Shown as locked/preview cards for Free users (with an "Upgrade" CTA).
-- Get Members Linked to Your Account
-- Link Your Gym Website
-- Create & Manage Competitions
-- Manage Your Affiliation
-- Track Member Performances
-
-**Section 3 — Tournament Pro Features**
-Active for Tournament Pro only. Locked preview for Free and Affiliate Pro users.
-- Advanced Analytics
-- Custom Branding
-
----
-
-## Visual Design
-
-### Active menu items (accessible):
-```
-┌─────────────────────────────────────────────────────┐
-│  [ICON]  FEATURE LABEL                    →          │
-└─────────────────────────────────────────────────────┘
-```
-Same as the current card style: `bg-card border border-border hover:border-primary/40`
-
-### Locked menu items (not on tier):
-```
-┌─────────────────────────────────────────────────────┐
-│  [🔒]   FEATURE LABEL                    UPGRADE →  │
-│         Requires Affiliate Pro                       │
-└─────────────────────────────────────────────────────┘
-```
-Rendered with muted colors, lock icon, and a right-side "Upgrade" badge chip that navigates to `/upgrade`.
-
-### Section headers:
-Each tier block has a small section label:
-- `— FREE —`
-- `— AFFILIATE PRO —`
-- `— TOURNAMENT PRO —`
-
-Section header color is muted for locked tiers and accented for the user's current tier.
-
-### Header upgrade nudge:
-For Free users, the tier badge in the header becomes a clickable `UPGRADE` button styled as a small accent chip.
-
----
-
-## Technical Implementation
-
-### Step 1 — Create `src/hooks/useSubscription.ts`
-
-```typescript
-// Reads from user_subscriptions (active rows) with fallback to profile.subscription_tier
-// Exposes: { tier, isAffiliatePro, isTournamentPro, canAccess, loading }
-
-const FEATURE_ACCESS: Record<string, string[]> = {
-  view_profile:         ['free', 'affiliate_pro', 'tournament_pro'],
-  view_leaderboards:    ['free', 'affiliate_pro', 'tournament_pro'],
-  create_competitions:  ['affiliate_pro', 'tournament_pro'],
-  manage_members:       ['affiliate_pro', 'tournament_pro'],
-  link_gym_website:     ['affiliate_pro', 'tournament_pro'],
-  manage_affiliation:   ['affiliate_pro', 'tournament_pro'],
-  track_performances:   ['affiliate_pro', 'tournament_pro'],
-  advanced_analytics:   ['tournament_pro'],
-  custom_branding:      ['tournament_pro'],
-};
-```
-
-The hook queries `user_subscriptions` for `status = 'active'` for the current user. If no row is found, it uses `profile.subscription_tier`. This means zero breaking changes to existing billing flow.
-
-### Step 2 — Rebuild `src/pages/MainMenu.tsx`
-
-**Key structural changes:**
-- Import `useSubscription` hook
-- Replace flat `menuItems[]` with two typed arrays: `freeItems[]`, `affiliateItems[]`, `proItems[]`
-- Each item has: `{ label, icon, route, feature, description }`
-- Render each section with a `SectionHeader` and either active `MenuButton` or locked `LockedMenuButton`
-- Keep identical header, skeleton loading, and error states
-- Keep existing `hasCompetitions` logic — the "Create Competition" vs "View/Build" dynamic is preserved
-
-**New local components (defined inline, no new files needed):**
-- `SectionHeader` — renders the tier section label
-- `ActiveMenuItem` — the current button style
-- `LockedMenuItem` — muted locked style with Lock icon and "Upgrade" chip
-
-### Step 3 — No backend changes
-
-`profile.subscription_tier` is already the authoritative synced field. The `useSubscription` hook reads from the database `user_subscriptions` table for the active row (already has RLS `SELECT` for own rows), and falls back gracefully.
-
-No new database migrations required.
-
----
-
-## Files Changed
-
-| File | Change Type |
+| Table | Purpose |
 |---|---|
-| `src/hooks/useSubscription.ts` | NEW — subscription tier + feature-gate hook |
-| `src/pages/MainMenu.tsx` | MODIFIED — subscription-gated section layout |
+| `super_users` | Max 2 platform admins (manual DB insert only) |
+| `competition_divisions` | First-class division entities per competition |
+| `competition_participants` | Athletes registered to teams |
+| `competition_judges` | Judge assignments per competition |
+| `scoring_events` | Immutable audit trail for score changes |
+| `seasons` | Championship season containers |
+| `season_competitions` | Links competitions to seasons |
 
-No frontend routing changes. No backend changes. No migration required.
+### Altered Tables
+
+| Table | Change |
+|---|---|
+| `competition_teams` | Add `division_id UUID REFERENCES competition_divisions(id) ON DELETE SET NULL` |
+| `competition_scores` | Add `judge_id UUID`, `locked BOOLEAN DEFAULT false`, `locked_at TIMESTAMPTZ` |
+| `competition_workouts` | Add `is_locked BOOLEAN DEFAULT false` |
+| `competitions` | Add `season_id UUID REFERENCES seasons(id) ON DELETE SET NULL` |
+
+### Functions
+
+| Function | Type |
+|---|---|
+| `limit_super_users()` | Trigger function -- raises exception if count >= 2 |
+| `is_super_user(UUID)` | SECURITY DEFINER -- returns boolean, used in all RLS |
+| `is_competition_owner(UUID, UUID)` | SECURITY DEFINER -- checks competitions.created_by |
+| `is_competition_judge(UUID, UUID)` | SECURITY DEFINER -- checks competition_judges |
+| `log_score_event()` | Trigger function -- inserts into scoring_events on score insert/update |
+| `get_competition_leaderboard(UUID)` | RPC -- returns division_id, division_name, team_id, team_name, total_points using `SUM(s.score)` |
+| `get_season_leaderboard(UUID)` | RPC -- aggregates scores across all competitions in a season |
+
+### Triggers
+
+| Trigger | Table | Event |
+|---|---|---|
+| `enforce_super_user_limit` | `super_users` | BEFORE INSERT |
+| `score_audit_trigger` | `competition_scores` | AFTER INSERT OR UPDATE |
+
+### RLS Policies (all include `OR is_super_user(auth.uid())`)
+
+**super_users**: No RLS policies for normal users (manual DB management only). SELECT allowed for authenticated (needed by `is_super_user` function which is SECURITY DEFINER, so actually no direct RLS needed -- table accessed only via the function).
+
+**competition_divisions**:
+- SELECT: authenticated
+- INSERT/UPDATE/DELETE: competition owner OR super_user
+
+**competition_participants**:
+- SELECT: authenticated
+- INSERT: competition owner OR self-registration (user_id = auth.uid()) OR super_user
+- UPDATE/DELETE: competition owner OR super_user
+
+**competition_judges**:
+- SELECT: authenticated
+- INSERT/DELETE: competition owner OR super_user
+
+**scoring_events**:
+- SELECT: authenticated
+- No INSERT/UPDATE/DELETE (trigger-only)
+
+**seasons + season_competitions**:
+- SELECT: authenticated
+- INSERT/UPDATE/DELETE: super_user only
+
+**Updated competition_scores** (existing policies replaced):
+- SELECT: authenticated (unchanged)
+- INSERT: owner OR judge (if workout not locked) OR super_user
+- UPDATE: owner OR judge (if workout not locked AND score not locked) OR super_user
+- DELETE: owner OR super_user
+
+### Indexes
+
+```text
+competition_divisions (competition_id)
+competition_participants (competition_id, team_id)
+competition_judges (competition_id, user_id)
+scoring_events (competition_id, team_id)
+competition_scores (competition_id, team_id)
+competition_teams (competition_id, division_id)
+competitions (season_id)
+```
+
+### Realtime
+
+Enable for: `competition_scores`, `competition_participants`, `scoring_events`
 
 ---
 
-## Example Rendered States
+## Phase 2: Domain Layer, Data Layer, and Hooks
 
-**Free User sees:**
-```
-— FREE —
-[👤] VIEW PROFILE            →
-[🏆] VIEW COMPETITION LEADERBOARDS →
+### Domain Layer (`src/domain/`) -- Pure TypeScript interfaces, no imports
 
-— AFFILIATE PRO —  ← muted label
-[🔒] MANAGE MEMBERS          UPGRADE →
-[🔒] LINK GYM WEBSITE        UPGRADE →
-[🔒] CREATE COMPETITIONS     UPGRADE →
-[🔒] MANAGE AFFILIATION      UPGRADE →
-[🔒] TRACK MEMBER PERFORMANCES UPGRADE →
+| File | Interfaces |
+|---|---|
+| `competition.ts` | Competition, Division, Team, Workout, Participant |
+| `scoring.ts` | Score, ScoringEvent, LeaderboardEntry, SeasonRanking |
+| `judges.ts` | Judge, CompetitionRole |
+| `superAdmin.ts` | SuperUser |
+| `season.ts` | Season, SeasonCompetition, SeasonLeaderboardEntry |
 
-— TOURNAMENT PRO — ← muted label
-[🔒] ADVANCED ANALYTICS      UPGRADE →
-[🔒] CUSTOM BRANDING         UPGRADE →
-```
+### Data Layer (`src/data/`) -- All database queries centralized here
 
-**Affiliate Pro User sees:**
-```
-— FREE —
-[👤] VIEW PROFILE            →
-[🏆] VIEW COMPETITION LEADERBOARDS →
+| File | Functions |
+|---|---|
+| `leaderboard.ts` | `fetchCompetitionLeaderboard(id)` via RPC, `fetchSeasonLeaderboard(id)` via RPC |
+| `judges.ts` | CRUD for competition_judges |
+| `divisions.ts` | CRUD for competition_divisions |
+| `participants.ts` | CRUD + self-registration for competition_participants |
+| `scoring.ts` | Score upsert with judge_id, lock/unlock workout, lock/unlock individual scores |
+| `superAdmin.ts` | Check super_user status, fetch all competitions, reassign ownership |
 
-— AFFILIATE PRO — ← accented label
-[👥] MANAGE MEMBERS          →
-[🔗] LINK GYM WEBSITE        →
-[🏆] CREATE COMPETITIONS     →
-[⚙️] MANAGE AFFILIATION      →
-[📊] TRACK MEMBER PERFORMANCES →
+### New Hooks
 
-— TOURNAMENT PRO — ← muted label
-[🔒] ADVANCED ANALYTICS      UPGRADE →
-[🔒] CUSTOM BRANDING         UPGRADE →
-```
-
-**Tournament Pro User sees all items active.**
+| Hook | Purpose |
+|---|---|
+| `src/hooks/useSuperUserAccess.ts` | Queries `super_users` via `is_super_user` RPC or direct check; exposes `isSuperUser: boolean`. Returns `false` silently for non-super users. No UI indicators. |
+| `src/hooks/useCompetitionRole.ts` | Returns `{ isOwner, isJudge, role }` for current user + competition. Checks `competitions.created_by` and `competition_judges`. |
+| `src/hooks/useLeaderboard.ts` | Calls `get_competition_leaderboard` RPC, subscribes to realtime `competition_scores` for auto-refresh. |
+| `src/hooks/useSeasonLeaderboard.ts` | Calls `get_season_leaderboard` RPC. |
 
 ---
 
-## Safety Guarantees
+## Phase 3: Competition Dashboard Rebuild
 
-- Zero breaking changes to existing billing or auth flow
-- `profile.subscription_tier` remains the fallback source of truth
-- Locked items navigate to `/upgrade` — no dead ends
-- `hasCompetitions` dynamic CTA is preserved inside the create competition item
-- All existing header, loading, and error states are preserved exactly
+### Role-Based Tab Visibility
+
+```text
+Owner:       Setup | Judges | Scores | Leaderboard | Roster | Overview
+Judge:       Scores | Leaderboard | Roster
+Viewer:      Leaderboard | Roster | Overview
+Super User:  All tabs + override controls (unlock buttons, edit any field)
+```
+
+### Access Logic
+
+```text
+const { isOwner, isJudge } = useCompetitionRole(competitionId);
+const { isSuperUser } = useSuperUserAccess();
+const canAdmin = isOwner || isSuperUser;
+const canScore = isOwner || isJudge || isSuperUser;
+```
+
+### New Components
+
+| Component | Purpose |
+|---|---|
+| `DivisionsPanel.tsx` | CRUD for divisions in Setup tab (owner/super_user only) |
+| `JudgesPanel.tsx` | Assign/remove judges by email lookup (owner/super_user only) |
+| `ParticipantsPanel.tsx` | "Roster" tab -- owner adds athletes, viewers self-register to teams |
+| `ScoreLockControls.tsx` | Per-workout lock toggle (owner); emergency unlock (super_user only) |
+
+### Modified Components
+
+| Component | Changes |
+|---|---|
+| `TeamsPanel.tsx` | Replace free-text division input with dropdown from `competition_divisions`; add `division_id` on insert |
+| `ScoresPanel.tsx` | Respect `is_locked` per workout; track `judge_id` on submit; show lock indicators; save via data layer |
+| `LeaderboardPanel.tsx` | Call RPC `get_competition_leaderboard` instead of client-side aggregation; group by division |
+| `WorkoutsPanel.tsx` | Show lock indicator per workout; owner can toggle lock |
+| `CompetitionDashboard.tsx` | Load divisions + judges; use `useCompetitionRole` + `useSuperUserAccess`; render role-based tabs |
+
+---
+
+## Phase 4: Super User Dashboard + Seasons
+
+### New Route: `/super-dashboard`
+
+- Added to `App.tsx` behind `ProtectedRoute` + `SuperUserGuard`
+- `SuperUserGuard` silently redirects non-super users to `/dashboard`
+- NOT linked from any normal navigation -- no menu item, no badge, no mention
+
+### New Pages/Components
+
+| File | Purpose |
+|---|---|
+| `src/pages/SuperDashboard.tsx` | Main layout with dedicated nav |
+| `src/components/super/CompetitionManager.tsx` | Browse/search/edit all competitions, reassign ownership |
+| `src/components/super/SeasonManager.tsx` | Create/manage seasons, assign competitions to seasons |
+| `src/components/super/AuditLog.tsx` | View scoring_events with filters |
+| `src/components/super/ScoreOverride.tsx` | Emergency unlock + score modification |
+| `src/components/super/SuperUserGuard.tsx` | Route guard component |
+
+### Season UI in Normal Dashboard
+
+- If a competition belongs to a season, show a season badge on the competition list
+- Season leaderboard accessible from competition list for all authenticated users
+
+### Updated `App.tsx`
+
+Add route: `/super-dashboard` with `ProtectedRoute` + `SuperUserGuard` wrapping `SuperDashboard`
+
+---
+
+## Files Summary
+
+| File | Type |
+|---|---|
+| Migration SQL | NEW |
+| `src/domain/competition.ts` | NEW |
+| `src/domain/scoring.ts` | NEW |
+| `src/domain/judges.ts` | NEW |
+| `src/domain/superAdmin.ts` | NEW |
+| `src/domain/season.ts` | NEW |
+| `src/data/leaderboard.ts` | NEW |
+| `src/data/judges.ts` | NEW |
+| `src/data/divisions.ts` | NEW |
+| `src/data/participants.ts` | NEW |
+| `src/data/scoring.ts` | NEW |
+| `src/data/superAdmin.ts` | NEW |
+| `src/hooks/useSuperUserAccess.ts` | NEW |
+| `src/hooks/useCompetitionRole.ts` | NEW |
+| `src/hooks/useLeaderboard.ts` | NEW |
+| `src/hooks/useSeasonLeaderboard.ts` | NEW |
+| `src/components/competition/DivisionsPanel.tsx` | NEW |
+| `src/components/competition/JudgesPanel.tsx` | NEW |
+| `src/components/competition/ParticipantsPanel.tsx` | NEW |
+| `src/components/competition/ScoreLockControls.tsx` | NEW |
+| `src/components/competition/TeamsPanel.tsx` | MODIFIED |
+| `src/components/competition/ScoresPanel.tsx` | MODIFIED |
+| `src/components/competition/LeaderboardPanel.tsx` | MODIFIED |
+| `src/components/competition/WorkoutsPanel.tsx` | MODIFIED |
+| `src/pages/CompetitionDashboard.tsx` | MODIFIED |
+| `src/pages/SuperDashboard.tsx` | NEW |
+| `src/components/super/CompetitionManager.tsx` | NEW |
+| `src/components/super/SeasonManager.tsx` | NEW |
+| `src/components/super/AuditLog.tsx` | NEW |
+| `src/components/super/ScoreOverride.tsx` | NEW |
+| `src/components/super/SuperUserGuard.tsx` | NEW |
+| `src/App.tsx` | MODIFIED |
+
+---
+
+## What Will NOT Change
+
+- All billing tables (billing_customers, billing_providers, billing_regions, etc.)
+- Stripe edge functions (create-checkout-session, stripe-webhook)
+- Subscription entitlement schema (user_subscriptions, pricing_tiers, tier_prices)
+- Region routing tables
+- Authentication flow (AuthProvider, ProtectedRoute)
+- Profile management (profiles table, useProfile hook, CreateProfile/ViewProfile pages)
+- useSubscription hook
+- MainMenu page
+
+---
+
+## Security Guarantees
+
+- Max 2 super users enforced by database trigger (cannot be bypassed from frontend)
+- Super users completely invisible to normal UI (no link, no badge, no mention)
+- `is_super_user()` is SECURITY DEFINER -- bypasses RLS safely, no recursion
+- Score locking enforced at RLS level -- frontend lock is cosmetic, database is authoritative
+- Judges scoped to assigned competitions only via RLS
+- Leaderboard computed server-side via RPC -- zero client aggregation
+- Scoring events are immutable (no UPDATE/DELETE policies)
+- All competition write operations check ownership OR super_user at database level
+
