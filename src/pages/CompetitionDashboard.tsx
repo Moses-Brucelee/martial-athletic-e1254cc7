@@ -5,6 +5,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useCompetitionRole } from "@/hooks/useCompetitionRole";
 import { useSuperUserAccess } from "@/hooks/useSuperUserAccess";
+import { useSubscription } from "@/hooks/useSubscription";
 import { fetchDivisions } from "@/data/divisions";
 import { fetchJudges } from "@/data/judges";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
@@ -43,6 +44,7 @@ export default function CompetitionDashboard() {
   const { profile, loading: profileLoading } = useProfile();
   const { isOwner, isJudge, role, loading: roleLoading } = useCompetitionRole(id);
   const { isSuperUser } = useSuperUserAccess();
+  const { canAccess } = useSubscription();
 
   const [competition, setCompetition] = useState<{ name: string; created_by: string } | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -52,8 +54,9 @@ export default function CompetitionDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const canAdmin = isOwner || isSuperUser;
-  const canScore = isOwner || isJudge || isSuperUser;
+  const hasPaidTier = canAccess('create_competitions');
+  const canAdmin = (isOwner && hasPaidTier) || isSuperUser;
+  const canScore = ((isOwner || isJudge) && hasPaidTier) || isSuperUser;
 
   useEffect(() => {
     if (!id) return;
