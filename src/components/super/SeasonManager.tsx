@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { seasonSchema } from "@/lib/validation";
 
 interface Season {
   id: string;
@@ -28,7 +29,11 @@ export function SeasonManager() {
   }, []);
 
   const handleAdd = async () => {
-    if (!newName.trim() || !newYear) return;
+    const parsed = seasonSchema.safeParse({ name: newName, year: newYear });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
     setAdding(true);
     const { data, error } = await supabase
       .from("seasons")

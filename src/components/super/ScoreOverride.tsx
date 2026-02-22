@@ -4,13 +4,17 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { unlockWorkout, unlockScore } from "@/data/scoring";
 import { Unlock } from "lucide-react";
+import { uuidSchema } from "@/lib/validation";
 
 export function ScoreOverride() {
   const [workoutId, setWorkoutId] = useState("");
   const [scoreId, setScoreId] = useState("");
 
   const handleUnlockWorkout = async () => {
-    if (!workoutId.trim()) return;
+    if (!uuidSchema.safeParse(workoutId.trim()).success) {
+      toast.error("Please enter a valid UUID");
+      return;
+    }
     try {
       await unlockWorkout(workoutId.trim());
       toast.success("Workout unlocked");
@@ -21,7 +25,10 @@ export function ScoreOverride() {
   };
 
   const handleUnlockScore = async () => {
-    if (!scoreId.trim()) return;
+    if (!uuidSchema.safeParse(scoreId.trim()).success) {
+      toast.error("Please enter a valid UUID");
+      return;
+    }
     try {
       await unlockScore(scoreId.trim());
       toast.success("Score unlocked");

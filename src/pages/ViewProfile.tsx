@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Camera, AlertCircle, CheckCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { profileSchema, validateImageFile, sanitizeError } from "@/lib/validation";
 
 export default function ViewProfile() {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ export default function ViewProfile() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (profile) {
@@ -44,19 +46,34 @@ export default function ViewProfile() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Image must be under 2MB");
+    const imgError = validateImageFile(file);
+    if (imgError) {
+      setError(imgError);
       return;
     }
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
+    setError("");
   };
 
   const handleSave = async () => {
     if (!user) return;
-    setSaving(true);
+    setFieldErrors({});
     setError("");
     setSuccess(false);
+
+    const result = profileSchema.safeParse({ fullName, gender, age: age || undefined, affiliation, aboutMe });
+    if (!result.success) {
+      const errs: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const key = String(issue.path[0]);
+        if (!errs[key]) errs[key] = issue.message;
+      });
+      setFieldErrors(errs);
+      return;
+    }
+
+    setSaving(true);
 
     try {
       let avatarUrl: string | null = profile?.avatar_url || null;
@@ -75,12 +92,12 @@ export default function ViewProfile() {
       const { error: updateError } = await supabase
         .from("profiles")
         .update({
-          full_name: fullName || null,
-          display_name: fullName || profile?.display_name,
+          full_name: fullName.trim() || null,
+          display_name: fullName.trim() || profile?.display_name,
           gender: gender || null,
           age: age ? parseInt(age) : null,
-          affiliation: affiliation || null,
-          about_me: aboutMe || null,
+          affiliation: affiliation.trim() || null,
+          about_me: aboutMe.trim() || null,
           avatar_url: avatarUrl,
         })
         .eq("user_id", user.id);
@@ -92,7 +109,7 @@ export default function ViewProfile() {
       await refetch();
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(sanitizeError(err));
     } finally {
       setSaving(false);
     }
@@ -116,7 +133,7 @@ export default function ViewProfile() {
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="text-center space-y-4">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
-          <p className="text-destructive">{profileError}</p>
+          <p className="text-destructive">Failed to load profile. Please try again.</p>
           <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
         </div>
       </div>
@@ -169,13 +186,14 @@ export default function ViewProfile() {
                   </div>
                 </button>
                 <p className="text-xs text-muted-foreground">Change Photo</p>
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleAvatarChange} />
               </div>
 
               <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Name and Surname</Label>
-                  <Input placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={saving} className="h-11 bg-background" />
+                  <Input placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={saving} className="h-11 bg-background" maxLength={100} />
+                  {fieldErrors.fullName && <p className="text-xs text-destructive">{fieldErrors.fullName}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Gender</Label>
@@ -188,21 +206,28 @@ export default function ViewProfile() {
                       <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
                     </SelectContent>
                   </Select>
+                  {fieldErrors.gender && <p className="text-xs text-destructive">{fieldErrors.gender}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Age</Label>
-                  <Input type="number" placeholder="25" value={age} onChange={(e) => setAge(e.target.value)} disabled={saving} className="h-11 bg-background" min={1} max={120} />
+                  <Input type="number" placeholder="25" value={age} onChange={(e) => setAge(e.target.value)} disabled={saving} className="h-11 bg-background" min={5} max={120} />
+                  {fieldErrors.age && <p className="text-xs text-destructive">{fieldErrors.age}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Affiliation</Label>
-                  <Input placeholder="Gym / Club name" value={affiliation} onChange={(e) => setAffiliation(e.target.value)} disabled={saving} className="h-11 bg-background" />
+                  <Input placeholder="Gym / Club name" value={affiliation} onChange={(e) => setAffiliation(e.target.value)} disabled={saving} className="h-11 bg-background" maxLength={100} />
+                  {fieldErrors.affiliation && <p className="text-xs text-destructive">{fieldErrors.affiliation}</p>}
                 </div>
               </div>
             </div>
 
             <div className="mt-6 space-y-2">
-              <Label className="text-foreground font-medium">About Me</Label>
-              <Textarea placeholder="Tell us about yourself..." value={aboutMe} onChange={(e) => setAboutMe(e.target.value)} disabled={saving} className="min-h-[100px] bg-background" />
+              <div className="flex items-center justify-between">
+                <Label className="text-foreground font-medium">About Me</Label>
+                <span className="text-xs text-muted-foreground">{aboutMe.length}/500</span>
+              </div>
+              <Textarea placeholder="Tell us about yourself..." value={aboutMe} onChange={(e) => setAboutMe(e.target.value.slice(0, 500))} disabled={saving} className="min-h-[100px] bg-background" maxLength={500} />
+              {fieldErrors.aboutMe && <p className="text-xs text-destructive">{fieldErrors.aboutMe}</p>}
             </div>
 
             <div className="flex justify-between mt-8">

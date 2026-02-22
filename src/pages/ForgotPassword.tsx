@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Mail, CheckCircle } from "lucide-react";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
+import { emailSchema } from "@/lib/validation";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -18,6 +19,11 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const parsed = emailSchema.safeParse(email);
+    if (!parsed.success) {
+      toast({ title: "Invalid email", description: parsed.error.issues[0].message, variant: "destructive" });
+      return;
+    }
     setLoading(true);
 
     try {

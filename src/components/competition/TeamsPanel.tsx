@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Users } from "lucide-react";
+import { toast } from "sonner";
 import type { Division } from "@/domain/competition";
+import { teamNameSchema } from "@/lib/validation";
 
 interface Team {
   id?: string;
@@ -27,7 +29,11 @@ export function TeamsPanel({ competitionId, teams, setTeams, isOwner, divisions 
   const [addingTeam, setAddingTeam] = useState(false);
 
   const addTeam = async () => {
-    if (!newTeamName.trim()) return;
+    const parsed = teamNameSchema.safeParse(newTeamName);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
     setAddingTeam(true);
     const divId = newDivisionId || null;
     const divName = divisions.find((d) => d.id === divId)?.name || "";

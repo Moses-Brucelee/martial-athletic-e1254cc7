@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, AlertCircle, Info } from "lucide-react";
+import { competitionSchema, sanitizeError } from "@/lib/validation";
 
 export default function CompetitionCreate() {
   const navigate = useNavigate();
@@ -23,16 +24,25 @@ export default function CompetitionCreate() {
   const [divisions, setDivisions] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleCreate = async () => {
     if (!user) return;
-    if (!name.trim()) {
-      setError("Competition name is required");
+    setFieldErrors({});
+    setError("");
+
+    const result = competitionSchema.safeParse({ name, venue, type, hostGym, divisions });
+    if (!result.success) {
+      const errs: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const key = String(issue.path[0]);
+        if (!errs[key]) errs[key] = issue.message;
+      });
+      setFieldErrors(errs);
       return;
     }
 
     setLoading(true);
-    setError("");
 
     const { data, error: insertError } = await supabase
       .from("competitions")
@@ -49,7 +59,7 @@ export default function CompetitionCreate() {
       .single();
 
     if (insertError) {
-      setError(insertError.message);
+      setError(sanitizeError(insertError));
       setLoading(false);
       return;
     }
@@ -95,7 +105,8 @@ export default function CompetitionCreate() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2 sm:col-span-2">
               <Label className="text-foreground font-medium">Competition Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter competition name" className="h-11 bg-background" disabled={loading} />
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter competition name" className="h-11 bg-background" disabled={loading} maxLength={100} />
+              {fieldErrors.name && <p className="text-xs text-destructive">{fieldErrors.name}</p>}
             </div>
             <div className="space-y-2">
               <Label className="text-foreground font-medium">Date</Label>
@@ -103,19 +114,23 @@ export default function CompetitionCreate() {
             </div>
             <div className="space-y-2">
               <Label className="text-foreground font-medium">Venue</Label>
-              <Input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Venue location" className="h-11 bg-background" disabled={loading} />
+              <Input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Venue location" className="h-11 bg-background" disabled={loading} maxLength={200} />
+              {fieldErrors.venue && <p className="text-xs text-destructive">{fieldErrors.venue}</p>}
             </div>
             <div className="space-y-2">
               <Label className="text-foreground font-medium">Type</Label>
-              <Input value={type} onChange={(e) => setType(e.target.value)} placeholder="e.g. CrossFit, MMA" className="h-11 bg-background" disabled={loading} />
+              <Input value={type} onChange={(e) => setType(e.target.value)} placeholder="e.g. CrossFit, MMA" className="h-11 bg-background" disabled={loading} maxLength={100} />
+              {fieldErrors.type && <p className="text-xs text-destructive">{fieldErrors.type}</p>}
             </div>
             <div className="space-y-2">
               <Label className="text-foreground font-medium">Host Gym</Label>
-              <Input value={hostGym} onChange={(e) => setHostGym(e.target.value)} placeholder="Host gym name" className="h-11 bg-background" disabled={loading} />
+              <Input value={hostGym} onChange={(e) => setHostGym(e.target.value)} placeholder="Host gym name" className="h-11 bg-background" disabled={loading} maxLength={100} />
+              {fieldErrors.hostGym && <p className="text-xs text-destructive">{fieldErrors.hostGym}</p>}
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label className="text-foreground font-medium">Divisions</Label>
-              <Input value={divisions} onChange={(e) => setDivisions(e.target.value)} placeholder="e.g. RX, Scaled, Masters" className="h-11 bg-background" disabled={loading} />
+              <Input value={divisions} onChange={(e) => setDivisions(e.target.value)} placeholder="e.g. RX, Scaled, Masters" className="h-11 bg-background" disabled={loading} maxLength={200} />
+              {fieldErrors.divisions && <p className="text-xs text-destructive">{fieldErrors.divisions}</p>}
             </div>
           </div>
         </div>

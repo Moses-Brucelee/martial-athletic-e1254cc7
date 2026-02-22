@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Camera, AlertCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
+import { profileSchema, validateImageFile, sanitizeError } from "@/lib/validation";
 
 export default function CreateProfile() {
   const navigate = useNavigate();
@@ -26,22 +27,40 @@ export default function CreateProfile() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Image must be under 2MB");
+    const imgError = validateImageFile(file);
+    if (imgError) {
+      setError(imgError);
       return;
     }
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
+    setError("");
   };
 
   const handleSubmit = async (skip: boolean) => {
     if (!user) return;
-    setLoading(true);
+    setFieldErrors({});
     setError("");
+
+    if (!skip) {
+      const result = profileSchema.safeParse({ fullName, gender, age: age || undefined, affiliation, aboutMe });
+      if (!result.success) {
+        const errs: Record<string, string> = {};
+        result.error.issues.forEach((issue) => {
+          const key = String(issue.path[0]);
+          if (!errs[key]) errs[key] = issue.message;
+        });
+        setFieldErrors(errs);
+        return;
+      }
+    }
+
+    setLoading(true);
 
     try {
       let avatarUrl: string | null = null;
@@ -66,12 +85,12 @@ export default function CreateProfile() {
       };
 
       if (!skip) {
-        if (fullName) updates.full_name = fullName;
-        if (fullName) updates.display_name = fullName;
+        if (fullName) updates.full_name = fullName.trim();
+        if (fullName) updates.display_name = fullName.trim();
         if (gender) updates.gender = gender;
         if (age) updates.age = parseInt(age);
-        if (affiliation) updates.affiliation = affiliation;
-        if (aboutMe) updates.about_me = aboutMe;
+        if (affiliation) updates.affiliation = affiliation.trim();
+        if (aboutMe) updates.about_me = aboutMe.trim();
         if (avatarUrl) updates.avatar_url = avatarUrl;
       }
 
@@ -84,7 +103,7 @@ export default function CreateProfile() {
 
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(sanitizeError(err));
     } finally {
       setLoading(false);
     }
@@ -132,7 +151,7 @@ export default function CreateProfile() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
                   className="hidden"
                   onChange={handleAvatarChange}
                 />
@@ -148,7 +167,9 @@ export default function CreateProfile() {
                     onChange={(e) => setFullName(e.target.value)}
                     disabled={loading}
                     className="h-11 bg-background"
+                    maxLength={100}
                   />
+                  {fieldErrors.fullName && <p className="text-xs text-destructive">{fieldErrors.fullName}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Gender</Label>
@@ -163,6 +184,7 @@ export default function CreateProfile() {
                       <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
                     </SelectContent>
                   </Select>
+                  {fieldErrors.gender && <p className="text-xs text-destructive">{fieldErrors.gender}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Age</Label>
@@ -173,9 +195,10 @@ export default function CreateProfile() {
                     onChange={(e) => setAge(e.target.value)}
                     disabled={loading}
                     className="h-11 bg-background"
-                    min={1}
+                    min={5}
                     max={120}
                   />
+                  {fieldErrors.age && <p className="text-xs text-destructive">{fieldErrors.age}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Affiliation</Label>
@@ -185,21 +208,28 @@ export default function CreateProfile() {
                     onChange={(e) => setAffiliation(e.target.value)}
                     disabled={loading}
                     className="h-11 bg-background"
+                    maxLength={100}
                   />
+                  {fieldErrors.affiliation && <p className="text-xs text-destructive">{fieldErrors.affiliation}</p>}
                 </div>
               </div>
             </div>
 
             {/* About Me */}
             <div className="mt-6 space-y-2">
-              <Label className="text-foreground font-medium">About Me</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-foreground font-medium">About Me</Label>
+                <span className="text-xs text-muted-foreground">{aboutMe.length}/500</span>
+              </div>
               <Textarea
                 placeholder="Tell us about yourself, your training background, goals..."
                 value={aboutMe}
-                onChange={(e) => setAboutMe(e.target.value)}
+                onChange={(e) => setAboutMe(e.target.value.slice(0, 500))}
                 disabled={loading}
                 className="min-h-[100px] bg-background"
+                maxLength={500}
               />
+              {fieldErrors.aboutMe && <p className="text-xs text-destructive">{fieldErrors.aboutMe}</p>}
             </div>
 
             {/* Actions */}

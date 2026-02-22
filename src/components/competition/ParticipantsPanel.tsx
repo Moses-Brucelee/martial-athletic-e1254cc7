@@ -8,6 +8,7 @@ import { fetchParticipants, addParticipant, removeParticipant, selfRegister } fr
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import type { Participant, Team } from "@/domain/competition";
+import { athleteNameSchema } from "@/lib/validation";
 
 interface ParticipantsPanelProps {
   competitionId: string;
@@ -30,7 +31,12 @@ export function ParticipantsPanel({ competitionId, teams, canAdmin }: Participan
   const isRegistered = participants.some((p) => p.user_id === user?.id);
 
   const handleAdd = async () => {
-    if (!newName.trim() || !selectedTeamId) return;
+    if (!selectedTeamId) return;
+    const parsed = athleteNameSchema.safeParse(newName);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
     setAdding(true);
     try {
       const p = await addParticipant(competitionId, selectedTeamId, newName.trim());
