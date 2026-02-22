@@ -1,104 +1,115 @@
 
 
-# Subscription Enforcement Hardening Plan
+# Dynamic Tier Architecture: Remove All Hardcoded Frontend Data
 
-The audit revealed that subscription enforcement exists only as a UI gate in MainMenu.tsx. Free-tier users can bypass it entirely by navigating directly to URLs. This plan closes all gaps across three enforcement layers.
+## Status Check
 
----
+Everything marked in your instructions for Layers 1-3 and Super User system is **already implemented and verified**:
+- `has_competition_access()` function active in DB
+- All RLS policies hardened on competitions + child tables
+- `SubscriptionGuard` wrapping `/competition/create` and `/competition/:id/workouts`
+- `CompetitionDashboard.tsx` using `canAccess('create_competitions')` for `canAdmin`/`canScore`
+- `super_users` table with `limit_super_users` trigger (max 2)
+- `/super-dashboard` guarded by `SuperUserGuard`
 
-## Gap Summary
+## The Problem
 
-| Layer | Currently Enforced? |
+Tournament Pro is `is_active = false` in the database but still renders on the dashboard because tier data is hardcoded:
+
+| File | Hardcoded Data |
 |---|---|
-| MainMenu navigation | Yes (UI-only cosmetic gate) |
-| Route/page-level guards | No |
-| Component mutation buttons | No |
-| Data layer mutations | No |
-| RLS policies (database) | No |
-
-A Free user can type `/competition/create` and create competitions. Once they own one, all child operations (teams, workouts, scores, divisions, judges) succeed because RLS only checks ownership.
+| `useSubscription.ts` | `TIER_HIERARCHY`, `FEATURE_ACCESS` map, `Tier` type |
+| `MainMenu.tsx` | `FREE_ITEMS`, `AFFILIATE_ITEMS`, `PRO_ITEMS`, tier labels, section names |
+| `CompetitionHeader.tsx` | Tier label/color string comparisons |
 
 ---
 
-## Fix Strategy: Three-Layer Enforcement
+## Step 1: Database Migration -- Two New Tables
 
-### Layer 1: Database RLS (Authoritative)
+**Table: `menu_items`**
 
-Create a SECURITY DEFINER function that checks whether a user has an active paid subscription:
-
-```text
-Function: has_competition_access(p_user_id UUID) -> BOOLEAN
-  Returns TRUE if:
-    - User has an active row in user_subscriptions with a tier key of
-      'affiliate_pro' or 'tournament_pro'
-    - OR user is a super_user
-  Returns FALSE otherwise (Free tier)
-```
-
-Update RLS INSERT policy on `competitions` table:
+Stores all main menu entries linked to a tier and feature key.
 
 ```text
-Current:  auth.uid() = created_by
-New:      auth.uid() = created_by AND has_competition_access(auth.uid())
+Columns:
+  id            UUID PK
+  tier_key      TEXT NOT NULL
+  feature_key   TEXT NOT NULL
+  label         TEXT NOT NULL
+  icon_name     TEXT NOT NULL  (e.g. 'User', 'Trophy')
+  route         TEXT NOT NULL
+  description   TEXT (nullable)
+  sort_order    INT DEFAULT 0
+  is_active     BOOLEAN DEFAULT true
+  created_at    TIMESTAMPTZ DEFAULT now()
 ```
 
-Update RLS INSERT/UPDATE/DELETE policies on:
-- `competition_teams`
-- `competition_workouts`
-- `competition_divisions`
-- `competition_judges`
-- `competition_participants` (owner operations only, not self-registration)
+RLS: Authenticated users can SELECT where `is_active = true`. No write access.
 
-From:
-```text
-is_competition_owner(auth.uid(), competition_id) OR is_super_user(auth.uid())
-```
-To:
-```text
-(is_competition_owner(auth.uid(), competition_id) AND has_competition_access(auth.uid()))
-OR is_super_user(auth.uid())
-```
+Seeded with current FREE and AFFILIATE PRO items. Tournament Pro items are NOT seeded (tier is inactive).
 
-`competition_scores` INSERT/UPDATE similarly updated to require `has_competition_access` for owner/judge paths (super_user bypass preserved).
+**Table: `tier_feature_access`**
 
-This ensures that even if all frontend guards fail, the database rejects mutations from Free users.
-
-### Layer 2: Route/Page Guards
-
-Create a new component: `src/components/SubscriptionGuard.tsx`
+Maps which features each tier can access. Replaces the hardcoded `FEATURE_ACCESS` in `useSubscription.ts`.
 
 ```text
-Props: { requiredFeature: string; children: ReactNode }
-Logic:
-  - Uses useSubscription().canAccess(requiredFeature)
-  - If loading: show spinner
-  - If not allowed: redirect to /upgrade
-  - If allowed: render children
+Columns:
+  id            UUID PK
+  tier_key      TEXT NOT NULL
+  feature_key   TEXT NOT NULL
+  UNIQUE(tier_key, feature_key)
+  created_at    TIMESTAMPTZ DEFAULT now()
 ```
 
-Update `App.tsx` routes:
+RLS: Authenticated users can SELECT. No write access.
 
-```text
-/competition/create     -> ProtectedRoute -> SubscriptionGuard(create_competitions) -> CompetitionCreate
-/competition/:id/workouts -> ProtectedRoute -> SubscriptionGuard(create_competitions) -> CompetitionWorkouts
-```
+Seeded with all current mappings (free, affiliate_pro, tournament_pro).
 
-The `/competition/:id` (dashboard) route stays open because viewers (Free tier) should still see leaderboards and rosters. The write controls inside are gated at Layer 3.
+## Step 2: Refactor `useSubscription.ts`
 
-### Layer 3: Component-Level Checks
+Remove all hardcoded constants:
+- Delete `type Tier`
+- Delete `TIER_HIERARCHY`
+- Delete `FEATURE_ACCESS`
 
-Update `CompetitionDashboard.tsx`:
+New logic:
+1. Fetch `tier_feature_access` rows from DB on mount
+2. Fetch active `pricing_tiers` to get tier names and sort orders
+3. Resolve user's current tier key (keep existing logic: check `user_subscriptions` then fallback to `profile.subscription_tier`)
+4. Build a `Set` of allowed feature keys for the user's tier, including all features from lower-tier sort orders
+5. `canAccess(feature)` checks membership in this set
+6. Super user override: if user is in `super_users`, always return true
+7. Export `tierName` (from `pricing_tiers.name`) and `tierKey` for UI consumers
 
-```text
-Current:  const canAdmin = isOwner || isSuperUser;
-New:      const { canAccess } = useSubscription();
-          const canAdmin = (isOwner && canAccess('create_competitions')) || isSuperUser;
-          const canScore = ((isOwner || isJudge) && canAccess('create_competitions')) || isSuperUser;
-```
+## Step 3: Refactor `MainMenu.tsx`
 
-This means a Free-tier user who somehow owns a competition (legacy data or direct DB insert) will see the Viewer tabs only -- no Setup, no Scores, no Judges tabs.
+Remove all hardcoded arrays and labels:
+- Delete `FREE_ITEMS`, `AFFILIATE_ITEMS`, `PRO_ITEMS`
+- Delete hardcoded `tierLabel` string mapping
 
-The `isOwner` boolean passed as `canAdmin`/`isOwner` prop to child components (TeamsPanel, WorkoutsPanel, DivisionsPanel, JudgesPanel, ScoresPanel) will now be `false` for Free users, hiding all add/edit/delete buttons.
+New logic:
+1. Fetch `menu_items` (where `is_active = true`) from DB on mount
+2. Fetch active `pricing_tiers` (where `is_active = true`) from DB
+3. Group menu items by `tier_key`
+4. Only render sections for tiers that appear in active `pricing_tiers`
+5. Section header label comes from `pricing_tiers.name`
+6. Map `icon_name` string to Lucide component via a lookup object (e.g. `{ User: UserIcon, Trophy: TrophyIcon, Eye: EyeIcon, ... }`)
+7. Tier badge in header uses `tierName` from `useSubscription` -- zero string comparisons
+8. Preserve special "competitions" route logic (check `hasCompetitions` to toggle between `/competitions` and `/competition/create`)
+
+## Step 4: Refactor `CompetitionHeader.tsx`
+
+Remove hardcoded tier label/color mapping (lines 31-43).
+
+New behavior:
+- Replace `subscriptionTier` prop with `tierName` prop (string from `pricing_tiers.name`)
+- If `tierName` exists and is not `"FREE"`, show badge with generic primary styling
+- No tier-specific color conditions
+
+## Step 5: Update Consumers
+
+- `CompetitionDashboard.tsx`: Use `tierName` from `useSubscription` and pass to `CompetitionHeader` instead of `profile?.subscription_tier`
+- `UpgradePackage.tsx`: Same minor prop change for `CompetitionHeader`
 
 ---
 
@@ -106,32 +117,26 @@ The `isOwner` boolean passed as `canAdmin`/`isOwner` prop to child components (T
 
 | File | Type | Change |
 |---|---|---|
-| SQL Migration | NEW | `has_competition_access()` function + updated RLS policies |
-| `src/components/SubscriptionGuard.tsx` | NEW | Route-level subscription gate component |
-| `src/App.tsx` | MODIFIED | Wrap competition create/workouts routes with SubscriptionGuard |
-| `src/pages/CompetitionDashboard.tsx` | MODIFIED | Add `useSubscription` to `canAdmin`/`canScore` logic |
-
----
+| SQL Migration | NEW | Create `menu_items` and `tier_feature_access` tables with RLS + seed data |
+| `src/hooks/useSubscription.ts` | MODIFIED | Fetch feature access from DB; remove all hardcoded maps; export `tierName`/`tierKey` |
+| `src/pages/MainMenu.tsx` | MODIFIED | Fetch menu items and tiers from DB; remove hardcoded arrays and labels |
+| `src/components/CompetitionHeader.tsx` | MODIFIED | Accept `tierName` prop; remove hardcoded tier string comparisons |
+| `src/pages/CompetitionDashboard.tsx` | MODIFIED | Pass `tierName` to CompetitionHeader |
+| `src/pages/UpgradePackage.tsx` | MODIFIED | Pass `tierName` to CompetitionHeader |
 
 ## What Will NOT Change
 
-- Billing tables, Stripe logic, edge functions
-- `useSubscription` hook (already correct)
-- `MainMenu.tsx` (already gated correctly)
-- Super user bypass (preserved at all layers)
-- Judge score submission (still allowed if they have paid tier via their own subscription or are explicitly assigned)
-- Viewer access to leaderboards and rosters (Free users can still view)
-- Profile management, authentication flow
+- RLS policies (already hardened)
+- `SubscriptionGuard.tsx` (already works, uses `useSubscription`)
+- `App.tsx` routes (already correct)
+- Super user system (already implemented)
+- Stripe/billing logic
+- `UpgradePackage.tsx` tier cards (already fetch from DB)
 
----
+## Result
 
-## Security Result After Fix
-
-| Attack Vector | Before | After |
-|---|---|---|
-| Free user navigates to `/competition/create` | Creates competition | Redirected to /upgrade |
-| Free user POSTs to competitions table via API | Insert succeeds | RLS rejects |
-| Free owner accesses Setup tab | Full admin controls shown | Viewer-only tabs shown |
-| Free owner submits scores via data layer | Upsert succeeds | RLS rejects |
-| Super user on Free tier | Blocked | Bypasses (correct) |
+- Disabling a tier in `pricing_tiers` automatically hides its menu section and features
+- Adding a new tier + menu items + feature access rows renders them in the UI with zero code deployment
+- Zero hardcoded tier names, feature lists, or menu arrays in frontend code
+- Business team can manage tiers entirely through database configuration
 
