@@ -3,31 +3,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 
-type Tier = "free" | "affiliate_pro" | "tournament_pro";
-
-const TIER_HIERARCHY: Tier[] = ["free", "affiliate_pro", "tournament_pro"];
-
-const FEATURE_ACCESS: Record<string, Tier[]> = {
-  view_profile: ["free", "affiliate_pro", "tournament_pro"],
-  view_leaderboards: ["free", "affiliate_pro", "tournament_pro"],
-  create_competitions: ["affiliate_pro", "tournament_pro"],
-  manage_members: ["affiliate_pro", "tournament_pro"],
-  link_gym_website: ["affiliate_pro", "tournament_pro"],
-  manage_affiliation: ["affiliate_pro", "tournament_pro"],
-  track_performances: ["affiliate_pro", "tournament_pro"],
-  advanced_analytics: ["tournament_pro"],
-  custom_branding: ["tournament_pro"],
-};
+interface TierInfo {
+  key: string;
+  name: string;
+  sort_order: number;
+}
 
 export function useSubscription() {
   const { user } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
-  const [tier, setTier] = useState<Tier>("free");
+  const [tierKey, setTierKey] = useState("free");
+  const [tierName, setTierName] = useState("FREE");
+  const [allowedFeatures, setAllowedFeatures] = useState<Set<string>>(new Set());
+  const [isSuperUser, setIsSuperUser] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
-      setTier("free");
+      setTierKey("free");
+      setTierName("FREE");
+      setAllowedFeatures(new Set());
+      setIsSuperUser(false);
       setLoading(false);
       return;
     }
@@ -35,8 +31,39 @@ export function useSubscription() {
     if (profileLoading) return;
 
     const resolve = async () => {
-      // Try user_subscriptions first
-      const { data } = await supabase
+      // Fetch all data in parallel
+      const [tiersRes, featuresRes, superRes] = await Promise.all([
+        supabase
+          .from("pricing_tiers")
+          .select("key, name, sort_order")
+          .eq("is_active", true)
+          .order("sort_order"),
+        supabase
+          .from("tier_feature_access")
+          .select("tier_key, feature_key"),
+        supabase
+          .from("super_users")
+          .select("user_id")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
+
+      const tiers: TierInfo[] = (tiersRes.data as TierInfo[]) ?? [];
+      const featureRows = featuresRes.data ?? [];
+      const isSuper = !!superRes.data;
+      setIsSuperUser(isSuper);
+
+      // Build feature map by tier_key
+      const featuresByTier: Record<string, string[]> = {};
+      for (const row of featureRows) {
+        if (!featuresByTier[row.tier_key]) featuresByTier[row.tier_key] = [];
+        featuresByTier[row.tier_key].push(row.feature_key);
+      }
+
+      // Resolve user's current tier key
+      let resolvedKey = "free";
+
+      const { data: subData } = await supabase
         .from("user_subscriptions")
         .select("tier_id, status")
         .eq("user_id", user.id)
@@ -44,24 +71,41 @@ export function useSubscription() {
         .limit(1)
         .maybeSingle();
 
-      if (data?.tier_id) {
-        // Resolve tier key from pricing_tiers
+      if (subData?.tier_id) {
         const { data: tierData } = await supabase
           .from("pricing_tiers")
           .select("key")
-          .eq("id", data.tier_id)
+          .eq("id", subData.tier_id)
           .single();
-
-        if (tierData?.key && TIER_HIERARCHY.includes(tierData.key as Tier)) {
-          setTier(tierData.key as Tier);
-          setLoading(false);
-          return;
+        if (tierData?.key) resolvedKey = tierData.key;
+      } else {
+        // Fallback to profile.subscription_tier
+        const fallback = profile?.subscription_tier;
+        if (fallback && tiers.some((t) => t.key === fallback)) {
+          resolvedKey = fallback;
         }
       }
 
-      // Fallback to profile.subscription_tier
-      const fallback = profile?.subscription_tier as Tier;
-      setTier(TIER_HIERARCHY.includes(fallback) ? fallback : "free");
+      setTierKey(resolvedKey);
+
+      // Find tier name
+      const matchedTier = tiers.find((t) => t.key === resolvedKey);
+      setTierName(matchedTier?.name ?? "FREE");
+
+      // Build allowed features set: include features from user's tier
+      // and all tiers with lower sort_order (tier hierarchy)
+      const userSortOrder = matchedTier?.sort_order ?? 0;
+      const eligibleTierKeys = tiers
+        .filter((t) => t.sort_order <= userSortOrder)
+        .map((t) => t.key);
+
+      const features = new Set<string>();
+      for (const tk of eligibleTierKeys) {
+        for (const fk of featuresByTier[tk] ?? []) {
+          features.add(fk);
+        }
+      }
+      setAllowedFeatures(features);
       setLoading(false);
     };
 
@@ -70,17 +114,18 @@ export function useSubscription() {
 
   const canAccess = useCallback(
     (feature: string): boolean => {
-      const allowed = FEATURE_ACCESS[feature];
-      if (!allowed) return false;
-      return allowed.includes(tier);
+      if (isSuperUser) return true;
+      return allowedFeatures.has(feature);
     },
-    [tier]
+    [allowedFeatures, isSuperUser]
   );
 
   return {
-    tier,
-    isAffiliatePro: tier === "affiliate_pro" || tier === "tournament_pro",
-    isTournamentPro: tier === "tournament_pro",
+    tierKey,
+    tierName,
+    tier: tierKey, // backward compat
+    isAffiliatePro: tierKey === "affiliate_pro" || tierKey === "tournament_pro",
+    isTournamentPro: tierKey === "tournament_pro",
     canAccess,
     loading: loading || profileLoading,
   };

@@ -14,33 +14,26 @@ import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 
 interface CompetitionHeaderProps {
   title: string;
-  subscriptionTier?: string;
+  tierName?: string;
   avatarUrl?: string | null;
   displayName?: string | null;
+  /** @deprecated Use tierName instead */
+  subscriptionTier?: string;
 }
 
 export function CompetitionHeader({
   title,
-  subscriptionTier = "free",
+  tierName,
   avatarUrl,
   displayName,
+  subscriptionTier,
 }: CompetitionHeaderProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
 
-  const tierLabel =
-    subscriptionTier === "tournament_pro"
-      ? "TOURNAMENT PRO"
-      : subscriptionTier === "affiliate_pro"
-      ? "AFFILIATE PRO"
-      : null;
-
-  const tierColor =
-    subscriptionTier === "tournament_pro"
-      ? "bg-primary text-primary-foreground"
-      : subscriptionTier === "affiliate_pro"
-      ? "bg-accent text-accent-foreground"
-      : "";
+  // Use tierName if provided, otherwise fall back to legacy prop
+  const resolvedName = tierName ?? subscriptionTier?.toUpperCase();
+  const showBadge = resolvedName && resolvedName !== "FREE" && resolvedName !== "free";
 
   const initials = displayName
     ? displayName
@@ -65,11 +58,9 @@ export function CompetitionHeader({
       </div>
 
       <div className="flex items-center gap-2">
-        {tierLabel && (
-          <span
-            className={`hidden sm:inline-flex text-xs font-bold px-2.5 py-1 rounded ${tierColor}`}
-          >
-            {tierLabel}
+        {showBadge && (
+          <span className="hidden sm:inline-flex text-xs font-bold px-2.5 py-1 rounded bg-primary text-primary-foreground">
+            {resolvedName}
           </span>
         )}
 

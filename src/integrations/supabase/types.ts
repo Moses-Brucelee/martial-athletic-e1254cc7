@@ -526,6 +526,45 @@ export type Database = {
           },
         ]
       }
+      menu_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          feature_key: string
+          icon_name: string
+          id: string
+          is_active: boolean
+          label: string
+          route: string
+          sort_order: number
+          tier_key: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          feature_key: string
+          icon_name: string
+          id?: string
+          is_active?: boolean
+          label: string
+          route: string
+          sort_order?: number
+          tier_key: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          feature_key?: string
+          icon_name?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          route?: string
+          sort_order?: number
+          tier_key?: string
+        }
+        Relationships: []
+      }
       pricing_features: {
         Row: {
           created_at: string
@@ -864,6 +903,27 @@ export type Database = {
         Update: {
           created_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      tier_feature_access: {
+        Row: {
+          created_at: string
+          feature_key: string
+          id: string
+          tier_key: string
+        }
+        Insert: {
+          created_at?: string
+          feature_key: string
+          id?: string
+          tier_key: string
+        }
+        Update: {
+          created_at?: string
+          feature_key?: string
+          id?: string
+          tier_key?: string
         }
         Relationships: []
       }
