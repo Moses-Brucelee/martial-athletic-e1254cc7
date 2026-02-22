@@ -44,7 +44,7 @@ export default function CompetitionDashboard() {
   const { profile, loading: profileLoading } = useProfile();
   const { isOwner, isJudge, role, loading: roleLoading } = useCompetitionRole(id);
   const { isSuperUser } = useSuperUserAccess();
-  const { canAccess } = useSubscription();
+  const { canAccess, tierName } = useSubscription();
 
   const [competition, setCompetition] = useState<{ name: string; created_by: string } | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -200,7 +200,7 @@ export default function CompetitionDashboard() {
     <div className="min-h-screen bg-background flex flex-col">
       <CompetitionHeader
         title="Tournament"
-        subscriptionTier={profile?.subscription_tier}
+        tierName={tierName}
         avatarUrl={profile?.avatar_url}
         displayName={profile?.display_name}
       />

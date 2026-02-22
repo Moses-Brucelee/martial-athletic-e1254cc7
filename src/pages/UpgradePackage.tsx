@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { useProfile } from "@/hooks/useProfile";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +32,8 @@ interface PricingTier {
 export default function UpgradePackage() {
   const navigate = useNavigate();
   const { profile, loading: profileLoading } = useProfile();
-  const currentTier = profile?.subscription_tier ?? "free";
+  const { tierName, tierKey } = useSubscription();
+  const currentTier = tierKey;
 
   const [tiers, setTiers] = useState<PricingTier[]>([]);
   const [tiersLoading, setTiersLoading] = useState(true);
@@ -121,7 +123,7 @@ export default function UpgradePackage() {
       <div className="min-h-screen bg-background flex flex-col">
         <CompetitionHeader
           title="UPGRADE"
-          subscriptionTier={currentTier}
+          tierName={tierName}
           avatarUrl={profile?.avatar_url}
           displayName={profile?.display_name}
         />
@@ -146,7 +148,7 @@ export default function UpgradePackage() {
     <div className="min-h-screen bg-background flex flex-col">
       <CompetitionHeader
         title="UPGRADE"
-        subscriptionTier={currentTier}
+        tierName={tierName}
         avatarUrl={profile?.avatar_url}
         displayName={profile?.display_name}
       />

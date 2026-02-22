@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -16,31 +16,27 @@ import {
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import type { LucideIcon } from "lucide-react";
 
-interface MenuItem {
+// Icon lookup — map icon_name string from DB to Lucide component
+const ICON_MAP: Record<string, LucideIcon> = {
+  User, Eye, Trophy, Users, Link2, Settings, BarChart3, Palette,
+};
+
+interface DbMenuItem {
+  id: string;
+  tier_key: string;
+  feature_key: string;
   label: string;
-  icon: LucideIcon;
-  feature: string;
+  icon_name: string;
   route: string;
-  description?: string;
+  description: string | null;
+  sort_order: number;
 }
 
-const FREE_ITEMS: MenuItem[] = [
-  { label: "VIEW PROFILE", icon: User, feature: "view_profile", route: "/profile" },
-  { label: "VIEW COMPETITION LEADERBOARDS", icon: Eye, feature: "view_leaderboards", route: "/competitions" },
-];
-
-const AFFILIATE_ITEMS: MenuItem[] = [
-  { label: "MANAGE MEMBERS", icon: Users, feature: "manage_members", route: "/members", description: "Get members linked to your account" },
-  { label: "LINK GYM WEBSITE", icon: Link2, feature: "link_gym_website", route: "/gym-website", description: "Connect your gym's online presence" },
-  { label: "CREATE / MANAGE COMPETITIONS", icon: Trophy, feature: "create_competitions", route: "/competitions", description: "Build and run competitions" },
-  { label: "MANAGE AFFILIATION", icon: Settings, feature: "manage_affiliation", route: "/affiliation", description: "Control your affiliate settings" },
-  { label: "TRACK MEMBER PERFORMANCES", icon: BarChart3, feature: "track_performances", route: "/performances", description: "Monitor athlete progress" },
-];
-
-const PRO_ITEMS: MenuItem[] = [
-  { label: "ADVANCED ANALYTICS", icon: BarChart3, feature: "advanced_analytics", route: "/analytics", description: "Deep performance insights" },
-  { label: "CUSTOM BRANDING", icon: Palette, feature: "custom_branding", route: "/branding", description: "White-label your competitions" },
-];
+interface DbTier {
+  key: string;
+  name: string;
+  sort_order: number;
+}
 
 function SectionHeader({ label, active }: { label: string; active: boolean }) {
   return (
@@ -58,8 +54,7 @@ function SectionHeader({ label, active }: { label: string; active: boolean }) {
   );
 }
 
-function ActiveMenuItem({ item, onClick }: { item: MenuItem; onClick: () => void }) {
-  const Icon = item.icon;
+function ActiveMenuItem({ label, icon: Icon, onClick }: { label: string; icon: LucideIcon; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -69,24 +64,23 @@ function ActiveMenuItem({ item, onClick }: { item: MenuItem; onClick: () => void
         <Icon className="h-5 w-5 text-primary" />
       </div>
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-bold text-foreground tracking-wide uppercase">{item.label}</span>
+        <span className="text-sm font-bold text-foreground tracking-wide uppercase">{label}</span>
       </div>
       <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
     </button>
   );
 }
 
-function LockedMenuItem({ item, requiredTier, onUpgrade }: { item: MenuItem; requiredTier: string; onUpgrade: () => void }) {
-  const Icon = item.icon;
+function LockedMenuItem({ label, description, onUpgrade }: { label: string; description?: string | null; onUpgrade: () => void }) {
   return (
     <div className="w-full flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border/50 text-left opacity-70">
       <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
         <Lock className="h-4 w-4 text-muted-foreground" />
       </div>
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-bold text-muted-foreground tracking-wide uppercase">{item.label}</span>
-        {item.description && (
-          <p className="text-xs text-muted-foreground/60 mt-0.5">{item.description}</p>
+        <span className="text-sm font-bold text-muted-foreground tracking-wide uppercase">{label}</span>
+        {description && (
+          <p className="text-xs text-muted-foreground/60 mt-0.5">{description}</p>
         )}
       </div>
       <Badge
@@ -104,9 +98,14 @@ export default function MainMenu() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading, error: profileError } = useProfile();
-  const { tier, canAccess, loading: subLoading } = useSubscription();
+  const { tierKey, tierName, canAccess, loading: subLoading } = useSubscription();
   const [hasCompetitions, setHasCompetitions] = useState(false);
   const [compLoading, setCompLoading] = useState(true);
+
+  // DB-driven data
+  const [menuItems, setMenuItems] = useState<DbMenuItem[]>([]);
+  const [activeTiers, setActiveTiers] = useState<DbTier[]>([]);
+  const [menuLoading, setMenuLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -121,18 +120,46 @@ export default function MainMenu() {
     check();
   }, [user]);
 
+  // Fetch menu items and active tiers from DB
+  useEffect(() => {
+    const fetchMenu = async () => {
+      const [itemsRes, tiersRes] = await Promise.all([
+        supabase
+          .from("menu_items")
+          .select("*")
+          .eq("is_active", true)
+          .order("sort_order"),
+        supabase
+          .from("pricing_tiers")
+          .select("key, name, sort_order")
+          .eq("is_active", true)
+          .order("sort_order"),
+      ]);
+      setMenuItems((itemsRes.data as DbMenuItem[]) ?? []);
+      setActiveTiers((tiersRes.data as DbTier[]) ?? []);
+      setMenuLoading(false);
+    };
+    fetchMenu();
+  }, []);
+
   useEffect(() => {
     if (!profileLoading && profile && !profile.profile_completed) {
       navigate("/create-profile", { replace: true });
     }
   }, [profile, profileLoading, navigate]);
 
-  const tierLabel =
-    tier === "tournament_pro"
-      ? "TOURNAMENT PRO"
-      : tier === "affiliate_pro"
-      ? "AFFILIATE PRO"
-      : "Free";
+  // Group menu items by tier_key, only for active tiers
+  const sections = useMemo(() => {
+    const activeTierKeys = new Set(activeTiers.map((t) => t.key));
+    const grouped: { tier: DbTier; items: DbMenuItem[] }[] = [];
+    for (const tier of activeTiers) {
+      const items = menuItems.filter(
+        (m) => m.tier_key === tier.key && activeTierKeys.has(m.tier_key)
+      );
+      if (items.length > 0) grouped.push({ tier, items });
+    }
+    return grouped;
+  }, [menuItems, activeTiers]);
 
   const initials = profile?.display_name
     ? profile.display_name
@@ -143,7 +170,7 @@ export default function MainMenu() {
         .slice(0, 2)
     : "MA";
 
-  const isLoading = profileLoading || compLoading || subLoading;
+  const isLoading = profileLoading || compLoading || subLoading || menuLoading;
 
   if (isLoading) {
     return (
@@ -175,9 +202,8 @@ export default function MainMenu() {
     );
   }
 
-  const handleItemClick = (item: MenuItem) => {
-    // Special handling for competitions route
-    if (item.feature === "create_competitions") {
+  const handleItemClick = (item: DbMenuItem) => {
+    if (item.feature_key === "create_competitions") {
       navigate(hasCompetitions ? "/competitions" : "/competition/create");
       return;
     }
@@ -186,33 +212,7 @@ export default function MainMenu() {
 
   const goUpgrade = () => navigate("/upgrade");
 
-  const renderSection = (label: string, items: MenuItem[], requiredTier: string) => {
-    const sectionActive =
-      requiredTier === "free" ||
-      (requiredTier === "affiliate_pro" && (tier === "affiliate_pro" || tier === "tournament_pro")) ||
-      (requiredTier === "tournament_pro" && tier === "tournament_pro");
-
-    return (
-      <div key={label}>
-        <SectionHeader label={label} active={sectionActive} />
-        <div className="space-y-2 mt-2">
-          {items.map((item) => {
-            // Override label for competitions dynamic CTA
-            const displayItem =
-              item.feature === "create_competitions" && hasCompetitions
-                ? { ...item, label: "VIEW / BUILD YOUR COMP" }
-                : item;
-
-            return canAccess(item.feature) ? (
-              <ActiveMenuItem key={item.feature} item={displayItem} onClick={() => handleItemClick(item)} />
-            ) : (
-              <LockedMenuItem key={item.feature} item={displayItem} requiredTier={requiredTier} onUpgrade={goUpgrade} />
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
+  const isFree = tierKey === "free";
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -222,7 +222,7 @@ export default function MainMenu() {
           <span className="text-lg font-bold text-foreground tracking-tight uppercase">Main Menu</span>
         </div>
         <div className="flex items-center gap-2">
-          {tier === "free" ? (
+          {isFree ? (
             <Badge
               variant="outline"
               className="cursor-pointer text-xs font-bold hover:bg-primary hover:text-primary-foreground transition-colors"
@@ -233,7 +233,7 @@ export default function MainMenu() {
             </Badge>
           ) : (
             <span className="text-xs font-bold px-2.5 py-1 rounded bg-primary text-primary-foreground">
-              {tierLabel}
+              {tierName}
             </span>
           )}
           <Avatar className="h-8 w-8">
@@ -251,9 +251,40 @@ export default function MainMenu() {
 
       <main className="flex-1 flex items-start justify-center px-4 py-6">
         <div className="w-full max-w-md space-y-1">
-          {renderSection("FREE", FREE_ITEMS, "free")}
-          {renderSection("AFFILIATE PRO", AFFILIATE_ITEMS, "affiliate_pro")}
-          {renderSection("TOURNAMENT PRO", PRO_ITEMS, "tournament_pro")}
+          {sections.map(({ tier, items }) => {
+            const sectionActive = canAccess(items[0]?.feature_key ?? "");
+
+            return (
+              <div key={tier.key}>
+                <SectionHeader label={tier.name} active={sectionActive} />
+                <div className="space-y-2 mt-2">
+                  {items.map((item) => {
+                    const Icon = ICON_MAP[item.icon_name] ?? User;
+                    const displayLabel =
+                      item.feature_key === "create_competitions" && hasCompetitions
+                        ? "VIEW / BUILD YOUR COMP"
+                        : item.label;
+
+                    return canAccess(item.feature_key) ? (
+                      <ActiveMenuItem
+                        key={item.id}
+                        label={displayLabel}
+                        icon={Icon}
+                        onClick={() => handleItemClick(item)}
+                      />
+                    ) : (
+                      <LockedMenuItem
+                        key={item.id}
+                        label={displayLabel}
+                        description={item.description}
+                        onUpgrade={goUpgrade}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </main>
     </div>
