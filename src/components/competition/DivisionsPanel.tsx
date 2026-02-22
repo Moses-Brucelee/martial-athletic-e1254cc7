@@ -5,6 +5,7 @@ import { Plus, Trash2, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { addDivision, removeDivision } from "@/data/divisions";
 import type { Division } from "@/domain/competition";
+import { divisionNameSchema } from "@/lib/validation";
 
 interface DivisionsPanelProps {
   competitionId: string;
@@ -18,7 +19,11 @@ export function DivisionsPanel({ competitionId, divisions, setDivisions, canAdmi
   const [adding, setAdding] = useState(false);
 
   const handleAdd = async () => {
-    if (!newName.trim()) return;
+    const parsed = divisionNameSchema.safeParse(newName);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
     setAdding(true);
     try {
       const div = await addDivision(competitionId, newName.trim(), divisions.length);

@@ -5,6 +5,9 @@ import { Plus, Trash2, Gavel } from "lucide-react";
 import { toast } from "sonner";
 import { addJudge, removeJudge, findUserByEmail } from "@/data/judges";
 import type { Judge } from "@/domain/judges";
+import { z } from "zod";
+
+const searchSchema = z.string().trim().min(1, "Please enter a name to search").max(200, "Search term is too long");
 
 interface JudgesPanelProps {
   competitionId: string;
@@ -18,7 +21,11 @@ export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: Judg
   const [adding, setAdding] = useState(false);
 
   const handleAdd = async () => {
-    if (!searchEmail.trim()) return;
+    const parsed = searchSchema.safeParse(searchEmail);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
     setAdding(true);
     try {
       const user = await findUserByEmail(searchEmail.trim());

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ClipboardList, Save, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { upsertScores } from "@/data/scoring";
+import { scoreSchema } from "@/lib/validation";
 
 interface Team {
   id?: string;
@@ -57,6 +58,19 @@ export function ScoresPanel({ competitionId, teams, workouts, canScore, judgeId 
   const saveScores = async () => {
     setSaving(true);
     try {
+      // Validate all scores first
+      const invalidScores: string[] = [];
+      Object.entries(scores).forEach(([, val]) => {
+        if (val !== "" && !scoreSchema.safeParse(val).success) {
+          invalidScores.push(val);
+        }
+      });
+      if (invalidScores.length > 0) {
+        toast.error("Scores must be between 0 and 999,999");
+        setSaving(false);
+        return;
+      }
+
       const upserts = Object.entries(scores)
         .filter(([, val]) => val !== "" && !isNaN(Number(val)))
         .map(([key, val]) => {
