@@ -29,6 +29,18 @@ export default function Login() {
   const [attempts, setAttempts] = useState(0);
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const [lockCountdown, setLockCountdown] = useState(0);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Real-time validation
+  const validation = loginSchema.safeParse({ email, password });
+  const fieldErrors: Record<string, string> = {};
+  if (!validation.success) {
+    validation.error.issues.forEach((issue) => {
+      const key = String(issue.path[0]);
+      if (!fieldErrors[key]) fieldErrors[key] = issue.message;
+    });
+  }
+  const isFormValid = validation.success;
 
   // Redirect if already logged in
   useEffect(() => {
@@ -154,10 +166,13 @@ export default function Login() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setTouched((p) => ({ ...p, email: true }))}
                   disabled={isLocked || loading}
                   className="h-12 bg-background border-border focus:border-primary"
                   autoComplete="email"
                 />
+                {touched.email && fieldErrors.email && <p className="text-xs text-destructive">{fieldErrors.email}</p>}
+                {!touched.email && !email && <p className="text-xs text-muted-foreground">Required</p>}
               </div>
 
               <div className="space-y-2">
@@ -169,6 +184,7 @@ export default function Login() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => setTouched((p) => ({ ...p, password: true }))}
                     disabled={isLocked || loading}
                     className="h-12 bg-background border-border focus:border-primary pr-11"
                     autoComplete="current-password"
@@ -182,11 +198,13 @@ export default function Login() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {touched.password && fieldErrors.password && <p className="text-xs text-destructive">{fieldErrors.password}</p>}
+                {!touched.password && !password && <p className="text-xs text-muted-foreground">Required</p>}
               </div>
 
               <Button
                 type="submit"
-                disabled={isLocked || loading}
+                disabled={isLocked || loading || !isFormValid}
                 className="w-full h-12 text-base font-semibold tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all"
               >
                 {loading ? (

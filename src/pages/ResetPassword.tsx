@@ -30,6 +30,18 @@ export default function ResetPassword() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Real-time validation
+  const validation = resetSchema.safeParse({ password, confirmPassword });
+  const fieldErrors: Record<string, string> = {};
+  if (!validation.success) {
+    validation.error.issues.forEach((issue) => {
+      const key = String(issue.path[0]);
+      if (!fieldErrors[key]) fieldErrors[key] = issue.message;
+    });
+  }
+  const isFormValid = validation.success;
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
@@ -38,12 +50,10 @@ export default function ResetPassword() {
       }
     });
 
-    // Also check if we already have a recovery session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setState("ready");
       } else {
-        // Give a moment for the auth state change to fire
         setTimeout(() => {
           setState((prev) => (prev === "validating" ? "invalid" : prev));
         }, 2000);
@@ -74,13 +84,11 @@ export default function ResetPassword() {
       return;
     }
 
-    // Sign out so user logs in with new password
     await supabase.auth.signOut();
     setState("success");
     setLoading(false);
   };
 
-  // Loading / validating token
   if (state === "validating") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -92,7 +100,6 @@ export default function ResetPassword() {
     );
   }
 
-  // Invalid / expired token
   if (state === "invalid") {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -118,7 +125,6 @@ export default function ResetPassword() {
     );
   }
 
-  // Success
   if (state === "success") {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -141,7 +147,6 @@ export default function ResetPassword() {
     );
   }
 
-  // Password reset form
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center justify-between px-4 sm:px-8 py-4">
@@ -178,6 +183,7 @@ export default function ResetPassword() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => setTouched((p) => ({ ...p, password: true }))}
                     disabled={loading}
                     className="h-12 bg-background border-border focus:border-primary pr-11"
                     autoComplete="new-password"
@@ -186,7 +192,8 @@ export default function ResetPassword() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+                {touched.password && fieldErrors.password && <p className="text-xs text-destructive">{fieldErrors.password}</p>}
+                {!touched.password && !password && <p className="text-xs text-muted-foreground">Required — minimum 6 characters</p>}
               </div>
 
               <div className="space-y-2">
@@ -198,6 +205,7 @@ export default function ResetPassword() {
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    onBlur={() => setTouched((p) => ({ ...p, confirmPassword: true }))}
                     disabled={loading}
                     className="h-12 bg-background border-border focus:border-primary pr-11"
                     autoComplete="new-password"
@@ -206,9 +214,11 @@ export default function ResetPassword() {
                     {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {touched.confirmPassword && fieldErrors.confirmPassword && <p className="text-xs text-destructive">{fieldErrors.confirmPassword}</p>}
+                {!touched.confirmPassword && !confirmPassword && <p className="text-xs text-muted-foreground">Required</p>}
               </div>
 
-              <Button type="submit" disabled={loading} className="w-full h-12 text-base font-semibold tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all">
+              <Button type="submit" disabled={loading || !isFormValid} className="w-full h-12 text-base font-semibold tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all">
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                 ) : (

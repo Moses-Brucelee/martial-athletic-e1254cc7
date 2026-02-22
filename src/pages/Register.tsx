@@ -29,6 +29,18 @@ export default function Register() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Real-time validation
+  const validation = registerSchema.safeParse({ email, password, confirmPassword });
+  const fieldErrors: Record<string, string> = {};
+  if (!validation.success) {
+    validation.error.issues.forEach((issue) => {
+      const key = String(issue.path[0]);
+      if (!fieldErrors[key]) fieldErrors[key] = issue.message;
+    });
+  }
+  const isFormValid = validation.success;
 
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
@@ -102,25 +114,31 @@ export default function Register() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
-                <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} className="h-12 bg-background border-border" autoComplete="email" />
+                <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => setTouched((p) => ({ ...p, email: true }))} disabled={loading} className="h-12 bg-background border-border" autoComplete="email" />
+                {touched.email && fieldErrors.email && <p className="text-xs text-destructive">{fieldErrors.email}</p>}
+                {!touched.email && !email && <p className="text-xs text-muted-foreground">Required</p>}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
                 <div className="relative">
-                  <Input id="password" type={showPassword ? "text" : "password"} placeholder="Min 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} className="h-12 bg-background border-border pr-11" autoComplete="new-password" />
+                  <Input id="password" type={showPassword ? "text" : "password"} placeholder="Min 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} onBlur={() => setTouched((p) => ({ ...p, password: true }))} disabled={loading} className="h-12 bg-background border-border pr-11" autoComplete="new-password" />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {touched.password && fieldErrors.password && <p className="text-xs text-destructive">{fieldErrors.password}</p>}
+                {!touched.password && !password && <p className="text-xs text-muted-foreground">Required — min 8 characters</p>}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword" className="text-foreground font-medium">Confirm Password</Label>
-                <Input id="confirmPassword" type="password" placeholder="Re-enter password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={loading} className="h-12 bg-background border-border" autoComplete="new-password" />
+                <Input id="confirmPassword" type="password" placeholder="Re-enter password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} onBlur={() => setTouched((p) => ({ ...p, confirmPassword: true }))} disabled={loading} className="h-12 bg-background border-border" autoComplete="new-password" />
+                {touched.confirmPassword && fieldErrors.confirmPassword && <p className="text-xs text-destructive">{fieldErrors.confirmPassword}</p>}
+                {!touched.confirmPassword && !confirmPassword && <p className="text-xs text-muted-foreground">Required</p>}
               </div>
 
-              <Button type="submit" disabled={loading} className="w-full h-12 text-base font-semibold tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
+              <Button type="submit" disabled={loading || !isFormValid} className="w-full h-12 text-base font-semibold tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
                 {loading ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : "Create Account"}
               </Button>
             </form>
