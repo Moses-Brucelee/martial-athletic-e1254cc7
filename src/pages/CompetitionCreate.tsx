@@ -25,6 +25,18 @@ export default function CompetitionCreate() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Real-time validation
+  const validation = competitionSchema.safeParse({ name, venue, type, hostGym, divisions });
+  const liveFieldErrors: Record<string, string> = {};
+  if (!validation.success) {
+    validation.error.issues.forEach((issue) => {
+      const key = String(issue.path[0]);
+      if (!liveFieldErrors[key]) liveFieldErrors[key] = issue.message;
+    });
+  }
+  const isFormValid = validation.success;
 
   const handleCreate = async () => {
     if (!user) return;
@@ -105,7 +117,9 @@ export default function CompetitionCreate() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2 sm:col-span-2">
               <Label className="text-foreground font-medium">Competition Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter competition name" className="h-11 bg-background" disabled={loading} maxLength={100} />
+              <Input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => setTouched((p) => ({ ...p, name: true }))} placeholder="Enter competition name" className="h-11 bg-background" disabled={loading} maxLength={100} />
+              {touched.name && liveFieldErrors.name && <p className="text-xs text-destructive">{liveFieldErrors.name}</p>}
+              {!touched.name && !name && <p className="text-xs text-muted-foreground">Required</p>}
               {fieldErrors.name && <p className="text-xs text-destructive">{fieldErrors.name}</p>}
             </div>
             <div className="space-y-2">
@@ -151,7 +165,7 @@ export default function CompetitionCreate() {
           </Button>
           <Button
             onClick={handleCreate}
-            disabled={loading}
+            disabled={loading || !isFormValid}
             className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-6"
           >
             {loading ? (

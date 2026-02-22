@@ -14,14 +14,19 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [touched, setTouched] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Real-time validation
+  const validation = emailSchema.safeParse(email);
+  const isFormValid = validation.success;
+  const emailError = !validation.success ? validation.error.issues[0].message : "";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = emailSchema.safeParse(email);
-    if (!parsed.success) {
-      toast({ title: "Invalid email", description: parsed.error.issues[0].message, variant: "destructive" });
+    if (!isFormValid) {
+      toast({ title: "Invalid email", description: emailError, variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -91,6 +96,7 @@ export default function ForgotPassword() {
                     onClick={() => {
                       setSubmitted(false);
                       setEmail("");
+                      setTouched(false);
                     }}
                     className="text-primary underline hover:no-underline"
                   >
@@ -146,6 +152,7 @@ export default function ForgotPassword() {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onBlur={() => setTouched(true)}
                     required
                     disabled={loading}
                     className="h-12 bg-background border-border focus:border-primary pl-10"
@@ -153,11 +160,13 @@ export default function ForgotPassword() {
                   />
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 </div>
+                {touched && emailError && <p className="text-xs text-destructive">{emailError}</p>}
+                {!touched && !email && <p className="text-xs text-muted-foreground">Required</p>}
               </div>
 
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !isFormValid}
                 className="w-full h-12 text-base font-semibold tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all"
               >
                 {loading ? (

@@ -30,7 +30,18 @@ export default function ViewProfile() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Real-time validation
+  const validation = profileSchema.safeParse({ fullName, gender, age: age || undefined, affiliation, aboutMe });
+  const fieldErrors: Record<string, string> = {};
+  if (!validation.success) {
+    validation.error.issues.forEach((issue) => {
+      const key = String(issue.path[0]);
+      if (!fieldErrors[key]) fieldErrors[key] = issue.message;
+    });
+  }
+  const isFormValid = validation.success;
 
   useEffect(() => {
     if (profile) {
@@ -57,23 +68,10 @@ export default function ViewProfile() {
   };
 
   const handleSave = async () => {
-    if (!user) return;
-    setFieldErrors({});
+    if (!user || !isFormValid) return;
+    setSaving(true);
     setError("");
     setSuccess(false);
-
-    const result = profileSchema.safeParse({ fullName, gender, age: age || undefined, affiliation, aboutMe });
-    if (!result.success) {
-      const errs: Record<string, string> = {};
-      result.error.issues.forEach((issue) => {
-        const key = String(issue.path[0]);
-        if (!errs[key]) errs[key] = issue.message;
-      });
-      setFieldErrors(errs);
-      return;
-    }
-
-    setSaving(true);
 
     try {
       let avatarUrl: string | null = profile?.avatar_url || null;
@@ -192,12 +190,13 @@ export default function ViewProfile() {
               <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Name and Surname</Label>
-                  <Input placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={saving} className="h-11 bg-background" maxLength={100} />
-                  {fieldErrors.fullName && <p className="text-xs text-destructive">{fieldErrors.fullName}</p>}
+                  <Input placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} onBlur={() => setTouched((p) => ({ ...p, fullName: true }))} disabled={saving} className="h-11 bg-background" maxLength={100} />
+                  {touched.fullName && fieldErrors.fullName && <p className="text-xs text-destructive">{fieldErrors.fullName}</p>}
+                  {!touched.fullName && !fullName && <p className="text-xs text-muted-foreground">Required</p>}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Gender</Label>
-                  <Select value={gender} onValueChange={setGender} disabled={saving}>
+                  <Select value={gender} onValueChange={(v) => { setGender(v); setTouched((p) => ({ ...p, gender: true })); }} disabled={saving}>
                     <SelectTrigger className="h-11 bg-background"><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="male">Male</SelectItem>
@@ -206,17 +205,18 @@ export default function ViewProfile() {
                       <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
                     </SelectContent>
                   </Select>
-                  {fieldErrors.gender && <p className="text-xs text-destructive">{fieldErrors.gender}</p>}
+                  {touched.gender && fieldErrors.gender && <p className="text-xs text-destructive">{fieldErrors.gender}</p>}
+                  {!touched.gender && !gender && <p className="text-xs text-muted-foreground">Required</p>}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Age</Label>
-                  <Input type="number" placeholder="25" value={age} onChange={(e) => setAge(e.target.value)} disabled={saving} className="h-11 bg-background" min={5} max={120} />
-                  {fieldErrors.age && <p className="text-xs text-destructive">{fieldErrors.age}</p>}
+                  <Input type="number" placeholder="25" value={age} onChange={(e) => setAge(e.target.value)} onBlur={() => setTouched((p) => ({ ...p, age: true }))} disabled={saving} className="h-11 bg-background" min={5} max={120} />
+                  {touched.age && fieldErrors.age && <p className="text-xs text-destructive">{fieldErrors.age}</p>}
+                  {!touched.age && !age && <p className="text-xs text-muted-foreground">Required</p>}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Affiliation</Label>
                   <Input placeholder="Gym / Club name" value={affiliation} onChange={(e) => setAffiliation(e.target.value)} disabled={saving} className="h-11 bg-background" maxLength={100} />
-                  {fieldErrors.affiliation && <p className="text-xs text-destructive">{fieldErrors.affiliation}</p>}
                 </div>
               </div>
             </div>
@@ -227,12 +227,11 @@ export default function ViewProfile() {
                 <span className="text-xs text-muted-foreground">{aboutMe.length}/500</span>
               </div>
               <Textarea placeholder="Tell us about yourself..." value={aboutMe} onChange={(e) => setAboutMe(e.target.value.slice(0, 500))} disabled={saving} className="min-h-[100px] bg-background" maxLength={500} />
-              {fieldErrors.aboutMe && <p className="text-xs text-destructive">{fieldErrors.aboutMe}</p>}
             </div>
 
             <div className="flex justify-between mt-8">
               <Button variant="outline" onClick={() => navigate("/dashboard")}>Back to Menu</Button>
-              <Button onClick={handleSave} disabled={saving} className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8">
+              <Button onClick={handleSave} disabled={saving || !isFormValid} className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8">
                 {saving ? <div className="w-5 h-5 border-2 border-accent-foreground border-t-transparent rounded-full animate-spin" /> : "Save Changes"}
               </Button>
             </div>

@@ -27,7 +27,18 @@ export default function CreateProfile() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Real-time validation
+  const validation = profileSchema.safeParse({ fullName, gender, age: age || undefined, affiliation, aboutMe });
+  const fieldErrors: Record<string, string> = {};
+  if (!validation.success) {
+    validation.error.issues.forEach((issue) => {
+      const key = String(issue.path[0]);
+      if (!fieldErrors[key]) fieldErrors[key] = issue.message;
+    });
+  }
+  const isFormValid = validation.success;
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -44,21 +55,9 @@ export default function CreateProfile() {
 
   const handleSubmit = async (skip: boolean) => {
     if (!user) return;
-    setFieldErrors({});
     setError("");
 
-    if (!skip) {
-      const result = profileSchema.safeParse({ fullName, gender, age: age || undefined, affiliation, aboutMe });
-      if (!result.success) {
-        const errs: Record<string, string> = {};
-        result.error.issues.forEach((issue) => {
-          const key = String(issue.path[0]);
-          if (!errs[key]) errs[key] = issue.message;
-        });
-        setFieldErrors(errs);
-        return;
-      }
-    }
+    if (!skip && !isFormValid) return;
 
     setLoading(true);
 
@@ -165,15 +164,17 @@ export default function CreateProfile() {
                     placeholder="John Doe"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    onBlur={() => setTouched((p) => ({ ...p, fullName: true }))}
                     disabled={loading}
                     className="h-11 bg-background"
                     maxLength={100}
                   />
-                  {fieldErrors.fullName && <p className="text-xs text-destructive">{fieldErrors.fullName}</p>}
+                  {touched.fullName && fieldErrors.fullName && <p className="text-xs text-destructive">{fieldErrors.fullName}</p>}
+                  {!touched.fullName && !fullName && <p className="text-xs text-muted-foreground">Required</p>}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Gender</Label>
-                  <Select value={gender} onValueChange={setGender} disabled={loading}>
+                  <Select value={gender} onValueChange={(v) => { setGender(v); setTouched((p) => ({ ...p, gender: true })); }} disabled={loading}>
                     <SelectTrigger className="h-11 bg-background">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
@@ -184,7 +185,8 @@ export default function CreateProfile() {
                       <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
                     </SelectContent>
                   </Select>
-                  {fieldErrors.gender && <p className="text-xs text-destructive">{fieldErrors.gender}</p>}
+                  {touched.gender && fieldErrors.gender && <p className="text-xs text-destructive">{fieldErrors.gender}</p>}
+                  {!touched.gender && !gender && <p className="text-xs text-muted-foreground">Required</p>}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Age</Label>
@@ -193,12 +195,14 @@ export default function CreateProfile() {
                     placeholder="25"
                     value={age}
                     onChange={(e) => setAge(e.target.value)}
+                    onBlur={() => setTouched((p) => ({ ...p, age: true }))}
                     disabled={loading}
                     className="h-11 bg-background"
                     min={5}
                     max={120}
                   />
-                  {fieldErrors.age && <p className="text-xs text-destructive">{fieldErrors.age}</p>}
+                  {touched.age && fieldErrors.age && <p className="text-xs text-destructive">{fieldErrors.age}</p>}
+                  {!touched.age && !age && <p className="text-xs text-muted-foreground">Required</p>}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Affiliation</Label>
@@ -210,7 +214,6 @@ export default function CreateProfile() {
                     className="h-11 bg-background"
                     maxLength={100}
                   />
-                  {fieldErrors.affiliation && <p className="text-xs text-destructive">{fieldErrors.affiliation}</p>}
                 </div>
               </div>
             </div>
@@ -229,7 +232,6 @@ export default function CreateProfile() {
                 className="min-h-[100px] bg-background"
                 maxLength={500}
               />
-              {fieldErrors.aboutMe && <p className="text-xs text-destructive">{fieldErrors.aboutMe}</p>}
             </div>
 
             {/* Actions */}
@@ -243,7 +245,7 @@ export default function CreateProfile() {
               </Button>
               <Button
                 onClick={() => handleSubmit(false)}
-                disabled={loading}
+                disabled={loading || !isFormValid}
                 className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8"
               >
                 {loading ? (
