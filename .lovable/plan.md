@@ -1,142 +1,135 @@
 
 
-# Dynamic Tier Architecture: Remove All Hardcoded Frontend Data
+# Security Hardening: Input Validation and Injection Protection
 
-## Status Check
+## Vulnerabilities Found
 
-Everything marked in your instructions for Layers 1-3 and Super User system is **already implemented and verified**:
-- `has_competition_access()` function active in DB
-- All RLS policies hardened on competitions + child tables
-- `SubscriptionGuard` wrapping `/competition/create` and `/competition/:id/workouts`
-- `CompetitionDashboard.tsx` using `canAccess('create_competitions')` for `canAdmin`/`canScore`
-- `super_users` table with `limit_super_users` trigger (max 2)
-- `/super-dashboard` guarded by `SuperUserGuard`
+After auditing every form, data layer, and component, here are the security issues:
 
-## The Problem
+### 1. No Input Validation on Profile Forms
 
-Tournament Pro is `is_active = false` in the database but still renders on the dashboard because tier data is hardcoded:
+**CreateProfile.tsx** and **ViewProfile.tsx** accept arbitrary-length strings with no sanitization. Users can submit names with 10,000+ characters, script tags, or SQL-like payloads. No field-level validation exists.
 
-| File | Hardcoded Data |
-|---|---|
-| `useSubscription.ts` | `TIER_HIERARCHY`, `FEATURE_ACCESS` map, `Tier` type |
-| `MainMenu.tsx` | `FREE_ITEMS`, `AFFILIATE_ITEMS`, `PRO_ITEMS`, tier labels, section names |
-| `CompetitionHeader.tsx` | Tier label/color string comparisons |
+### 2. No Input Validation on Competition Create
 
----
+**CompetitionCreate.tsx** only checks if name is non-empty. No length limits, no trimming on venue/type/host_gym/divisions fields.
 
-## Step 1: Database Migration -- Two New Tables
+### 3. No Input Validation on Competition Child Panels
 
-**Table: `menu_items`**
+- **TeamsPanel.tsx**: Team name has no length limit or character restriction
+- **DivisionsPanel.tsx**: Division name has no length limit
+- **ParticipantsPanel.tsx**: Athlete name has no length limit
+- **JudgesPanel.tsx**: Email search has no validation
+- **ScoresPanel.tsx**: Score input accepts any number (negative, extremely large)
+- **WorkoutsPanel.tsx**: No validation on workout data
 
-Stores all main menu entries linked to a tier and feature key.
+### 4. No Validation on Super User Tools
 
-```text
-Columns:
-  id            UUID PK
-  tier_key      TEXT NOT NULL
-  feature_key   TEXT NOT NULL
-  label         TEXT NOT NULL
-  icon_name     TEXT NOT NULL  (e.g. 'User', 'Trophy')
-  route         TEXT NOT NULL
-  description   TEXT (nullable)
-  sort_order    INT DEFAULT 0
-  is_active     BOOLEAN DEFAULT true
-  created_at    TIMESTAMPTZ DEFAULT now()
-```
+- **ScoreOverride.tsx**: UUID fields not validated (accepts any string)
+- **CompetitionManager.tsx**: Search input not sanitized (low risk since it's client-side filter)
+- **SeasonManager.tsx**: Season name and year have no validation
 
-RLS: Authenticated users can SELECT where `is_active = true`. No write access.
+### 5. ForgotPassword.tsx Has No Email Validation
 
-Seeded with current FREE and AFFILIATE PRO items. Tournament Pro items are NOT seeded (tier is inactive).
+Email field uses only HTML `required` attribute, no Zod schema validation.
 
-**Table: `tier_feature_access`**
+### 6. Avatar File Extension Not Validated
 
-Maps which features each tier can access. Replaces the hardcoded `FEATURE_ACCESS` in `useSubscription.ts`.
+Users can upload files with unexpected extensions (e.g., `.exe.jpg`). Only size is checked, not MIME type or extension whitelist.
 
-```text
-Columns:
-  id            UUID PK
-  tier_key      TEXT NOT NULL
-  feature_key   TEXT NOT NULL
-  UNIQUE(tier_key, feature_key)
-  created_at    TIMESTAMPTZ DEFAULT now()
-```
+### 7. Error Messages May Leak Internal Details
 
-RLS: Authenticated users can SELECT. No write access.
-
-Seeded with all current mappings (free, affiliate_pro, tournament_pro).
-
-## Step 2: Refactor `useSubscription.ts`
-
-Remove all hardcoded constants:
-- Delete `type Tier`
-- Delete `TIER_HIERARCHY`
-- Delete `FEATURE_ACCESS`
-
-New logic:
-1. Fetch `tier_feature_access` rows from DB on mount
-2. Fetch active `pricing_tiers` to get tier names and sort orders
-3. Resolve user's current tier key (keep existing logic: check `user_subscriptions` then fallback to `profile.subscription_tier`)
-4. Build a `Set` of allowed feature keys for the user's tier, including all features from lower-tier sort orders
-5. `canAccess(feature)` checks membership in this set
-6. Super user override: if user is in `super_users`, always return true
-7. Export `tierName` (from `pricing_tiers.name`) and `tierKey` for UI consumers
-
-## Step 3: Refactor `MainMenu.tsx`
-
-Remove all hardcoded arrays and labels:
-- Delete `FREE_ITEMS`, `AFFILIATE_ITEMS`, `PRO_ITEMS`
-- Delete hardcoded `tierLabel` string mapping
-
-New logic:
-1. Fetch `menu_items` (where `is_active = true`) from DB on mount
-2. Fetch active `pricing_tiers` (where `is_active = true`) from DB
-3. Group menu items by `tier_key`
-4. Only render sections for tiers that appear in active `pricing_tiers`
-5. Section header label comes from `pricing_tiers.name`
-6. Map `icon_name` string to Lucide component via a lookup object (e.g. `{ User: UserIcon, Trophy: TrophyIcon, Eye: EyeIcon, ... }`)
-7. Tier badge in header uses `tierName` from `useSubscription` -- zero string comparisons
-8. Preserve special "competitions" route logic (check `hasCompetitions` to toggle between `/competitions` and `/competition/create`)
-
-## Step 4: Refactor `CompetitionHeader.tsx`
-
-Remove hardcoded tier label/color mapping (lines 31-43).
-
-New behavior:
-- Replace `subscriptionTier` prop with `tierName` prop (string from `pricing_tiers.name`)
-- If `tierName` exists and is not `"FREE"`, show badge with generic primary styling
-- No tier-specific color conditions
-
-## Step 5: Update Consumers
-
-- `CompetitionDashboard.tsx`: Use `tierName` from `useSubscription` and pass to `CompetitionHeader` instead of `profile?.subscription_tier`
-- `UpgradePackage.tsx`: Same minor prop change for `CompetitionHeader`
+Raw error messages from the database are displayed to users (e.g., `err.message` from Supabase), which could reveal table names or constraint details.
 
 ---
 
-## Files Changed
+## Implementation Plan
 
-| File | Type | Change |
-|---|---|---|
-| SQL Migration | NEW | Create `menu_items` and `tier_feature_access` tables with RLS + seed data |
-| `src/hooks/useSubscription.ts` | MODIFIED | Fetch feature access from DB; remove all hardcoded maps; export `tierName`/`tierKey` |
-| `src/pages/MainMenu.tsx` | MODIFIED | Fetch menu items and tiers from DB; remove hardcoded arrays and labels |
-| `src/components/CompetitionHeader.tsx` | MODIFIED | Accept `tierName` prop; remove hardcoded tier string comparisons |
-| `src/pages/CompetitionDashboard.tsx` | MODIFIED | Pass `tierName` to CompetitionHeader |
-| `src/pages/UpgradePackage.tsx` | MODIFIED | Pass `tierName` to CompetitionHeader |
+### File 1: `src/lib/validation.ts` (NEW)
 
-## What Will NOT Change
+Create a centralized validation library with reusable Zod schemas and sanitization utilities:
 
-- RLS policies (already hardened)
-- `SubscriptionGuard.tsx` (already works, uses `useSubscription`)
-- `App.tsx` routes (already correct)
-- Super user system (already implemented)
-- Stripe/billing logic
-- `UpgradePackage.tsx` tier cards (already fetch from DB)
+- `profileSchema`: name (2-100 chars, trimmed), gender (enum), age (5-120 integer), affiliation (max 100), aboutMe (max 500)
+- `competitionSchema`: name (2-100 chars), venue (max 200), type (max 100), hostGym (max 100), divisions (max 200)
+- `teamNameSchema`: 1-100 chars, trimmed
+- `divisionNameSchema`: 1-100 chars, trimmed
+- `athleteNameSchema`: 1-100 chars, trimmed
+- `scoreSchema`: number, min 0, max 999999
+- `seasonSchema`: name (2-100 chars), year (2000-2100 integer)
+- `uuidSchema`: regex-validated UUID format
+- `sanitizeText(input: string): string` -- trims and removes control characters
+- `sanitizeError(error: unknown): string` -- returns user-friendly error message, never exposes raw DB errors
+- `ALLOWED_IMAGE_EXTENSIONS`: whitelist of `['jpg', 'jpeg', 'png', 'gif', 'webp']`
+- `validateImageFile(file: File): string | null` -- checks size, extension, and MIME type
 
-## Result
+### File 2: `src/pages/CreateProfile.tsx` (MODIFIED)
 
-- Disabling a tier in `pricing_tiers` automatically hides its menu section and features
-- Adding a new tier + menu items + feature access rows renders them in the UI with zero code deployment
-- Zero hardcoded tier names, feature lists, or menu arrays in frontend code
-- Business team can manage tiers entirely through database configuration
+- Import and use `profileSchema` from validation library
+- Add `fieldErrors` state for inline error messages under each field
+- Validate on "Create" submit; skip button bypasses validation
+- Add character counter on About Me (shows X/500)
+- Use `sanitizeError` for error display
+- Validate avatar with `validateImageFile` (extension + MIME type check)
+
+### File 3: `src/pages/ViewProfile.tsx` (MODIFIED)
+
+- Same validation as CreateProfile using `profileSchema`
+- Add field-level error messages
+- Use `sanitizeError` for error display
+- Validate avatar with `validateImageFile`
+
+### File 4: `src/pages/CompetitionCreate.tsx` (MODIFIED)
+
+- Import and use `competitionSchema`
+- Add field-level validation with inline errors
+- Use `sanitizeError` for error display
+
+### File 5: `src/components/competition/TeamsPanel.tsx` (MODIFIED)
+
+- Validate team name with `teamNameSchema` before insert
+- Show toast error for invalid input
+
+### File 6: `src/components/competition/DivisionsPanel.tsx` (MODIFIED)
+
+- Validate division name with `divisionNameSchema` before insert
+
+### File 7: `src/components/competition/ParticipantsPanel.tsx` (MODIFIED)
+
+- Validate athlete name with `athleteNameSchema` before insert
+
+### File 8: `src/components/competition/ScoresPanel.tsx` (MODIFIED)
+
+- Validate scores with `scoreSchema` before save (reject negatives, enforce max)
+- Show toast for invalid scores
+
+### File 9: `src/components/competition/JudgesPanel.tsx` (MODIFIED)
+
+- Validate search input as email format before lookup
+
+### File 10: `src/components/super/ScoreOverride.tsx` (MODIFIED)
+
+- Validate workout ID and score ID with `uuidSchema` before API calls
+
+### File 11: `src/components/super/SeasonManager.tsx` (MODIFIED)
+
+- Validate season name and year with `seasonSchema`
+
+### File 12: `src/pages/ForgotPassword.tsx` (MODIFIED)
+
+- Add Zod email validation schema (matching Login page pattern)
+
+---
+
+## What This Does NOT Need to Change
+
+- **Login.tsx** and **Register.tsx**: Already have Zod validation
+- **ResetPassword.tsx**: Already has Zod validation
+- **RLS policies**: Already hardened (database layer protects against injection regardless)
+- **Supabase client**: Uses parameterized queries internally, so SQL injection via the SDK is not possible. The validation is defense-in-depth and protects against data corruption, XSS, and unexpected payloads.
+
+## Security Notes
+
+- SQL injection is not a direct risk because the Supabase JS SDK uses parameterized queries. However, input validation prevents data corruption, oversized payloads, and potential XSS if data is rendered without escaping.
+- All validation is client-side defense-in-depth. The database RLS policies remain the authoritative enforcement layer.
+- Error sanitization prevents leaking internal database structure to end users.
 
