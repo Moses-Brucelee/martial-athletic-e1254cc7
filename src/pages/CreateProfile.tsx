@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -8,8 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, AlertCircle } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Camera, AlertCircle, CalendarIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import { profileSchema, validateImageFile, sanitizeError } from "@/lib/validation";
 
@@ -21,6 +25,7 @@ export default function CreateProfile() {
   const [fullName, setFullName] = useState("");
   const [gender, setGender] = useState("");
   const [age, setAge] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
   const [affiliation, setAffiliation] = useState("");
   const [aboutMe, setAboutMe] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -88,6 +93,7 @@ export default function CreateProfile() {
         if (fullName) updates.display_name = fullName.trim();
         if (gender) updates.gender = gender;
         if (age) updates.age = parseInt(age);
+        if (dateOfBirth) updates.date_of_birth = format(dateOfBirth, "yyyy-MM-dd");
         if (affiliation) updates.affiliation = affiliation.trim();
         if (aboutMe) updates.about_me = aboutMe.trim();
         if (avatarUrl) updates.avatar_url = avatarUrl;
@@ -187,6 +193,31 @@ export default function CreateProfile() {
                   </Select>
                   {touched.gender && fieldErrors.gender && <p className="text-xs text-destructive">{fieldErrors.gender}</p>}
                   {!touched.gender && !gender && <p className="text-xs text-muted-foreground">Required</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-foreground font-medium">Date of Birth</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn("h-11 w-full justify-start text-left font-normal bg-background", !dateOfBirth && "text-muted-foreground")}
+                        disabled={loading}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateOfBirth ? format(dateOfBirth, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateOfBirth}
+                        onSelect={setDateOfBirth}
+                        disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Age</Label>

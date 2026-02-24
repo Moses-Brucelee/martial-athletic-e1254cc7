@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
@@ -8,10 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
-import { Camera, AlertCircle, CheckCircle } from "lucide-react";
+import { Camera, AlertCircle, CheckCircle, CalendarIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 import { profileSchema, validateImageFile, sanitizeError } from "@/lib/validation";
 
 export default function ViewProfile() {
@@ -23,6 +27,7 @@ export default function ViewProfile() {
   const [fullName, setFullName] = useState("");
   const [gender, setGender] = useState("");
   const [age, setAge] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
   const [affiliation, setAffiliation] = useState("");
   const [aboutMe, setAboutMe] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -48,6 +53,7 @@ export default function ViewProfile() {
       setFullName(profile.full_name || "");
       setGender(profile.gender || "");
       setAge(profile.age ? String(profile.age) : "");
+      setDateOfBirth(profile.date_of_birth ? parseISO(profile.date_of_birth) : undefined);
       setAffiliation(profile.affiliation || "");
       setAboutMe(profile.about_me || "");
       setAvatarPreview(profile.avatar_url || null);
@@ -94,6 +100,7 @@ export default function ViewProfile() {
           display_name: fullName.trim() || profile?.display_name,
           gender: gender || null,
           age: age ? parseInt(age) : null,
+          date_of_birth: dateOfBirth ? format(dateOfBirth, "yyyy-MM-dd") : null,
           affiliation: affiliation.trim() || null,
           about_me: aboutMe.trim() || null,
           avatar_url: avatarUrl,
@@ -207,6 +214,31 @@ export default function ViewProfile() {
                   </Select>
                   {touched.gender && fieldErrors.gender && <p className="text-xs text-destructive">{fieldErrors.gender}</p>}
                   {!touched.gender && !gender && <p className="text-xs text-muted-foreground">Required</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-foreground font-medium">Date of Birth</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn("h-11 w-full justify-start text-left font-normal bg-background", !dateOfBirth && "text-muted-foreground")}
+                        disabled={saving}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateOfBirth ? format(dateOfBirth, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateOfBirth}
+                        onSelect={setDateOfBirth}
+                        disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Age</Label>
