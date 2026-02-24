@@ -172,3 +172,40 @@ export function useUpdateBoutWinner() {
     },
   });
 }
+
+// ── Batch bracket operations ──────────────────────────────────────────
+
+export function useGenerateBrackets() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ competitionId, brackets }: { competitionId: string; brackets: Parameters<typeof api.createBracketWithBouts>[1] }) =>
+      api.createBracketWithBouts(competitionId, brackets),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["brackets", variables.competitionId] });
+    },
+  });
+}
+
+export function useDeleteBrackets() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (competitionId: string) => api.deleteBrackets(competitionId),
+    onSuccess: (_data, competitionId) => {
+      qc.invalidateQueries({ queryKey: ["brackets", competitionId] });
+    },
+  });
+}
+
+// ── Competition status ────────────────────────────────────────────────
+
+export function useUpdateCompetitionStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      api.updateCompetitionStatus(id, status),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["competition", variables.id] });
+      qc.invalidateQueries({ queryKey: ["competitions"] });
+    },
+  });
+}

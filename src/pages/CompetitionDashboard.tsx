@@ -19,6 +19,9 @@ import { MobileJudgeScoring } from "@/modules/scoring/components/MobileJudgeScor
 import { ScoreLockControls } from "@/modules/scoring/components/ScoreLockControls";
 import { LeaderboardPanel } from "@/modules/leaderboard/components/LeaderboardPanel";
 import { ParticipantsPanel } from "@/modules/athletes/components/ParticipantsPanel";
+import { BracketsPanel } from "@/modules/tournaments/components/BracketsPanel";
+import { CompetitionStatusBar } from "@/modules/tournaments/components/CompetitionStatusBar";
+import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 import { V1_FULL_ACCESS } from "@/lib/featureFlags";
 
 export default function CompetitionDashboard() {
@@ -63,6 +66,7 @@ export default function CompetitionDashboard() {
       <TabsList className="w-full overflow-x-auto flex mb-6">
         <TabsTrigger value="setup" className="flex-1">Setup</TabsTrigger>
         <TabsTrigger value="judges" className="flex-1">Judges</TabsTrigger>
+        <TabsTrigger value="brackets" className="flex-1">Brackets</TabsTrigger>
         <TabsTrigger value="scores" className="flex-1">Scores</TabsTrigger>
         <TabsTrigger value="leaderboard" className="flex-1">Leaderboard</TabsTrigger>
         <TabsTrigger value="roster" className="flex-1">Roster</TabsTrigger>
@@ -103,6 +107,10 @@ export default function CompetitionDashboard() {
         <JudgesPanelLazy competitionId={id!} canAdmin={canAdmin} />
       </TabsContent>
 
+      <TabsContent value="brackets">
+        <BracketsPanel competitionId={id!} canAdmin={canAdmin} />
+      </TabsContent>
+
       <TabsContent value="scores"><ScoreTab /></TabsContent>
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
       <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={canAdmin} /></TabsContent>
@@ -118,13 +126,15 @@ export default function CompetitionDashboard() {
 
   const renderJudgeTabs = () => (
     <Tabs defaultValue="scores" className="w-full">
-      <TabsList className="w-full grid grid-cols-3 mb-6">
+      <TabsList className="w-full grid grid-cols-4 mb-6">
         <TabsTrigger value="scores">Scores</TabsTrigger>
+        <TabsTrigger value="brackets">Brackets</TabsTrigger>
         <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
         <TabsTrigger value="roster">Roster</TabsTrigger>
       </TabsList>
 
       <TabsContent value="scores"><ScoreTab /></TabsContent>
+      <TabsContent value="brackets"><BracketsPanel competitionId={id!} canAdmin={false} /></TabsContent>
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
       <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>
     </Tabs>
@@ -162,7 +172,15 @@ export default function CompetitionDashboard() {
           Competition Dashboard
         </h2>
         {competition && (
-          <p className="text-muted-foreground mb-6">{competition.name}</p>
+          <p className="text-muted-foreground mb-4">{competition.name}</p>
+        )}
+
+        {competition && (
+          <CompetitionStatusBar
+            competitionId={id!}
+            status={(competition.status || "draft") as CompetitionStatus}
+            canAdmin={canAdmin}
+          />
         )}
 
         {compError && (
