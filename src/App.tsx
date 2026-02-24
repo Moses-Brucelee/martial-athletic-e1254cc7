@@ -24,6 +24,7 @@ import UpgradePackage from "./pages/UpgradePackage";
 import SuperDashboard from "./pages/SuperDashboard";
 import MembersPage from "./modules/members/components/MembersPage";
 import NotFound from "./pages/NotFound";
+import Guide from "./pages/Guide";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,8 @@ const App = () => (
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/guide" element={<Guide />} />
+              <Route path="/tutorial" element={<Guide />} />
               <Route path="/create-profile" element={<ProtectedRoute><CreateProfile /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><MainMenu /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ViewProfile /></ProtectedRoute>} />
