@@ -1,182 +1,161 @@
 
 
-# V1 Production Refactor — Phase 2 Implementation Plan
+# Phase 2 Completion: Bracket Generation, Tournament Lifecycle, and Testing
 
 ## Overview
 
-This phase adds schema gaps (DOB, age categories, registrations, brackets, bouts), a proper age calculation system, DOB dropdown UX, age eligibility enforcement, and leaderboard enhancements -- all without modifying Phase 1 architecture.
+This plan covers four items: verifying existing DOB/eligibility features work correctly, then implementing two major new features -- automated bracket generation and a tournament lifecycle state machine.
 
 ---
 
-## Part 1: Database Migration
+## Part 1: DOB Picker and Age Eligibility (Verification)
 
-A single migration adding:
+The DOB picker, age calculation, and eligibility enforcement are already fully implemented:
 
-- `date_of_birth` (DATE) column to `profiles`
-- `age_category_type` (TEXT DEFAULT 'open'), `min_age` (INTEGER), `max_age` (INTEGER) to `competitions`
-- `athlete_registrations` table with RLS (authenticated SELECT; owner/super full CRUD; self-register INSERT where user_id = auth.uid())
-- `brackets` table with RLS (authenticated SELECT; owner/super mutations)
-- `bouts` table with RLS (authenticated SELECT; owner/super mutations via bracket->competition join)
-- Enable realtime for `athlete_registrations`
+- `DateOfBirthPicker.tsx` renders year/month/day dropdowns, emits ISO string
+- `calculateAge()` and `checkAgeEligibility()` in `src/utils/calculateAge.ts` handle age computation
+- `CreateProfile.tsx` and `ViewProfile.tsx` both use the picker and display computed age
+- `ParticipantsPanel.tsx` checks eligibility on self-register using competition date as reference
+- `CompetitionCreate.tsx` allows configuring age categories (Open, Under X, Age Range)
 
-All existing columns and data remain untouched.
+**No code changes needed** -- these will be verified via browser testing after implementation.
 
 ---
 
-## Part 2: Age Calculation Utility
+## Part 2: Automated Bracket Generation
 
-**New file:** `src/utils/calculateAge.ts`
+### New file: `src/modules/tournaments/bracketGenerator.ts`
+
+Pure logic module (no Supabase, no React) that:
+
+1. Accepts a list of participants with profile data (DOB, gender) and competition config (date, age category, divisions)
+2. Groups participants by:
+   - Age category (computed dynamically from DOB + competition date)
+   - Gender (from profile)
+   - Division (from team assignment)
+3. For each group, generates a single-elimination bracket:
+   - Calculates rounds needed: `Math.ceil(Math.log2(participants.length))`
+   - Seeds participants (simple sequential seeding for V1)
+   - Creates bout matchups for round 1
+   - Assigns byes when participant count is not a power of 2
+   - Subsequent rounds have empty team slots (filled as winners advance)
+4. Returns bracket and bout data structures ready for database insertion
+
+### New file: `src/modules/tournaments/components/BracketsPanel.tsx`
+
+UI component for the competition dashboard "Brackets" tab:
+
+- Shows existing brackets grouped by division/age category
+- "Generate Brackets" button (admin only) that calls the generator
+- Visual bracket display showing rounds and matchups
+- Each bout shows team names, winner selection button (admin/judge)
+- Mobile-friendly card layout (no tables)
+- Uses `useBrackets`, `useBouts`, `useCreateBracket`, `useUpdateBoutWinner` hooks
+
+### Updates to existing files:
+
+**`src/modules/tournaments/api.ts`**
+- Add `createBracketWithBouts(competitionId, brackets)` -- batch insert bracket + bouts in one call
+- Add `deleteBrackets(competitionId)` -- clear existing brackets for regeneration
+
+**`src/modules/tournaments/hooks.ts`**
+- Add `useGenerateBrackets` mutation hook
+- Add `useDeleteBrackets` mutation hook
+
+**`src/pages/CompetitionDashboard.tsx`**
+- Add "Brackets" tab to owner and judge tab views
+- Import and render `BracketsPanel`
+
+---
+
+## Part 3: Tournament Lifecycle State Machine
+
+### New file: `src/modules/tournaments/stateMachine.ts`
+
+Pure logic defining the competition lifecycle:
 
 ```text
-export function calculateAge(dob: Date, referenceDate: Date = new Date()): number
+States: draft -> registration -> seeding -> in_progress -> completed
+
+Transitions:
+  draft -> registration        (requires: at least 1 team, 1 workout)
+  registration -> seeding      (requires: at least 2 registered participants)
+  seeding -> in_progress       (requires: brackets generated)
+  in_progress -> completed     (requires: all bouts resolved OR manual override)
+  
+  Backward transitions (admin only):
+  registration -> draft
+  seeding -> registration
 ```
 
-- Compares year/month/day against referenceDate
-- Leap-year safe
-- Birthday on reference date increments age
-- Standalone, no UI coupling
+Exports:
+- `getAvailableTransitions(status, context)` -- returns valid next states
+- `canTransition(from, to, context)` -- validates a specific transition
+- `getStatusLabel(status)` -- human-readable label
+- `getStatusColor(status)` -- badge color class
 
-**Update:** `src/lib/validation.ts`
-- Replace inline `calculateAge` with import from `src/utils/calculateAge`
-- Backward compatible (default referenceDate = new Date())
+### Database migration
 
----
+The `competitions.status` column already exists (DEFAULT 'draft'). No schema change needed -- just ensure the application uses the new states consistently.
 
-## Part 3: DOB Dropdown Component
+### New file: `src/modules/tournaments/components/CompetitionStatusBar.tsx`
 
-**New file:** `src/components/ui/DateOfBirthPicker.tsx`
+Horizontal status bar displayed at the top of the competition dashboard:
 
-Controlled component with:
-- Year dropdown: current year back 100 years, scrollable
-- Month dropdown: January-December
-- Day dropdown: dynamic 28-31 based on month/year
-- Future date prevention
-- Inline validation errors
-- Mobile-optimized full-width selects with touch-friendly sizing
-- Emits ISO date string (YYYY-MM-DD)
+- Shows all 5 states as steps with the current one highlighted
+- Forward/backward transition buttons (admin only)
+- Confirmation dialog before state changes
+- Validates prerequisites before allowing transitions (shows what's missing)
+- Mobile-responsive (horizontal scroll or compact layout)
 
-**Update:** `src/pages/CreateProfile.tsx`
-- Replace Calendar/Popover with DateOfBirthPicker
-- Remove calendar-related imports
-- Keep computed age read-only display
+### Updates to existing files:
 
-**Update:** `src/pages/ViewProfile.tsx`
-- Same replacement as CreateProfile
+**`src/modules/tournaments/api.ts`**
+- Add `updateCompetitionStatus(id, status)` function
 
----
+**`src/modules/tournaments/hooks.ts`**
+- Add `useUpdateCompetitionStatus` mutation hook
 
-## Part 4: Competition Domain + Create Form
-
-**Update:** `src/domain/competition.ts`
-- Add `age_category_type`, `min_age`, `max_age` to Competition interface
-
-**Update:** `src/modules/tournaments/types.ts`
-- Add age category fields to CreateCompetitionInput
-
-**Update:** `src/modules/tournaments/api.ts`
-- Include age category fields in createCompetition insert
-
-**Update:** `src/pages/CompetitionCreate.tsx`
-- Add age category section:
-  - Dropdown: Open / Under X / Age Range
-  - Conditional inputs for min_age/max_age
-  - Validation: max_age > min_age when both set
-- Persist to competitions table
-
-**Update:** `src/pages/CompetitionDashboard.tsx`
-- Display age category config in Setup tab (read-only badge showing category type and limits)
+**`src/pages/CompetitionDashboard.tsx`**
+- Add `CompetitionStatusBar` below the competition name
+- Pass competition data and admin flag
+- Conditionally disable certain tabs based on competition state (e.g., scoring only available in `in_progress`)
 
 ---
 
-## Part 5: Eligibility Enforcement
-
-**Update:** `src/modules/athletes/components/ParticipantsPanel.tsx`
-- On self-register: fetch athlete DOB from profile, fetch competition date + age config
-- Compute age via `calculateAge(dob, competitionDate)`
-- Validate against min_age/max_age
-- Block registration with clear error: "Athlete is not eligible for this age category."
-
-**Database:** Add validation trigger on `athlete_registrations` INSERT as server-side safety net
-- Computes age from profiles.date_of_birth vs competitions.date
-- Rejects if outside min_age/max_age bounds
-
----
-
-## Part 6: Leaderboard Enhancement
-
-**Update:** `src/modules/leaderboard/components/LeaderboardPanel.tsx`
-- Accept competition date and age category config
-- Show age category label (e.g., "U18", "Masters 35-40", "Open")
-- Age at competition computed client-side from participant DOB data
-- Realtime updates remain functional (no changes to hooks)
-
----
-
-## Part 7: Bracket/Bout Foundation
-
-**Update:** `src/domain/competition.ts`
-- Add `Bracket` and `Bout` interfaces
-
-**Update:** `src/modules/tournaments/types.ts`
-- Export Bracket, Bout types
-- Add CreateBracketInput interface
-
-**Update:** `src/modules/tournaments/api.ts`
-- Add: fetchBrackets, createBracket, fetchBouts, updateBoutWinner
-
-**Update:** `src/modules/tournaments/hooks.ts`
-- Add: useBrackets, useCreateBracket, useBouts, useUpdateBoutWinner
-
-Bracket grouping logic foundation: group by age category (dynamic from DOB + competition date), gender, weight class (placeholder). Age category never stored on athlete.
-
----
-
-## Files Summary
+## File Summary
 
 ### New Files
 | File | Purpose |
 |---|---|
-| `src/utils/calculateAge.ts` | Age calculation with reference date |
-| `src/components/ui/DateOfBirthPicker.tsx` | Year/month/day dropdown component |
-| Migration SQL | Schema additions |
+| `src/modules/tournaments/bracketGenerator.ts` | Pure bracket generation logic |
+| `src/modules/tournaments/stateMachine.ts` | Competition lifecycle state machine |
+| `src/modules/tournaments/components/BracketsPanel.tsx` | Bracket management UI |
+| `src/modules/tournaments/components/CompetitionStatusBar.tsx` | Status bar with transitions |
 
 ### Modified Files
 | File | Change |
 |---|---|
-| `src/lib/validation.ts` | Import calculateAge from utils |
-| `src/domain/competition.ts` | Add age category fields, Bracket, Bout interfaces |
-| `src/modules/tournaments/types.ts` | Add age category to inputs, Bracket/Bout types |
-| `src/modules/tournaments/api.ts` | Age category in create, bracket/bout API |
-| `src/modules/tournaments/hooks.ts` | Bracket/bout hooks |
-| `src/pages/CreateProfile.tsx` | Replace calendar with DOB dropdown |
-| `src/pages/ViewProfile.tsx` | Replace calendar with DOB dropdown |
-| `src/pages/CompetitionCreate.tsx` | Add age category config |
-| `src/pages/CompetitionDashboard.tsx` | Show age category in setup |
-| `src/modules/athletes/components/ParticipantsPanel.tsx` | Eligibility check |
-| `src/modules/leaderboard/components/LeaderboardPanel.tsx` | Age display |
-| `src/hooks/useProfile.ts` | Already has date_of_birth (no change needed) |
+| `src/modules/tournaments/api.ts` | Add bracket batch insert, delete, status update |
+| `src/modules/tournaments/hooks.ts` | Add generation, deletion, status hooks |
+| `src/pages/CompetitionDashboard.tsx` | Add Brackets tab + StatusBar |
 
-### Untouched (Phase 1)
-- All module api/hooks patterns
-- Realtime scoring infrastructure
-- Mobile judge interface
+### Unchanged
+- All Phase 1 architecture (auth, scoring, realtime, mobile judge)
+- DOB picker, age calculation, eligibility enforcement
 - V1_FULL_ACCESS flag
-- Auth system
-- Edge functions
+- Database schema (uses existing tables)
 
 ---
 
 ## Execution Order
 
-1. Database migration (all schema changes in one migration)
-2. Create `src/utils/calculateAge.ts`
-3. Update `src/lib/validation.ts` to use new utility
-4. Create `src/components/ui/DateOfBirthPicker.tsx`
-5. Update CreateProfile.tsx and ViewProfile.tsx with DOB picker
-6. Update domain types and tournament module (Competition, Bracket, Bout)
-7. Update CompetitionCreate.tsx with age category config
-8. Update CompetitionDashboard.tsx setup tab
-9. Add bracket/bout API + hooks to tournaments module
-10. Add eligibility enforcement to ParticipantsPanel
-11. Enhance LeaderboardPanel with age category display
+1. Create `stateMachine.ts` (pure logic, no dependencies)
+2. Create `bracketGenerator.ts` (pure logic, uses calculateAge)
+3. Add API functions to `tournaments/api.ts` (batch bracket insert, status update)
+4. Add hooks to `tournaments/hooks.ts`
+5. Create `CompetitionStatusBar.tsx` component
+6. Create `BracketsPanel.tsx` component
+7. Update `CompetitionDashboard.tsx` with new tab and status bar
+8. Test end-to-end: create competition, set age category, register athletes, generate brackets, advance through lifecycle states
 
