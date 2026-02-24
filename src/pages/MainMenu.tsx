@@ -6,12 +6,11 @@ import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { V1_FULL_ACCESS } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  LogOut, Trophy, Eye, User, ArrowUp, AlertCircle, Lock,
+  LogOut, Trophy, Eye, User, AlertCircle,
   Users, Link2, Settings, BarChart3, Palette, ChevronRight,
 } from "lucide-react";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
@@ -22,7 +21,6 @@ import { BrowseMarketplaceSection } from "@/components/dashboard/BrowseMarketpla
 import { ShopSpotlight } from "@/components/dashboard/ShopSpotlight";
 import { ProgramSpotlight } from "@/components/dashboard/ProgramSpotlight";
 
-// Icon lookup — map icon_name string from DB to Lucide component
 const ICON_MAP: Record<string, LucideIcon> = {
   User, Eye, Trophy, Users, Link2, Settings, BarChart3, Palette,
 };
@@ -38,70 +36,25 @@ interface DbMenuItem {
   sort_order: number;
 }
 
-interface DbTier {
-  key: string;
-  name: string;
-  sort_order: number;
-}
-
-function SectionHeader({ label, active, tierBadge }: { label: string; active: boolean; tierBadge?: string }) {
-  return (
-    <div className="flex items-center gap-3 pt-4 pb-1">
-      <div className={`h-px flex-1 ${active ? "bg-primary/30" : "bg-border"}`} />
-      <div className="flex items-center gap-2">
-        <span
-          className={`text-[11px] font-bold tracking-widest uppercase ${
-            active ? "text-primary" : "text-muted-foreground/60"
-          }`}
-        >
-          {label}
-        </span>
-        {tierBadge && (
-          <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-bold uppercase tracking-wider">
-            {tierBadge}
-          </Badge>
-        )}
-      </div>
-      <div className={`h-px flex-1 ${active ? "bg-primary/30" : "bg-border"}`} />
-    </div>
-  );
-}
-
-function ActiveMenuItem({ label, icon: Icon, onClick }: { label: string; icon: LucideIcon; onClick: () => void }) {
+function MenuItem({ label, description, icon: Icon, onClick }: { label: string; description?: string | null; icon: LucideIcon; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover:border-primary/40 transition-colors text-left group"
+      className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border/60 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 text-left group"
     >
-      <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-        <Icon className="h-4 w-4 text-primary" />
-      </div>
-      <span className="flex-1 text-xs font-bold text-foreground tracking-wide uppercase truncate">{label}</span>
-      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-    </button>
-  );
-}
-
-function LockedMenuItem({ label, description, onUpgrade }: { label: string; description?: string | null; onUpgrade: () => void }) {
-  return (
-    <div className="w-full flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50 text-left opacity-70">
-      <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center shrink-0">
-        <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+      <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+        <Icon className="h-5 w-5 text-primary" />
       </div>
       <div className="flex-1 min-w-0">
-        <span className="text-xs font-bold text-muted-foreground tracking-wide uppercase">{label}</span>
+        <span className="block text-sm font-bold text-foreground tracking-wide uppercase truncate">
+          {label}
+        </span>
         {description && (
-          <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{description}</p>
+          <span className="block text-[11px] text-muted-foreground mt-0.5 truncate">{description}</span>
         )}
       </div>
-      <Badge
-        variant="outline"
-        className="cursor-pointer text-[9px] shrink-0 hover:bg-primary hover:text-primary-foreground transition-colors"
-        onClick={onUpgrade}
-      >
-        UPGRADE
-      </Badge>
-    </div>
+      <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
+    </button>
   );
 }
 
@@ -109,13 +62,11 @@ export default function MainMenu() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading, error: profileError } = useProfile();
-  const { tierKey, tierName, canAccess, loading: subLoading } = useSubscription();
+  const { canAccess, loading: subLoading } = useSubscription();
   const [hasCompetitions, setHasCompetitions] = useState(false);
   const [compLoading, setCompLoading] = useState(true);
 
-  // DB-driven data
   const [menuItems, setMenuItems] = useState<DbMenuItem[]>([]);
-  const [activeTiers, setActiveTiers] = useState<DbTier[]>([]);
   const [menuLoading, setMenuLoading] = useState(true);
 
   useEffect(() => {
@@ -131,23 +82,14 @@ export default function MainMenu() {
     check();
   }, [user]);
 
-  // Fetch menu items and active tiers from DB
   useEffect(() => {
     const fetchMenu = async () => {
-      const [itemsRes, tiersRes] = await Promise.all([
-        supabase
-          .from("menu_items")
-          .select("*")
-          .eq("is_active", true)
-          .order("sort_order"),
-        supabase
-          .from("pricing_tiers")
-          .select("key, name, sort_order")
-          .eq("is_active", true)
-          .order("sort_order"),
-      ]);
-      setMenuItems((itemsRes.data as DbMenuItem[]) ?? []);
-      setActiveTiers((tiersRes.data as DbTier[]) ?? []);
+      const { data } = await supabase
+        .from("menu_items")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order");
+      setMenuItems((data as DbMenuItem[]) ?? []);
       setMenuLoading(false);
     };
     fetchMenu();
@@ -159,27 +101,16 @@ export default function MainMenu() {
     }
   }, [profile, profileLoading, navigate]);
 
-  // Group menu items by tier_key, only for active tiers
-  const sections = useMemo(() => {
-    const activeTierKeys = new Set(activeTiers.map((t) => t.key));
-    const grouped: { tier: DbTier; items: DbMenuItem[] }[] = [];
-    for (const tier of activeTiers) {
-      const items = menuItems.filter(
-        (m) => m.tier_key === tier.key && activeTierKeys.has(m.tier_key)
-      );
-      if (items.length > 0) grouped.push({ tier, items });
-    }
-    return grouped;
-  }, [menuItems, activeTiers]);
+  // Flatten all accessible menu items (no tier grouping)
+  const accessibleItems = useMemo(() => {
+    return menuItems.filter((m) => V1_FULL_ACCESS || canAccess(m.feature_key));
+  }, [menuItems, canAccess]);
 
   const initials = profile?.display_name
-    ? profile.display_name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+    ? profile.display_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "MA";
+
+  const firstName = profile?.display_name?.split(" ")[0] ?? "Athlete";
 
   const isLoading = profileLoading || compLoading || subLoading || menuLoading;
 
@@ -190,9 +121,9 @@ export default function MainMenu() {
           <Skeleton className="h-10 w-48" />
           <Skeleton className="h-8 w-8 rounded-full" />
         </header>
-        <main className="max-w-md mx-auto px-4 py-12 space-y-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-14 w-full rounded-xl" />
+        <main className="max-w-lg mx-auto px-4 py-10 space-y-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-2xl" />
           ))}
         </main>
       </div>
@@ -205,9 +136,7 @@ export default function MainMenu() {
         <div className="text-center space-y-4">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
           <p className="text-destructive">{profileError}</p>
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Retry
-          </Button>
+          <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
         </div>
       </div>
     );
@@ -221,90 +150,61 @@ export default function MainMenu() {
     navigate(item.route);
   };
 
-  const goUpgrade = () => navigate("/upgrade");
-
-  const isFree = tierKey === "free";
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border bg-card">
+      {/* Header */}
+      <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <img src={logoCompact} alt="Martial Athletic" className="w-10 h-10 object-contain" />
-          <span className="text-lg font-bold text-foreground tracking-tight uppercase">Main Menu</span>
+          <span className="text-lg font-bold text-foreground tracking-tight uppercase hidden sm:inline">
+            Martial Athletic
+          </span>
         </div>
         <div className="flex items-center gap-2">
-          {!V1_FULL_ACCESS && isFree ? (
-            <Badge
-              variant="outline"
-              className="cursor-pointer text-xs font-bold hover:bg-primary hover:text-primary-foreground transition-colors"
-              onClick={goUpgrade}
-            >
-              <ArrowUp className="h-3 w-3 mr-1" />
-              UPGRADE
-            </Badge>
-          ) : !V1_FULL_ACCESS ? (
-            <span className="text-xs font-bold px-2.5 py-1 rounded bg-primary text-primary-foreground">
-              {tierName}
-            </span>
-          ) : null}
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-9 w-9 border-2 border-primary/20">
             <AvatarImage src={profile?.avatar_url || undefined} />
-            <AvatarFallback className="bg-muted text-muted-foreground text-xs font-semibold">
+            <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
               {initials}
             </AvatarFallback>
           </Avatar>
           <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9">
+          <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9 text-muted-foreground hover:text-destructive">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </header>
 
-      <main className="flex-1 flex items-start justify-center px-4 py-6">
-        <div className="w-full max-w-md space-y-6">
-          {/* DB-driven menu sections */}
-          <div className="space-y-1">
-            {sections.map(({ tier, items }) => {
-              const sectionActive = V1_FULL_ACCESS || canAccess(items[0]?.feature_key ?? "");
+      <main className="flex-1 px-4 py-8 max-w-lg mx-auto w-full space-y-8">
+        {/* Welcome */}
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+            Hey, {firstName} 👋
+          </h1>
+          <p className="text-sm text-muted-foreground">What would you like to do today?</p>
+        </div>
 
-              return (
-                <div key={tier.key}>
-                  <SectionHeader
-                    label={tier.name}
-                    active={sectionActive}
-                    tierBadge={tier.key !== "free" ? tier.name : undefined}
-                  />
-                  <div className="space-y-1.5 mt-2">
-                    {items.map((item) => {
-                      const Icon = ICON_MAP[item.icon_name] ?? User;
-                      const displayLabel =
-                        item.feature_key === "create_competitions" && hasCompetitions
-                          ? "VIEW / BUILD YOUR COMP"
-                          : item.label;
+        {/* Menu items */}
+        <div className="space-y-2">
+          {accessibleItems.map((item) => {
+            const Icon = ICON_MAP[item.icon_name] ?? User;
+            const displayLabel =
+              item.feature_key === "create_competitions" && hasCompetitions
+                ? "View / Build Your Comp"
+                : item.label;
+            return (
+              <MenuItem
+                key={item.id}
+                label={displayLabel}
+                description={item.description}
+                icon={Icon}
+                onClick={() => handleItemClick(item)}
+              />
+            );
+          })}
+        </div>
 
-                      return (V1_FULL_ACCESS || canAccess(item.feature_key)) ? (
-                        <ActiveMenuItem
-                          key={item.id}
-                          label={displayLabel}
-                          icon={Icon}
-                          onClick={() => handleItemClick(item)}
-                        />
-                      ) : (
-                        <LockedMenuItem
-                          key={item.id}
-                          label={displayLabel}
-                          description={item.description}
-                          onUpgrade={goUpgrade}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Spotlight sections */}
+        {/* Spotlight sections */}
+        <div className="space-y-6 pt-2">
           <UpcomingCompetitionsSpotlight />
           <BrowseMarketplaceSection />
           <ShopSpotlight />
