@@ -1,135 +1,409 @@
 
 
-# Security Hardening: Input Validation and Injection Protection
+# V1 Architecture Refactor
 
-## Vulnerabilities Found
+## Guiding Principle: Role-Based Access Stays, Subscription Gating Goes
 
-After auditing every form, data layer, and component, here are the security issues:
-
-### 1. No Input Validation on Profile Forms
-
-**CreateProfile.tsx** and **ViewProfile.tsx** accept arbitrary-length strings with no sanitization. Users can submit names with 10,000+ characters, script tags, or SQL-like payloads. No field-level validation exists.
-
-### 2. No Input Validation on Competition Create
-
-**CompetitionCreate.tsx** only checks if name is non-empty. No length limits, no trimming on venue/type/host_gym/divisions fields.
-
-### 3. No Input Validation on Competition Child Panels
-
-- **TeamsPanel.tsx**: Team name has no length limit or character restriction
-- **DivisionsPanel.tsx**: Division name has no length limit
-- **ParticipantsPanel.tsx**: Athlete name has no length limit
-- **JudgesPanel.tsx**: Email search has no validation
-- **ScoresPanel.tsx**: Score input accepts any number (negative, extremely large)
-- **WorkoutsPanel.tsx**: No validation on workout data
-
-### 4. No Validation on Super User Tools
-
-- **ScoreOverride.tsx**: UUID fields not validated (accepts any string)
-- **CompetitionManager.tsx**: Search input not sanitized (low risk since it's client-side filter)
-- **SeasonManager.tsx**: Season name and year have no validation
-
-### 5. ForgotPassword.tsx Has No Email Validation
-
-Email field uses only HTML `required` attribute, no Zod schema validation.
-
-### 6. Avatar File Extension Not Validated
-
-Users can upload files with unexpected extensions (e.g., `.exe.jpg`). Only size is checked, not MIME type or extension whitelist.
-
-### 7. Error Messages May Leak Internal Details
-
-Raw error messages from the database are displayed to users (e.g., `err.message` from Supabase), which could reveal table names or constraint details.
+All competition role logic (owner, judge, viewer) is **preserved exactly as-is**. Only the `has_competition_access()` subscription check and frontend tier gating are bypassed.
 
 ---
 
-## Implementation Plan
+## Part 1: Database Migration
 
-### File 1: `src/lib/validation.ts` (NEW)
+### 1A. New Tables
 
-Create a centralized validation library with reusable Zod schemas and sanitization utilities:
+**`athlete_registrations`**
 
-- `profileSchema`: name (2-100 chars, trimmed), gender (enum), age (5-120 integer), affiliation (max 100), aboutMe (max 500)
-- `competitionSchema`: name (2-100 chars), venue (max 200), type (max 100), hostGym (max 100), divisions (max 200)
-- `teamNameSchema`: 1-100 chars, trimmed
-- `divisionNameSchema`: 1-100 chars, trimmed
-- `athleteNameSchema`: 1-100 chars, trimmed
-- `scoreSchema`: number, min 0, max 999999
-- `seasonSchema`: name (2-100 chars), year (2000-2100 integer)
-- `uuidSchema`: regex-validated UUID format
-- `sanitizeText(input: string): string` -- trims and removes control characters
-- `sanitizeError(error: unknown): string` -- returns user-friendly error message, never exposes raw DB errors
-- `ALLOWED_IMAGE_EXTENSIONS`: whitelist of `['jpg', 'jpeg', 'png', 'gif', 'webp']`
-- `validateImageFile(file: File): string | null` -- checks size, extension, and MIME type
+| Column | Type | Default | Notes |
+|---|---|---|---|
+| id | UUID PK | gen_random_uuid() | |
+| competition_id | UUID NOT NULL | | FK-like, not enforced |
+| user_id | UUID | NULL | nullable for manual adds |
+| athlete_name | TEXT NOT NULL | | |
+| team_id | UUID | NULL | assigned after registration |
+| status | TEXT | 'pending' | pending, confirmed, rejected |
+| created_at | TIMESTAMPTZ | now() | |
 
-### File 2: `src/pages/CreateProfile.tsx` (MODIFIED)
+RLS: Authenticated SELECT. Owner/super INSERT/UPDATE/DELETE. Self-register INSERT (`user_id = auth.uid()`).
 
-- Import and use `profileSchema` from validation library
-- Add `fieldErrors` state for inline error messages under each field
-- Validate on "Create" submit; skip button bypasses validation
-- Add character counter on About Me (shows X/500)
-- Use `sanitizeError` for error display
-- Validate avatar with `validateImageFile` (extension + MIME type check)
+**`brackets`**
 
-### File 3: `src/pages/ViewProfile.tsx` (MODIFIED)
+| Column | Type | Default |
+|---|---|---|
+| id | UUID PK | gen_random_uuid() |
+| competition_id | UUID NOT NULL | |
+| division_id | UUID | NULL |
+| name | TEXT NOT NULL | |
+| bracket_type | TEXT | 'single_elimination' |
+| created_at | TIMESTAMPTZ | now() |
 
-- Same validation as CreateProfile using `profileSchema`
-- Add field-level error messages
-- Use `sanitizeError` for error display
-- Validate avatar with `validateImageFile`
+RLS: Authenticated SELECT. Owner/super mutations.
 
-### File 4: `src/pages/CompetitionCreate.tsx` (MODIFIED)
+**`bouts`**
 
-- Import and use `competitionSchema`
-- Add field-level validation with inline errors
-- Use `sanitizeError` for error display
+| Column | Type | Default |
+|---|---|---|
+| id | UUID PK | gen_random_uuid() |
+| bracket_id | UUID NOT NULL | |
+| round_number | INT NOT NULL | |
+| bout_number | INT NOT NULL | |
+| team_a_id | UUID | NULL |
+| team_b_id | UUID | NULL |
+| winner_id | UUID | NULL |
+| status | TEXT | 'pending' |
+| created_at | TIMESTAMPTZ | now() |
 
-### File 5: `src/components/competition/TeamsPanel.tsx` (MODIFIED)
+RLS: Authenticated SELECT. Owner/super mutations.
 
-- Validate team name with `teamNameSchema` before insert
-- Show toast error for invalid input
+### 1B. Schema Modification
 
-### File 6: `src/components/competition/DivisionsPanel.tsx` (MODIFIED)
+- Add `date_of_birth DATE` column to `profiles` (nullable, keeps existing `age` column)
 
-- Validate division name with `divisionNameSchema` before insert
+### 1C. Realtime
 
-### File 7: `src/components/competition/ParticipantsPanel.tsx` (MODIFIED)
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE public.competition_scores;
+```
 
-- Validate athlete name with `athleteNameSchema` before insert
+### 1D. RLS Update for V1
 
-### File 8: `src/components/competition/ScoresPanel.tsx` (MODIFIED)
+Update `has_competition_access()` function to always return `true` for V1 (keeps the function signature so all existing RLS policies still reference it, but removes the subscription check):
 
-- Validate scores with `scoreSchema` before save (reject negatives, enforce max)
-- Show toast for invalid scores
+```sql
+CREATE OR REPLACE FUNCTION public.has_competition_access(p_user_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT true;
+$$;
+```
 
-### File 9: `src/components/competition/JudgesPanel.tsx` (MODIFIED)
-
-- Validate search input as email format before lookup
-
-### File 10: `src/components/super/ScoreOverride.tsx` (MODIFIED)
-
-- Validate workout ID and score ID with `uuidSchema` before API calls
-
-### File 11: `src/components/super/SeasonManager.tsx` (MODIFIED)
-
-- Validate season name and year with `seasonSchema`
-
-### File 12: `src/pages/ForgotPassword.tsx` (MODIFIED)
-
-- Add Zod email validation schema (matching Login page pattern)
+This single change makes all existing RLS policies pass for any authenticated user while **preserving `is_competition_owner()` and `is_competition_judge()` checks** in those same policies. When subscriptions return, just restore the original function body.
 
 ---
 
-## What This Does NOT Need to Change
+## Part 2: Feature Flag + Subscription Bypass
 
-- **Login.tsx** and **Register.tsx**: Already have Zod validation
-- **ResetPassword.tsx**: Already has Zod validation
-- **RLS policies**: Already hardened (database layer protects against injection regardless)
-- **Supabase client**: Uses parameterized queries internally, so SQL injection via the SDK is not possible. The validation is defense-in-depth and protects against data corruption, XSS, and unexpected payloads.
+### New file: `src/lib/featureFlags.ts`
 
-## Security Notes
+```typescript
+export const V1_FULL_ACCESS = true;
+```
 
-- SQL injection is not a direct risk because the Supabase JS SDK uses parameterized queries. However, input validation prevents data corruption, oversized payloads, and potential XSS if data is rendered without escaping.
-- All validation is client-side defense-in-depth. The database RLS policies remain the authoritative enforcement layer.
-- Error sanitization prevents leaking internal database structure to end users.
+### Modify: `src/hooks/useSubscription.ts`
+
+- Import `V1_FULL_ACCESS`
+- When `true`: `canAccess()` always returns `true`, skip all DB fetches for tier resolution
+- Keep all existing logic intact (just short-circuited)
+
+### Modify: `src/pages/MainMenu.tsx`
+
+- When `V1_FULL_ACCESS`: render all menu items as `ActiveMenuItem`, hide UPGRADE badge
+
+### Modify: `src/components/CompetitionHeader.tsx`
+
+- When `V1_FULL_ACCESS`: hide tier badge
+
+### Modify: `src/App.tsx`
+
+- Remove `SubscriptionGuard` wrapper from `/competition/create` and `/competition/:id/workouts` routes (no longer needed when all features are open)
+
+### Modify: `src/pages/CompetitionDashboard.tsx`
+
+- When `V1_FULL_ACCESS`:
+  - `canAdmin = isOwner || isSuperUser` (no tier check, but still requires ownership)
+  - `canScore = isOwner || isJudge || isSuperUser` (no tier check, but still requires judge/owner role)
+
+**Role matrix preserved:**
+
+| Role | Setup/Config | Add Judges | Score | Leaderboard | View |
+|---|---|---|---|---|---|
+| Owner | Yes | Yes | Yes | Yes | Yes |
+| Judge | No | No | Yes | Yes | Yes |
+| Viewer | No | No | No | Yes | Yes |
+| Super User | Yes | Yes | Yes | Yes | Yes |
+
+---
+
+## Part 3: Module Architecture
+
+### New folder structure
+
+```text
+src/modules/
+  tournaments/
+    types.ts
+    api.ts
+    hooks.ts
+    components/
+      TeamsPanel.tsx
+      WorkoutsPanel.tsx
+      DivisionsPanel.tsx
+  scoring/
+    types.ts
+    api.ts
+    hooks.ts
+    components/
+      ScoresPanel.tsx
+      ScoreLockControls.tsx
+      MobileJudgeScoring.tsx   (NEW)
+  leaderboard/
+    types.ts
+    api.ts
+    hooks.ts
+    components/
+      LeaderboardPanel.tsx
+  athletes/
+    types.ts
+    api.ts
+    hooks.ts
+    components/
+      ParticipantsPanel.tsx
+  auth/
+    types.ts
+    api.ts
+    hooks.ts
+  admin/
+    types.ts
+    api.ts
+    hooks.ts
+    components/
+      CompetitionManager.tsx
+      SeasonManager.tsx
+      AuditLog.tsx
+      ScoreOverride.tsx
+```
+
+### Data Flow Pattern (every module)
+
+```text
+api.ts          -- Raw Supabase queries (ONLY file that imports supabase client)
+hooks.ts        -- TanStack Query hooks wrapping api.ts functions
+components/     -- UI components consuming hooks (NO direct Supabase imports)
+types.ts        -- TypeScript interfaces (re-exported from domain/ where applicable)
+```
+
+### Module: `tournaments`
+
+**`api.ts`**: Consolidates all calls currently scattered across CompetitionDashboard, CompetitionList, CompetitionCreate, CompetitionWorkouts, and `data/divisions.ts`.
+
+- `fetchCompetition(id)`, `fetchCompetitions()`, `createCompetition(data)`
+- `fetchTeams(competitionId)`, `addTeam(...)`, `removeTeam(...)`
+- `fetchWorkouts(competitionId)`, `addWorkout(...)`, `removeWorkout(...)`, `updateWorkoutMeasurement(...)`
+- Re-exports from `data/divisions.ts`: `fetchDivisions`, `addDivision`, `removeDivision`
+
+**`hooks.ts`**: TanStack Query hooks with proper cache keys and invalidation.
+
+- `useCompetition(id)` -- replaces inline fetch in CompetitionDashboard
+- `useCompetitions()` -- replaces inline fetch in CompetitionList
+- `useTeams(competitionId)` -- replaces prop-drilled teams state
+- `useWorkouts(competitionId)` -- replaces prop-drilled workouts state
+- `useDivisions(competitionId)` -- replaces prop-drilled divisions state
+- `useCreateCompetition()` -- mutation
+- `useAddTeam()`, `useRemoveTeam()` -- mutations invalidating `['teams', id]`
+- `useAddWorkout()`, `useRemoveWorkout()`, `useUpdateWorkoutMeasurement()` -- mutations
+
+### Module: `scoring`
+
+**`api.ts`**: Consolidates from `data/scoring.ts` + inline ScoresPanel calls.
+
+- `fetchScores(competitionId)`, `upsertScores(...)`, `lockWorkout(...)`, `unlockWorkout(...)`, `lockScore(...)`, `unlockScore(...)`
+
+**`hooks.ts`**:
+
+- `useScores(competitionId)` -- TanStack Query + Supabase Realtime subscription. On `postgres_changes` event for `competition_scores`, invalidates query cache.
+- `useUpsertScores()` -- mutation with optimistic update: immediately updates local cache, rolls back on error.
+- `useLockWorkout()`, `useUnlockWorkout()` -- mutations invalidating `['workouts', id]`
+
+### Module: `leaderboard`
+
+**`api.ts`**: From `data/leaderboard.ts`.
+
+**`hooks.ts`**: Refactored `useLeaderboard` using TanStack Query + existing realtime subscription pattern. The realtime subscription invalidates the query cache instead of managing state directly.
+
+### Module: `athletes`
+
+**`api.ts`**: From `data/participants.ts`.
+
+**`hooks.ts`**: `useParticipants(competitionId)`, `useAddParticipant()`, `useRemoveParticipant()`, `useSelfRegister()`.
+
+### Module: `auth`
+
+**`api.ts`**: Profile CRUD (extracted from useProfile inline calls).
+
+**`hooks.ts`**: `useProfile()` refactored with TanStack Query. `useCompetitionRole()` stays as hook (already clean).
+
+### Module: `admin`
+
+**`api.ts`**: Super user checks, judge management (from `data/judges.ts`, `data/superAdmin.ts`).
+
+**`hooks.ts`**: `useSuperUserAccess()`, `useJudges(competitionId)`.
+
+**`components/`**: Move super admin components here.
+
+---
+
+## Part 4: Refactor CompetitionDashboard to Layout-Only
+
+### Current problems
+
+- Fetches 5 tables in one `useEffect`
+- Manages state for teams, workouts, divisions, judges via `useState`
+- Props drilled through every panel
+
+### New approach
+
+```typescript
+export default function CompetitionDashboard() {
+  const { id } = useParams<{ id: string }>();
+  const { data: competition, isLoading } = useCompetition(id);
+  const { isOwner, isJudge, role } = useCompetitionRole(id);
+  const { isSuperUser } = useSuperUserAccess();
+  const { profile } = useProfile();
+
+  const canAdmin = isOwner || isSuperUser;
+  const canScore = isOwner || isJudge || isSuperUser;
+
+  // Each tab panel fetches its own data via module hooks
+  // No prop drilling, no local state for teams/workouts/divisions
+  return (
+    <Layout>
+      {canAdmin ? <OwnerTabs /> : isJudge ? <JudgeTabs /> : <ViewerTabs />}
+    </Layout>
+  );
+}
+```
+
+Each panel (TeamsPanel, ScoresPanel, etc.) internally calls its own hook (`useTeams`, `useScores`, etc.) and manages its own mutations. Only `competitionId`, `canAdmin`, and `canScore` are passed as props.
+
+---
+
+## Part 5: Mobile-First Judge Scoring UI
+
+### New component: `src/modules/scoring/components/MobileJudgeScoring.tsx`
+
+- Full-screen card-based layout (one team per card)
+- Large number input with +/- buttons (min 48x48px touch targets)
+- Team name + division displayed prominently
+- Swipe/arrow navigation between teams
+- Workout selector pills at top
+- Lock indicator per workout
+- Sticky "Save All Scores" button at bottom
+- No horizontal scroll tables
+
+### Integration
+
+- `ScoresPanel` (desktop): existing table layout, refactored to use `useScores()` hook
+- `MobileJudgeScoring` (mobile): card layout, same `useScores()` hook
+- CompetitionDashboard Scores tab uses `useIsMobile()` to render the appropriate component
+- Both share the same `useUpsertScores()` mutation with optimistic updates
+
+---
+
+## Part 6: Profile DOB Field
+
+- Add `date_of_birth` column to `profiles` (migration)
+- Update `CreateProfile.tsx` and `ViewProfile.tsx` to show a date picker
+- Keep `age` field for backward compat; compute display age from DOB when available
+- Update `profileSchema` in `validation.ts` to include optional `dateOfBirth`
+- Update `Profile` interface in `auth/types.ts`
+
+---
+
+## Part 7: UI Polish
+
+- Card-based layouts for teams, workouts, participants (replacing dense lists)
+- Mobile responsive tabs (horizontally scrollable `TabsList` on small screens with `overflow-x-auto`)
+- Better spacing (increased padding, section dividers)
+- Keep existing theme and color scheme -- no redesign
+
+---
+
+## Part 8: Code Quality
+
+- Strict TypeScript: no `any` types in new module files
+- Old `data/` and `domain/` files become thin re-exports to avoid breaking any remaining imports
+- Remove dead code and unused imports from refactored pages
+- Standardized loading/error pattern across all hooks:
+  ```typescript
+  { data, isLoading, isError, error }
+  ```
+
+---
+
+## Files Summary
+
+### New Files (~30)
+
+| File | Purpose |
+|---|---|
+| `src/lib/featureFlags.ts` | V1_FULL_ACCESS flag |
+| `src/modules/tournaments/types.ts` | Tournament types |
+| `src/modules/tournaments/api.ts` | All tournament DB queries |
+| `src/modules/tournaments/hooks.ts` | TanStack Query hooks |
+| `src/modules/tournaments/components/TeamsPanel.tsx` | Self-contained teams UI |
+| `src/modules/tournaments/components/WorkoutsPanel.tsx` | Self-contained workouts UI |
+| `src/modules/tournaments/components/DivisionsPanel.tsx` | Self-contained divisions UI |
+| `src/modules/scoring/types.ts` | Scoring types |
+| `src/modules/scoring/api.ts` | Scoring DB queries |
+| `src/modules/scoring/hooks.ts` | Scoring hooks + realtime |
+| `src/modules/scoring/components/ScoresPanel.tsx` | Desktop score entry |
+| `src/modules/scoring/components/ScoreLockControls.tsx` | Lock controls |
+| `src/modules/scoring/components/MobileJudgeScoring.tsx` | Mobile judge UI |
+| `src/modules/leaderboard/types.ts` | Leaderboard types |
+| `src/modules/leaderboard/api.ts` | Leaderboard queries |
+| `src/modules/leaderboard/hooks.ts` | Leaderboard hooks + realtime |
+| `src/modules/leaderboard/components/LeaderboardPanel.tsx` | Leaderboard UI |
+| `src/modules/athletes/types.ts` | Athlete types |
+| `src/modules/athletes/api.ts` | Participant queries |
+| `src/modules/athletes/hooks.ts` | Participant hooks |
+| `src/modules/athletes/components/ParticipantsPanel.tsx` | Roster UI |
+| `src/modules/auth/types.ts` | Profile types |
+| `src/modules/auth/api.ts` | Profile queries |
+| `src/modules/auth/hooks.ts` | Profile + role hooks |
+| `src/modules/admin/types.ts` | Admin types |
+| `src/modules/admin/api.ts` | Admin queries |
+| `src/modules/admin/hooks.ts` | Admin hooks |
+| `src/modules/admin/components/*.tsx` | Moved super admin components |
+
+### Modified Files (~12)
+
+| File | Change |
+|---|---|
+| Migration SQL | New tables, DOB column, realtime, `has_competition_access` override |
+| `src/App.tsx` | Remove SubscriptionGuard wrappers |
+| `src/hooks/useSubscription.ts` | V1_FULL_ACCESS bypass |
+| `src/pages/CompetitionDashboard.tsx` | Layout-only shell using module hooks |
+| `src/pages/CompetitionList.tsx` | Use `useCompetitions()` hook |
+| `src/pages/CompetitionCreate.tsx` | Use `useCreateCompetition()` mutation |
+| `src/pages/CompetitionWorkouts.tsx` | Use tournament hooks |
+| `src/pages/MainMenu.tsx` | V1 full access rendering |
+| `src/pages/CreateProfile.tsx` | DOB field |
+| `src/pages/ViewProfile.tsx` | DOB field |
+| `src/components/CompetitionHeader.tsx` | V1 flag hides badge |
+| `src/lib/validation.ts` | Add DOB schema |
+
+### Preserved (no changes)
+
+- All `src/components/ui/` files
+- `src/components/AuthProvider.tsx`
+- `src/components/ProtectedRoute.tsx`
+- `src/integrations/supabase/client.ts` and `types.ts`
+- Edge functions
+- Existing RLS policies (they still reference `is_competition_owner`, `is_competition_judge` -- those remain unchanged)
+
+---
+
+## Execution Order
+
+1. Database migration (new tables, DOB, realtime, `has_competition_access` override)
+2. Create `src/lib/featureFlags.ts`
+3. Create all module `types.ts` files
+4. Create all module `api.ts` files
+5. Create all module `hooks.ts` files
+6. Create module components (refactored panels + MobileJudgeScoring)
+7. Refactor pages to use modules (CompetitionDashboard, List, Create, Workouts)
+8. Apply V1_FULL_ACCESS to subscription/menu/header/routes
+9. Add DOB to profile pages
+10. Clean up old data/ files as re-exports, remove dead code
 
