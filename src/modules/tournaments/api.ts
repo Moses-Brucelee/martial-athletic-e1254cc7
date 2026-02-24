@@ -192,3 +192,49 @@ export async function updateBoutWinner(boutId: string, winnerId: string): Promis
     .eq("id", boutId);
   if (error) throw error;
 }
+
+// ── Batch bracket + bout creation ─────────────────────────────────────
+
+export async function createBracketWithBouts(
+  competitionId: string,
+  brackets: { name: string; division_id: string | null; bracket_type: string; bouts: { round_number: number; bout_number: number; team_a_id: string | null; team_b_id: string | null; status: string }[] }[],
+): Promise<void> {
+  for (const b of brackets) {
+    const { data: bracket, error: bErr } = await supabase
+      .from("brackets")
+      .insert({ competition_id: competitionId, name: b.name, division_id: b.division_id, bracket_type: b.bracket_type })
+      .select("id")
+      .single();
+    if (bErr) throw bErr;
+
+    if (b.bouts.length > 0) {
+      const rows = b.bouts.map((bout) => ({ ...bout, bracket_id: bracket.id }));
+      const { error: boutErr } = await supabase.from("bouts").insert(rows);
+      if (boutErr) throw boutErr;
+    }
+  }
+}
+
+export async function deleteBrackets(competitionId: string): Promise<void> {
+  // Bouts cascade via bracket_id FK — but we delete explicitly for safety
+  const { data: brackets } = await supabase
+    .from("brackets")
+    .select("id")
+    .eq("competition_id", competitionId);
+
+  if (brackets && brackets.length > 0) {
+    const ids = brackets.map((b) => b.id);
+    await supabase.from("bouts").delete().in("bracket_id", ids);
+    await supabase.from("brackets").delete().eq("competition_id", competitionId);
+  }
+}
+
+// ── Competition status ────────────────────────────────────────────────
+
+export async function updateCompetitionStatus(id: string, status: string): Promise<void> {
+  const { error } = await supabase
+    .from("competitions")
+    .update({ status })
+    .eq("id", id);
+  if (error) throw error;
+}
