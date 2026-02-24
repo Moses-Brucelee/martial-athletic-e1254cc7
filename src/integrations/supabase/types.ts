@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      athlete_registrations: {
+        Row: {
+          athlete_name: string
+          competition_id: string
+          created_at: string
+          id: string
+          status: string
+          team_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          athlete_name: string
+          competition_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          team_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          athlete_name?: string
+          competition_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          team_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_registrations_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_registrations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "competition_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_customers: {
         Row: {
           billing_provider: string
@@ -205,6 +250,113 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      bouts: {
+        Row: {
+          bout_number: number
+          bracket_id: string
+          created_at: string
+          id: string
+          round_number: number
+          status: string
+          team_a_id: string | null
+          team_b_id: string | null
+          winner_id: string | null
+        }
+        Insert: {
+          bout_number: number
+          bracket_id: string
+          created_at?: string
+          id?: string
+          round_number: number
+          status?: string
+          team_a_id?: string | null
+          team_b_id?: string | null
+          winner_id?: string | null
+        }
+        Update: {
+          bout_number?: number
+          bracket_id?: string
+          created_at?: string
+          id?: string
+          round_number?: number
+          status?: string
+          team_a_id?: string | null
+          team_b_id?: string | null
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bouts_bracket_id_fkey"
+            columns: ["bracket_id"]
+            isOneToOne: false
+            referencedRelation: "brackets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bouts_team_a_id_fkey"
+            columns: ["team_a_id"]
+            isOneToOne: false
+            referencedRelation: "competition_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bouts_team_b_id_fkey"
+            columns: ["team_b_id"]
+            isOneToOne: false
+            referencedRelation: "competition_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bouts_winner_id_fkey"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "competition_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brackets: {
+        Row: {
+          bracket_type: string
+          competition_id: string
+          created_at: string
+          division_id: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          bracket_type?: string
+          competition_id: string
+          created_at?: string
+          division_id?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          bracket_type?: string
+          competition_id?: string
+          created_at?: string
+          division_id?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brackets_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brackets_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "competition_divisions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       competition_divisions: {
         Row: {
@@ -452,12 +604,15 @@ export type Database = {
       }
       competitions: {
         Row: {
+          age_category_type: string | null
           created_at: string
           created_by: string
           date: string | null
           divisions: string | null
           host_gym: string | null
           id: string
+          max_age: number | null
+          min_age: number | null
           name: string
           season_id: string | null
           status: string
@@ -466,12 +621,15 @@ export type Database = {
           venue: string | null
         }
         Insert: {
+          age_category_type?: string | null
           created_at?: string
           created_by: string
           date?: string | null
           divisions?: string | null
           host_gym?: string | null
           id?: string
+          max_age?: number | null
+          min_age?: number | null
           name: string
           season_id?: string | null
           status?: string
@@ -480,12 +638,15 @@ export type Database = {
           venue?: string | null
         }
         Update: {
+          age_category_type?: string | null
           created_at?: string
           created_by?: string
           date?: string | null
           divisions?: string | null
           host_gym?: string | null
           id?: string
+          max_age?: number | null
+          min_age?: number | null
           name?: string
           season_id?: string | null
           status?: string
@@ -661,6 +822,7 @@ export type Database = {
           age: number | null
           avatar_url: string | null
           created_at: string
+          date_of_birth: string | null
           display_name: string | null
           full_name: string | null
           gender: string | null
@@ -676,6 +838,7 @@ export type Database = {
           age?: number | null
           avatar_url?: string | null
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string | null
           full_name?: string | null
           gender?: string | null
@@ -691,6 +854,7 @@ export type Database = {
           age?: number | null
           avatar_url?: string | null
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string | null
           full_name?: string | null
           gender?: string | null

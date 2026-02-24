@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UserPlus, Trash2, UserCheck } from "lucide-react";
+import { UserPlus, Trash2, UserCheck, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,8 +7,9 @@ import { toast } from "sonner";
 import { athleteNameSchema } from "@/lib/validation";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
-import { useTeams } from "@/modules/tournaments/hooks";
+import { useTeams, useCompetition } from "@/modules/tournaments/hooks";
 import { useParticipants, useAddParticipant, useRemoveParticipant, useSelfRegister } from "@/modules/athletes/hooks";
+import { calculateAge, checkAgeEligibility } from "@/utils/calculateAge";
 
 interface ParticipantsPanelProps {
   competitionId: string;
@@ -20,12 +21,14 @@ export function ParticipantsPanel({ competitionId, canAdmin }: ParticipantsPanel
   const { profile } = useProfile();
   const { data: teams = [] } = useTeams(competitionId);
   const { data: participants = [] } = useParticipants(competitionId);
+  const { data: competition } = useCompetition(competitionId);
   const addMutation = useAddParticipant();
   const removeMutation = useRemoveParticipant();
   const selfRegMutation = useSelfRegister();
 
   const [newName, setNewName] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState("");
+  const [eligibilityError, setEligibilityError] = useState<string | null>(null);
 
   const isRegistered = user ? participants.some((p) => p.user_id === user.id) : false;
 
@@ -55,6 +58,26 @@ export function ParticipantsPanel({ competitionId, canAdmin }: ParticipantsPanel
 
   const handleSelfRegister = async (teamId: string) => {
     if (!user || !profile?.display_name) return;
+    setEligibilityError(null);
+
+    // Age eligibility check
+    if (profile.date_of_birth && competition) {
+      const dob = new Date(profile.date_of_birth + "T00:00:00");
+      const compDate = competition.date ? new Date(competition.date + "T00:00:00") : new Date();
+      const err = checkAgeEligibility(
+        dob,
+        compDate,
+        competition.age_category_type,
+        competition.min_age,
+        competition.max_age,
+      );
+      if (err) {
+        setEligibilityError(err);
+        toast.error(err);
+        return;
+      }
+    }
+
     try {
       await selfRegMutation.mutateAsync({
         competitionId, teamId, userId: user.id, athleteName: profile.display_name,
@@ -80,6 +103,13 @@ export function ParticipantsPanel({ competitionId, canAdmin }: ParticipantsPanel
         <UserPlus className="h-5 w-5 text-primary" />
         <h3 className="text-lg font-bold text-foreground uppercase">Roster</h3>
       </div>
+
+      {eligibilityError && (
+        <div className="flex items-start gap-3 p-3 mb-4 rounded-lg bg-destructive/10 border border-destructive/20">
+          <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+          <p className="text-sm text-destructive">{eligibilityError}</p>
+        </div>
+      )}
 
       {teams.length === 0 ? (
         <p className="text-sm text-muted-foreground">Add teams first.</p>

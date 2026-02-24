@@ -9,16 +9,8 @@ export const profileSchema = z.object({
   aboutMe: z.string().max(500, "About Me must be under 500 characters").optional().or(z.literal("")),
 });
 
-/** Calculate age in whole years from a date of birth */
-export function calculateAge(dob: Date): number {
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const monthDiff = today.getMonth() - dob.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-    age--;
-  }
-  return age;
-}
+// Re-export from canonical utility so existing imports keep working
+export { calculateAge } from "@/utils/calculateAge";
 
 export const competitionSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be under 100 characters"),

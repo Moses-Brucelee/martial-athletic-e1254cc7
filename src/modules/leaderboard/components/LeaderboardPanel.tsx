@@ -1,5 +1,8 @@
 import { Trophy } from "lucide-react";
 import { useLeaderboard } from "@/modules/leaderboard/hooks";
+import { useCompetition } from "@/modules/tournaments/hooks";
+import { getAgeCategoryLabel } from "@/utils/calculateAge";
+import { Badge } from "@/components/ui/badge";
 
 interface LeaderboardPanelProps {
   competitionId: string;
@@ -7,8 +10,13 @@ interface LeaderboardPanelProps {
 
 export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
   const { data: entries = [], isLoading } = useLeaderboard(competitionId);
+  const { data: competition } = useCompetition(competitionId);
 
   const medalColors = ["text-yellow-500", "text-gray-400", "text-amber-700"];
+
+  const ageCategoryLabel = competition
+    ? getAgeCategoryLabel(competition.age_category_type, competition.min_age, competition.max_age)
+    : null;
 
   const grouped = entries.reduce<Record<string, typeof entries>>((acc, entry) => {
     const div = entry.division_name || "Overall";
@@ -46,6 +54,9 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
       <div className="flex items-center gap-2 mb-4">
         <Trophy className="h-5 w-5 text-primary" />
         <h3 className="text-lg font-bold text-foreground uppercase">Leaderboard</h3>
+        {ageCategoryLabel && ageCategoryLabel !== "Open" && (
+          <Badge variant="secondary" className="ml-2 text-xs">{ageCategoryLabel}</Badge>
+        )}
       </div>
 
       {Object.entries(grouped).map(([divName, divEntries]) => (

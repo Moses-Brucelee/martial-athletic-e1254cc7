@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "./api";
-import type { CreateCompetitionInput, AddTeamInput, AddWorkoutInput } from "./types";
+import type { CreateCompetitionInput, AddTeamInput, AddWorkoutInput, CreateBracketInput } from "./types";
 
 // ── Competition queries ───────────────────────────────────────────────
 
@@ -129,5 +129,46 @@ export function useDivisions(competitionId: string | undefined) {
     queryKey: ["divisions", competitionId],
     queryFn: () => api.fetchDivisions(competitionId!),
     enabled: !!competitionId,
+  });
+}
+
+// ── Brackets ──────────────────────────────────────────────────────────
+
+export function useBrackets(competitionId: string | undefined) {
+  return useQuery({
+    queryKey: ["brackets", competitionId],
+    queryFn: () => api.fetchBrackets(competitionId!),
+    enabled: !!competitionId,
+  });
+}
+
+export function useCreateBracket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateBracketInput) => api.createBracket(input),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["brackets", variables.competition_id] });
+    },
+  });
+}
+
+// ── Bouts ─────────────────────────────────────────────────────────────
+
+export function useBouts(bracketId: string | undefined) {
+  return useQuery({
+    queryKey: ["bouts", bracketId],
+    queryFn: () => api.fetchBouts(bracketId!),
+    enabled: !!bracketId,
+  });
+}
+
+export function useUpdateBoutWinner() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ boutId, winnerId, bracketId }: { boutId: string; winnerId: string; bracketId: string }) =>
+      api.updateBoutWinner(boutId, winnerId),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["bouts", variables.bracketId] });
+    },
   });
 }

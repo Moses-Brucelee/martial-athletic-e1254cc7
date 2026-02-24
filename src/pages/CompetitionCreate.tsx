@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, AlertCircle, Info } from "lucide-react";
 import { competitionSchema, sanitizeError } from "@/lib/validation";
 
@@ -23,6 +24,9 @@ export default function CompetitionCreate() {
   const [type, setType] = useState("");
   const [hostGym, setHostGym] = useState("");
   const [divisions, setDivisions] = useState("");
+  const [ageCategoryType, setAgeCategoryType] = useState("open");
+  const [minAge, setMinAge] = useState("");
+  const [maxAge, setMaxAge] = useState("");
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -35,7 +39,17 @@ export default function CompetitionCreate() {
       if (!liveFieldErrors[key]) liveFieldErrors[key] = issue.message;
     });
   }
-  const isFormValid = validation.success;
+
+  // Age category validation
+  const ageErrors: string[] = [];
+  if (ageCategoryType === "under_x" && !maxAge) ageErrors.push("Max age is required for Under X");
+  if (ageCategoryType === "age_range") {
+    if (!minAge) ageErrors.push("Min age is required");
+    if (!maxAge) ageErrors.push("Max age is required");
+    if (minAge && maxAge && parseInt(maxAge) <= parseInt(minAge)) ageErrors.push("Max age must be greater than min age");
+  }
+
+  const isFormValid = validation.success && ageErrors.length === 0;
 
   const handleCreate = async () => {
     if (!user) return;
@@ -62,6 +76,9 @@ export default function CompetitionCreate() {
         type: type || null,
         host_gym: hostGym || null,
         divisions: divisions || null,
+        age_category_type: ageCategoryType,
+        min_age: minAge ? parseInt(minAge) : null,
+        max_age: maxAge ? parseInt(maxAge) : null,
       });
       navigate(`/competition/${comp.id}/workouts`);
     } catch (err) {
@@ -124,6 +141,44 @@ export default function CompetitionCreate() {
               <Label className="text-foreground font-medium">Divisions</Label>
               <Input value={divisions} onChange={(e) => setDivisions(e.target.value)} placeholder="e.g. RX, Scaled, Masters" className="h-11 bg-background" disabled={createMutation.isPending} maxLength={200} />
             </div>
+          </div>
+
+          {/* Age Category Configuration */}
+          <div className="border-t border-border pt-5 space-y-4">
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Age Category</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="text-foreground font-medium">Category Type</Label>
+                <Select value={ageCategoryType} onValueChange={setAgeCategoryType} disabled={createMutation.isPending}>
+                  <SelectTrigger className="h-11 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">Open (No Limits)</SelectItem>
+                    <SelectItem value="under_x">Under X</SelectItem>
+                    <SelectItem value="age_range">Age Range</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {(ageCategoryType === "age_range") && (
+                <div className="space-y-2">
+                  <Label className="text-foreground font-medium">Min Age</Label>
+                  <Input type="number" value={minAge} onChange={(e) => setMinAge(e.target.value)}
+                    placeholder="e.g. 35" className="h-11 bg-background" disabled={createMutation.isPending} min={0} max={120} />
+                </div>
+              )}
+              {(ageCategoryType === "under_x" || ageCategoryType === "age_range") && (
+                <div className="space-y-2">
+                  <Label className="text-foreground font-medium">Max Age</Label>
+                  <Input type="number" value={maxAge} onChange={(e) => setMaxAge(e.target.value)}
+                    placeholder={ageCategoryType === "under_x" ? "e.g. 17 (for U18)" : "e.g. 40"}
+                    className="h-11 bg-background" disabled={createMutation.isPending} min={0} max={120} />
+                </div>
+              )}
+            </div>
+            {ageErrors.length > 0 && (
+              <div className="space-y-1">
+                {ageErrors.map((e, i) => <p key={i} className="text-xs text-destructive">{e}</p>)}
+              </div>
+            )}
           </div>
         </div>
 
