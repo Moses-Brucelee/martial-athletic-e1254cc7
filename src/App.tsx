@@ -25,6 +25,10 @@ import SuperDashboard from "./pages/SuperDashboard";
 import MembersPage from "./modules/members/components/MembersPage";
 import NotFound from "./pages/NotFound";
 import Guide from "./pages/Guide";
+import Affiliation from "./pages/Affiliation";
+import GymWebsite from "./pages/GymWebsite";
+import Performances from "./pages/Performances";
+import Browse from "./pages/Browse";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +58,10 @@ const App = () => (
               <Route path="/upgrade" element={<ProtectedRoute><UpgradePackage /></ProtectedRoute>} />
               <Route path="/super-dashboard" element={<ProtectedRoute><SuperUserGuard><SuperDashboard /></SuperUserGuard></ProtectedRoute>} />
               <Route path="/members" element={<ProtectedRoute><MembersPage /></ProtectedRoute>} />
+              <Route path="/affiliation" element={<ProtectedRoute><Affiliation /></ProtectedRoute>} />
+              <Route path="/gym-website" element={<ProtectedRoute><GymWebsite /></ProtectedRoute>} />
+              <Route path="/performances" element={<ProtectedRoute><Performances /></ProtectedRoute>} />
+              <Route path="/browse" element={<Browse />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

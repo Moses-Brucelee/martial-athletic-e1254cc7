@@ -17,6 +17,11 @@ import {
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import type { LucideIcon } from "lucide-react";
 
+import { UpcomingCompetitionsSpotlight } from "@/components/dashboard/UpcomingCompetitionsSpotlight";
+import { BrowseMarketplaceSection } from "@/components/dashboard/BrowseMarketplaceSection";
+import { ShopSpotlight } from "@/components/dashboard/ShopSpotlight";
+import { ProgramSpotlight } from "@/components/dashboard/ProgramSpotlight";
+
 // Icon lookup — map icon_name string from DB to Lucide component
 const ICON_MAP: Record<string, LucideIcon> = {
   User, Eye, Trophy, Users, Link2, Settings, BarChart3, Palette,
@@ -39,17 +44,24 @@ interface DbTier {
   sort_order: number;
 }
 
-function SectionHeader({ label, active }: { label: string; active: boolean }) {
+function SectionHeader({ label, active, tierBadge }: { label: string; active: boolean; tierBadge?: string }) {
   return (
     <div className="flex items-center gap-3 pt-4 pb-1">
       <div className={`h-px flex-1 ${active ? "bg-primary/30" : "bg-border"}`} />
-      <span
-        className={`text-[11px] font-bold tracking-widest uppercase ${
-          active ? "text-primary" : "text-muted-foreground/60"
-        }`}
-      >
-        {label}
-      </span>
+      <div className="flex items-center gap-2">
+        <span
+          className={`text-[11px] font-bold tracking-widest uppercase ${
+            active ? "text-primary" : "text-muted-foreground/60"
+          }`}
+        >
+          {label}
+        </span>
+        {tierBadge && (
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-bold uppercase tracking-wider">
+            {tierBadge}
+          </Badge>
+        )}
+      </div>
       <div className={`h-px flex-1 ${active ? "bg-primary/30" : "bg-border"}`} />
     </div>
   );
@@ -59,34 +71,32 @@ function ActiveMenuItem({ label, icon: Icon, onClick }: { label: string; icon: L
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-4 p-4 rounded-xl bg-card border border-border hover:border-primary/40 transition-colors text-left group"
+      className="w-full flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover:border-primary/40 transition-colors text-left group"
     >
-      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-        <Icon className="h-5 w-5 text-primary" />
+      <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+        <Icon className="h-4 w-4 text-primary" />
       </div>
-      <div className="flex-1 min-w-0">
-        <span className="text-sm font-bold text-foreground tracking-wide uppercase">{label}</span>
-      </div>
-      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+      <span className="flex-1 text-xs font-bold text-foreground tracking-wide uppercase truncate">{label}</span>
+      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
     </button>
   );
 }
 
 function LockedMenuItem({ label, description, onUpgrade }: { label: string; description?: string | null; onUpgrade: () => void }) {
   return (
-    <div className="w-full flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border/50 text-left opacity-70">
-      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
-        <Lock className="h-4 w-4 text-muted-foreground" />
+    <div className="w-full flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50 text-left opacity-70">
+      <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center shrink-0">
+        <Lock className="h-3.5 w-3.5 text-muted-foreground" />
       </div>
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-bold text-muted-foreground tracking-wide uppercase">{label}</span>
+        <span className="text-xs font-bold text-muted-foreground tracking-wide uppercase">{label}</span>
         {description && (
-          <p className="text-xs text-muted-foreground/60 mt-0.5">{description}</p>
+          <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{description}</p>
         )}
       </div>
       <Badge
         variant="outline"
-        className="cursor-pointer text-[10px] shrink-0 hover:bg-primary hover:text-primary-foreground transition-colors"
+        className="cursor-pointer text-[9px] shrink-0 hover:bg-primary hover:text-primary-foreground transition-colors"
         onClick={onUpgrade}
       >
         UPGRADE
@@ -251,41 +261,54 @@ export default function MainMenu() {
       </header>
 
       <main className="flex-1 flex items-start justify-center px-4 py-6">
-        <div className="w-full max-w-md space-y-1">
-          {sections.map(({ tier, items }) => {
-            const sectionActive = V1_FULL_ACCESS || canAccess(items[0]?.feature_key ?? "");
+        <div className="w-full max-w-md space-y-6">
+          {/* DB-driven menu sections */}
+          <div className="space-y-1">
+            {sections.map(({ tier, items }) => {
+              const sectionActive = V1_FULL_ACCESS || canAccess(items[0]?.feature_key ?? "");
 
-            return (
-              <div key={tier.key}>
-                <SectionHeader label={tier.name} active={sectionActive} />
-                <div className="space-y-2 mt-2">
-                  {items.map((item) => {
-                    const Icon = ICON_MAP[item.icon_name] ?? User;
-                    const displayLabel =
-                      item.feature_key === "create_competitions" && hasCompetitions
-                        ? "VIEW / BUILD YOUR COMP"
-                        : item.label;
+              return (
+                <div key={tier.key}>
+                  <SectionHeader
+                    label={tier.name}
+                    active={sectionActive}
+                    tierBadge={tier.key !== "free" ? tier.name : undefined}
+                  />
+                  <div className="space-y-1.5 mt-2">
+                    {items.map((item) => {
+                      const Icon = ICON_MAP[item.icon_name] ?? User;
+                      const displayLabel =
+                        item.feature_key === "create_competitions" && hasCompetitions
+                          ? "VIEW / BUILD YOUR COMP"
+                          : item.label;
 
-                    return (V1_FULL_ACCESS || canAccess(item.feature_key)) ? (
-                      <ActiveMenuItem
-                        key={item.id}
-                        label={displayLabel}
-                        icon={Icon}
-                        onClick={() => handleItemClick(item)}
-                      />
-                    ) : (
-                      <LockedMenuItem
-                        key={item.id}
-                        label={displayLabel}
-                        description={item.description}
-                        onUpgrade={goUpgrade}
-                      />
-                    );
-                  })}
+                      return (V1_FULL_ACCESS || canAccess(item.feature_key)) ? (
+                        <ActiveMenuItem
+                          key={item.id}
+                          label={displayLabel}
+                          icon={Icon}
+                          onClick={() => handleItemClick(item)}
+                        />
+                      ) : (
+                        <LockedMenuItem
+                          key={item.id}
+                          label={displayLabel}
+                          description={item.description}
+                          onUpgrade={goUpgrade}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {/* Spotlight sections */}
+          <UpcomingCompetitionsSpotlight />
+          <BrowseMarketplaceSection />
+          <ShopSpotlight />
+          <ProgramSpotlight />
         </div>
       </main>
     </div>
