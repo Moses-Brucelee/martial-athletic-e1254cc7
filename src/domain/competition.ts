@@ -9,6 +9,7 @@ export interface Competition {
   type: string | null;
   divisions: string | null;
   status: string;
+  poster_url: string | null;
   created_by: string;
   season_id: string | null;
   age_category_type: string | null;
