@@ -23,6 +23,7 @@ import { BracketsPanel } from "@/modules/tournaments/components/BracketsPanel";
 import { CompetitionStatusBar } from "@/modules/tournaments/components/CompetitionStatusBar";
 import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 import { V1_FULL_ACCESS } from "@/lib/featureFlags";
+import { PosterUpload } from "@/components/competition/PosterUpload";
 
 export default function CompetitionDashboard() {
   const { id } = useParams<{ id: string }>();
@@ -30,7 +31,7 @@ export default function CompetitionDashboard() {
   const { profile, loading: profileLoading } = useProfile();
   const { isOwner, isJudge, loading: roleLoading } = useCompetitionRole(id);
   const { isSuperUser } = useSuperUserAccess();
-  const { data: competition, isLoading: compLoading, error: compError } = useCompetition(id);
+  const { data: competition, isLoading: compLoading, error: compError, refetch: refetchComp } = useCompetition(id);
   const isMobile = useIsMobile();
 
   // V1: bypass tier check, but preserve role-based access
@@ -172,9 +173,19 @@ export default function CompetitionDashboard() {
           Competition Dashboard
         </h2>
         {competition && (
-          <p className="text-muted-foreground mb-4">{competition.name}</p>
+          <>
+            <p className="text-muted-foreground mb-2">{competition.name}</p>
+            {canAdmin && (
+              <div className="mb-4">
+                <PosterUpload
+                  competitionId={id!}
+                  currentPosterUrl={competition.poster_url}
+                  onPosterUpdated={() => refetchComp()}
+                />
+              </div>
+            )}
+          </>
         )}
-
         {competition && (
           <CompetitionStatusBar
             competitionId={id!}

@@ -614,6 +614,7 @@ export type Database = {
           max_age: number | null
           min_age: number | null
           name: string
+          poster_url: string | null
           season_id: string | null
           status: string
           type: string | null
@@ -631,6 +632,7 @@ export type Database = {
           max_age?: number | null
           min_age?: number | null
           name: string
+          poster_url?: string | null
           season_id?: string | null
           status?: string
           type?: string | null
@@ -648,6 +650,7 @@ export type Database = {
           max_age?: number | null
           min_age?: number | null
           name?: string
+          poster_url?: string | null
           season_id?: string | null
           status?: string
           type?: string | null
