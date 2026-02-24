@@ -78,6 +78,24 @@ export default function CompetitionDashboard() {
             <h3 className="text-lg font-bold text-foreground uppercase mb-4">Score Locks</h3>
             <ScoreLockControls competitionId={id!} canAdmin={canAdmin} isSuperUser={isSuperUser} />
           </div>
+          {competition && (
+            <div className="bg-card border border-border rounded-xl p-6">
+              <h3 className="text-lg font-bold text-foreground uppercase mb-4">Age Category</h3>
+              <div className="space-y-2 text-sm">
+                <p className="text-foreground">
+                  <span className="text-muted-foreground">Type: </span>
+                  {competition.age_category_type === "under_x" ? "Under X" :
+                   competition.age_category_type === "age_range" ? "Age Range" : "Open"}
+                </p>
+                {competition.min_age != null && (
+                  <p className="text-foreground"><span className="text-muted-foreground">Min Age: </span>{competition.min_age}</p>
+                )}
+                {competition.max_age != null && (
+                  <p className="text-foreground"><span className="text-muted-foreground">Max Age: </span>{competition.max_age}</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </TabsContent>
 

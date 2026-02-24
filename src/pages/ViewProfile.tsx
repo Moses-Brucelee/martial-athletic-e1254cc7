@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
@@ -9,14 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { DateOfBirthPicker } from "@/components/ui/DateOfBirthPicker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
-import { Camera, AlertCircle, CheckCircle, CalendarIcon } from "lucide-react";
+import { Camera, AlertCircle, CheckCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
-import { profileSchema, validateImageFile, sanitizeError, calculateAge } from "@/lib/validation";
+import { profileSchema, validateImageFile, sanitizeError } from "@/lib/validation";
+import { calculateAge } from "@/utils/calculateAge";
 
 export default function ViewProfile() {
   const navigate = useNavigate();
@@ -26,7 +25,7 @@ export default function ViewProfile() {
 
   const [fullName, setFullName] = useState("");
   const [gender, setGender] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
+  const [dobString, setDobString] = useState<string | undefined>(undefined);
   const [affiliation, setAffiliation] = useState("");
   const [aboutMe, setAboutMe] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -36,9 +35,9 @@ export default function ViewProfile() {
   const [success, setSuccess] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  const dateOfBirth = dobString ? new Date(dobString + "T00:00:00") : undefined;
   const computedAge = dateOfBirth ? calculateAge(dateOfBirth) : null;
 
-  // Real-time validation
   const validation = profileSchema.safeParse({ fullName, gender, affiliation, aboutMe });
   const fieldErrors: Record<string, string> = {};
   if (!validation.success) {
@@ -53,7 +52,7 @@ export default function ViewProfile() {
     if (profile) {
       setFullName(profile.full_name || "");
       setGender(profile.gender || "");
-      setDateOfBirth(profile.date_of_birth ? parseISO(profile.date_of_birth) : undefined);
+      setDobString(profile.date_of_birth || undefined);
       setAffiliation(profile.affiliation || "");
       setAboutMe(profile.about_me || "");
       setAvatarPreview(profile.avatar_url || null);
@@ -64,10 +63,7 @@ export default function ViewProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
     const imgError = validateImageFile(file);
-    if (imgError) {
-      setError(imgError);
-      return;
-    }
+    if (imgError) { setError(imgError); return; }
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
     setError("");
@@ -81,13 +77,10 @@ export default function ViewProfile() {
 
     try {
       let avatarUrl: string | null = profile?.avatar_url || null;
-
       if (avatarFile) {
         const ext = avatarFile.name.split(".").pop();
         const path = `${user.id}/avatar.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(path, avatarFile, { upsert: true });
+        const { error: uploadError } = await supabase.storage.from("avatars").upload(path, avatarFile, { upsert: true });
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
         avatarUrl = urlData.publicUrl;
@@ -100,7 +93,7 @@ export default function ViewProfile() {
           display_name: fullName.trim() || profile?.display_name,
           gender: gender || null,
           age: computedAge,
-          date_of_birth: dateOfBirth ? format(dateOfBirth, "yyyy-MM-dd") : null,
+          date_of_birth: dobString || null,
           affiliation: affiliation.trim() || null,
           about_me: aboutMe.trim() || null,
           avatar_url: avatarUrl,
@@ -108,7 +101,6 @@ export default function ViewProfile() {
         .eq("user_id", user.id);
 
       if (updateError) throw updateError;
-
       setSuccess(true);
       setAvatarFile(null);
       await refetch();
@@ -125,9 +117,7 @@ export default function ViewProfile() {
       <div className="min-h-screen bg-background">
         <Skeleton className="h-14 w-full" />
         <div className="max-w-3xl mx-auto p-6 space-y-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
         </div>
       </div>
     );
@@ -145,21 +135,11 @@ export default function ViewProfile() {
     );
   }
 
-  const initials = (fullName || profile?.display_name || "MA")
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = (fullName || profile?.display_name || "MA").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <CompetitionHeader
-        title="Profile"
-        subscriptionTier={profile?.subscription_tier}
-        avatarUrl={profile?.avatar_url}
-        displayName={profile?.display_name}
-      />
+      <CompetitionHeader title="Profile" subscriptionTier={profile?.subscription_tier} avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
 
       <main className="flex-1 flex items-start justify-center px-4 py-8">
         <div className="w-full max-w-3xl">
@@ -182,9 +162,7 @@ export default function ViewProfile() {
                 <button type="button" onClick={() => fileInputRef.current?.click()} className="relative group">
                   <Avatar className="h-28 w-28 border-2 border-border">
                     <AvatarImage src={avatarPreview || undefined} />
-                    <AvatarFallback className="bg-muted text-muted-foreground text-lg font-bold">
-                      {initials}
-                    </AvatarFallback>
+                    <AvatarFallback className="bg-muted text-muted-foreground text-lg font-bold">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="absolute inset-0 rounded-full bg-foreground/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                     <Camera className="h-6 w-6 text-background" />
@@ -215,31 +193,7 @@ export default function ViewProfile() {
                   {touched.gender && fieldErrors.gender && <p className="text-xs text-destructive">{fieldErrors.gender}</p>}
                   {!touched.gender && !gender && <p className="text-xs text-muted-foreground">Required</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-foreground font-medium">Date of Birth</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn("h-11 w-full justify-start text-left font-normal bg-background", !dateOfBirth && "text-muted-foreground")}
-                        disabled={saving}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateOfBirth ? format(dateOfBirth, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={dateOfBirth}
-                        onSelect={setDateOfBirth}
-                        disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                <DateOfBirthPicker value={dobString} onChange={setDobString} disabled={saving} />
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Age</Label>
                   <div className="h-11 flex items-center px-3 rounded-md border border-border bg-muted text-foreground">

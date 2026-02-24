@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Competition, Division, Team, Workout } from "./types";
-import type { CreateCompetitionInput, AddTeamInput, AddWorkoutInput } from "./types";
+import type { Competition, Division, Team, Workout, Bracket, Bout } from "./types";
+import type { CreateCompetitionInput, AddTeamInput, AddWorkoutInput, CreateBracketInput } from "./types";
 
 // ── Competitions ──────────────────────────────────────────────────────
 
@@ -34,6 +34,9 @@ export async function createCompetition(input: CreateCompetitionInput): Promise<
       type: input.type || null,
       host_gym: input.host_gym || null,
       divisions: input.divisions || null,
+      age_category_type: input.age_category_type || "open",
+      min_age: input.min_age ?? null,
+      max_age: input.max_age ?? null,
     })
     .select("*")
     .single();
@@ -141,3 +144,51 @@ export async function saveWorkouts(competitionId: string, workouts: { workout_nu
 // ── Divisions (re-export from data layer for backward compat) ─────────
 
 export { fetchDivisions, addDivision, removeDivision, updateDivision } from "@/data/divisions";
+
+// ── Brackets ──────────────────────────────────────────────────────────
+
+export async function fetchBrackets(competitionId: string): Promise<Bracket[]> {
+  const { data, error } = await supabase
+    .from("brackets")
+    .select("*")
+    .eq("competition_id", competitionId)
+    .order("created_at");
+  if (error) throw error;
+  return (data ?? []) as Bracket[];
+}
+
+export async function createBracket(input: CreateBracketInput): Promise<Bracket> {
+  const { data, error } = await supabase
+    .from("brackets")
+    .insert({
+      competition_id: input.competition_id,
+      division_id: input.division_id || null,
+      name: input.name,
+      bracket_type: input.bracket_type || "single_elimination",
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as Bracket;
+}
+
+// ── Bouts ─────────────────────────────────────────────────────────────
+
+export async function fetchBouts(bracketId: string): Promise<Bout[]> {
+  const { data, error } = await supabase
+    .from("bouts")
+    .select("*")
+    .eq("bracket_id", bracketId)
+    .order("round_number")
+    .order("bout_number");
+  if (error) throw error;
+  return (data ?? []) as Bout[];
+}
+
+export async function updateBoutWinner(boutId: string, winnerId: string): Promise<void> {
+  const { error } = await supabase
+    .from("bouts")
+    .update({ winner_id: winnerId, status: "completed" })
+    .eq("id", boutId);
+  if (error) throw error;
+}
