@@ -1,161 +1,237 @@
 
 
-# Phase 2 Completion: Bracket Generation, Tournament Lifecycle, and Testing
+# Normalized Members + Discount Engine — Refined Implementation Plan
 
-## Overview
+## User Refinements Incorporated
 
-This plan covers four items: verifying existing DOB/eligibility features work correctly, then implementing two major new features -- automated bracket generation and a tournament lifecycle state machine.
+All 5 critical refinements from the user are accepted and integrated:
 
----
+- A. `gyms.owner_id` as real FK to `profiles(id)` with ON DELETE CASCADE
+- B. `slug TEXT UNIQUE NOT NULL` on gyms for future public pages
+- C. CHECK constraint on `member_discounts` ensuring exactly one of percentage/amount
+- D. `created_by UUID REFERENCES profiles(id)` on `member_discounts` for audit
+- E. Performance indexes on all high-query columns
 
-## Part 1: DOB Picker and Age Eligibility (Verification)
-
-The DOB picker, age calculation, and eligibility enforcement are already fully implemented:
-
-- `DateOfBirthPicker.tsx` renders year/month/day dropdowns, emits ISO string
-- `calculateAge()` and `checkAgeEligibility()` in `src/utils/calculateAge.ts` handle age computation
-- `CreateProfile.tsx` and `ViewProfile.tsx` both use the picker and display computed age
-- `ParticipantsPanel.tsx` checks eligibility on self-register using competition date as reference
-- `CompetitionCreate.tsx` allows configuring age categories (Open, Under X, Age Range)
-
-**No code changes needed** -- these will be verified via browser testing after implementation.
+Additionally: compound discount stacking (`1 - product of (1 - each%)`) instead of linear sum.
 
 ---
 
-## Part 2: Automated Bracket Generation
+## Phase 1: Database Migration
 
-### New file: `src/modules/tournaments/bracketGenerator.ts`
+Single migration creating 4 tables, 2 security definer functions, RLS policies, and indexes.
 
-Pure logic module (no Supabase, no React) that:
+### Tables
 
-1. Accepts a list of participants with profile data (DOB, gender) and competition config (date, age category, divisions)
-2. Groups participants by:
-   - Age category (computed dynamically from DOB + competition date)
-   - Gender (from profile)
-   - Division (from team assignment)
-3. For each group, generates a single-elimination bracket:
-   - Calculates rounds needed: `Math.ceil(Math.log2(participants.length))`
-   - Seeds participants (simple sequential seeding for V1)
-   - Creates bout matchups for round 1
-   - Assigns byes when participant count is not a power of 2
-   - Subsequent rounds have empty team slots (filled as winners advance)
-4. Returns bracket and bout data structures ready for database insertion
+**gyms**
 
-### New file: `src/modules/tournaments/components/BracketsPanel.tsx`
+| Column | Type | Constraint |
+|---|---|---|
+| id | UUID PK | DEFAULT gen_random_uuid() |
+| owner_id | UUID NOT NULL | REFERENCES profiles(id) ON DELETE CASCADE |
+| name | TEXT NOT NULL | |
+| slug | TEXT UNIQUE NOT NULL | For future /gym/:slug |
+| description | TEXT NULL | |
+| logo_url | TEXT NULL | |
+| website_url | TEXT NULL | |
+| metadata | JSONB NULL | |
+| created_at | TIMESTAMPTZ | DEFAULT now() |
 
-UI component for the competition dashboard "Brackets" tab:
+**gym_members**
 
-- Shows existing brackets grouped by division/age category
-- "Generate Brackets" button (admin only) that calls the generator
-- Visual bracket display showing rounds and matchups
-- Each bout shows team names, winner selection button (admin/judge)
-- Mobile-friendly card layout (no tables)
-- Uses `useBrackets`, `useBouts`, `useCreateBracket`, `useUpdateBoutWinner` hooks
+| Column | Type | Constraint |
+|---|---|---|
+| id | UUID PK | DEFAULT gen_random_uuid() |
+| gym_id | UUID NOT NULL | REFERENCES gyms(id) ON DELETE CASCADE |
+| user_id | UUID NOT NULL | REFERENCES profiles(id) ON DELETE CASCADE |
+| role | TEXT | DEFAULT 'member' |
+| belt_rank | TEXT NULL | |
+| join_date | DATE | DEFAULT CURRENT_DATE |
+| status | TEXT | DEFAULT 'active' |
+| team_assignment | TEXT NULL | |
+| metadata | JSONB NULL | |
+| created_at | TIMESTAMPTZ | DEFAULT now() |
+| | | UNIQUE(gym_id, user_id) |
 
-### Updates to existing files:
+Zero identity fields -- name/email come from profiles via join.
 
-**`src/modules/tournaments/api.ts`**
-- Add `createBracketWithBouts(competitionId, brackets)` -- batch insert bracket + bouts in one call
-- Add `deleteBrackets(competitionId)` -- clear existing brackets for regeneration
+**member_discounts**
 
-**`src/modules/tournaments/hooks.ts`**
-- Add `useGenerateBrackets` mutation hook
-- Add `useDeleteBrackets` mutation hook
+| Column | Type | Constraint |
+|---|---|---|
+| id | UUID PK | DEFAULT gen_random_uuid() |
+| gym_member_id | UUID NOT NULL | REFERENCES gym_members(id) ON DELETE CASCADE |
+| discount_type | TEXT NOT NULL | subscription, competition_entry, vendor, promotional, reward, manual_override |
+| source_type | TEXT NOT NULL | gym_subscription, affiliation, vendor, tournament_result, admin, system |
+| source_id | UUID NULL | Reference to affiliation/vendor/competition |
+| discount_percentage | NUMERIC NULL | |
+| discount_amount | NUMERIC NULL | |
+| is_stackable | BOOLEAN | DEFAULT false |
+| priority | INTEGER | DEFAULT 100 |
+| valid_from | TIMESTAMPTZ | DEFAULT now() |
+| valid_until | TIMESTAMPTZ NULL | |
+| metadata | JSONB NULL | |
+| created_at | TIMESTAMPTZ | DEFAULT now() |
+| created_by | UUID NULL | REFERENCES profiles(id) |
+| | | CHECK: exactly one of percentage or amount must be non-null |
 
-**`src/pages/CompetitionDashboard.tsx`**
-- Add "Brackets" tab to owner and judge tab views
-- Import and render `BracketsPanel`
+**gym_default_discounts**
 
----
+| Column | Type | Constraint |
+|---|---|---|
+| id | UUID PK | DEFAULT gen_random_uuid() |
+| gym_id | UUID NOT NULL | REFERENCES gyms(id) ON DELETE CASCADE |
+| discount_type | TEXT NOT NULL | |
+| discount_percentage | NUMERIC NOT NULL | |
+| applies_to | TEXT | DEFAULT 'all' |
+| is_stackable | BOOLEAN | DEFAULT false |
+| priority | INTEGER | DEFAULT 200 |
+| valid_from | TIMESTAMPTZ | DEFAULT now() |
+| valid_until | TIMESTAMPTZ NULL | |
+| metadata | JSONB NULL | |
+| created_at | TIMESTAMPTZ | DEFAULT now() |
 
-## Part 3: Tournament Lifecycle State Machine
-
-### New file: `src/modules/tournaments/stateMachine.ts`
-
-Pure logic defining the competition lifecycle:
+### Security Definer Functions
 
 ```text
-States: draft -> registration -> seeding -> in_progress -> completed
+is_gym_owner(p_user_id UUID, p_gym_id UUID) -> BOOLEAN
+  SELECT EXISTS (SELECT 1 FROM gyms WHERE id = p_gym_id AND owner_id = p_user_id)
 
-Transitions:
-  draft -> registration        (requires: at least 1 team, 1 workout)
-  registration -> seeding      (requires: at least 2 registered participants)
-  seeding -> in_progress       (requires: brackets generated)
-  in_progress -> completed     (requires: all bouts resolved OR manual override)
-  
-  Backward transitions (admin only):
-  registration -> draft
-  seeding -> registration
+is_gym_member_owner(p_user_id UUID, p_gym_member_id UUID) -> BOOLEAN
+  SELECT EXISTS (
+    SELECT 1 FROM gym_members gm
+    JOIN gyms g ON g.id = gm.gym_id
+    WHERE gm.id = p_gym_member_id AND g.owner_id = p_user_id
+  )
 ```
 
-Exports:
-- `getAvailableTransitions(status, context)` -- returns valid next states
-- `canTransition(from, to, context)` -- validates a specific transition
-- `getStatusLabel(status)` -- human-readable label
-- `getStatusColor(status)` -- badge color class
+### RLS Policies
 
-### Database migration
+**gyms:** All authenticated can SELECT. Owner can INSERT/UPDATE/DELETE. Super users bypass.
 
-The `competitions.status` column already exists (DEFAULT 'draft'). No schema change needed -- just ensure the application uses the new states consistently.
+**gym_members:** Gym owner (via is_gym_owner) or own record (user_id = auth.uid()) can SELECT. Gym owner can INSERT/UPDATE/DELETE. Super users bypass.
 
-### New file: `src/modules/tournaments/components/CompetitionStatusBar.tsx`
+**member_discounts:** Gym owner of parent member (via is_gym_member_owner) or own membership can SELECT. Gym owner can INSERT/UPDATE/DELETE. Super users bypass.
 
-Horizontal status bar displayed at the top of the competition dashboard:
+**gym_default_discounts:** Gym owner (via is_gym_owner) can full CRUD. Super users bypass.
 
-- Shows all 5 states as steps with the current one highlighted
-- Forward/backward transition buttons (admin only)
-- Confirmation dialog before state changes
-- Validates prerequisites before allowing transitions (shows what's missing)
-- Mobile-responsive (horizontal scroll or compact layout)
+### Indexes
 
-### Updates to existing files:
+```text
+idx_gym_members_gym_id ON gym_members(gym_id)
+idx_gym_members_user_id ON gym_members(user_id)
+idx_member_discounts_member_id ON member_discounts(gym_member_id)
+idx_gym_default_discounts_gym_id ON gym_default_discounts(gym_id)
+```
 
-**`src/modules/tournaments/api.ts`**
-- Add `updateCompetitionStatus(id, status)` function
+---
 
-**`src/modules/tournaments/hooks.ts`**
-- Add `useUpdateCompetitionStatus` mutation hook
+## Phase 2: Discount Resolution Engine
 
-**`src/pages/CompetitionDashboard.tsx`**
-- Add `CompetitionStatusBar` below the competition name
-- Pass competition data and admin flag
-- Conditionally disable certain tabs based on competition state (e.g., scoring only available in `in_progress`)
+### New file: `src/utils/discountResolver.types.ts`
+
+Type definitions for `DiscountContext`, `MemberDiscount`, `GymDefaultDiscount`, `AppliedDiscount`, `ResolvedDiscount`.
+
+### New file: `src/utils/discountResolver.ts`
+
+Pure stateless function -- no database calls, no React:
+
+```text
+resolveMemberDiscount(
+  memberDiscounts: MemberDiscount[],
+  gymDefaults: GymDefaultDiscount[],
+  context: DiscountContext,
+  now?: Date
+) => ResolvedDiscount
+```
+
+**Key logic change per user feedback:** Compound stacking, not linear.
+
+- 20% + 20% = 1 - (0.8 x 0.8) = 36%, NOT 40%
+- Capped at 100%
+- Non-stackable: highest priority only
+- Fixed amounts: summed separately
+
+---
+
+## Phase 3: Members Module
+
+### New file: `src/modules/members/types.ts`
+
+TypeScript interfaces. `GymMember` type includes profile fields (display_name, avatar_url, full_name) fetched via join -- never stored in gym_members.
+
+### New file: `src/modules/members/api.ts`
+
+Supabase query functions:
+- `fetchUserGyms(userId)` -- gyms owned by user
+- `createGym(data)` -- with auto-generated slug from name
+- `fetchGymMembers(gymId)` -- joined with profiles for display data
+- `addGymMember(gymId, userId)` -- insert membership
+- `removeGymMember(memberId)` -- delete
+- `updateGymMember(memberId, updates)` -- belt_rank, status, role, etc.
+- `fetchMemberDiscounts(gymMemberId)` -- active discounts
+- `createMemberDiscount(data)` -- with created_by from auth
+- `deleteMemberDiscount(id)` -- remove
+- `fetchGymDefaultDiscounts(gymId)` -- gym-level defaults
+- `createGymDefaultDiscount(data)` -- insert
+- `deleteGymDefaultDiscount(id)` -- remove
+
+### New file: `src/modules/members/hooks.ts`
+
+TanStack Query hooks wrapping each API function plus `useResolvedDiscount(gymMemberId, context)` that fetches discounts + defaults and runs the resolver.
+
+---
+
+## Phase 4: UI Components
+
+### New file: `src/modules/members/components/MembersPage.tsx`
+
+- If user has no gym: "Create Your Gym" form (name, description -- slug auto-generated)
+- Once gym exists: searchable member directory with profile avatars, display names, belt ranks, status
+- Add member by searching existing profiles
+- Click to open member detail
+
+### New file: `src/modules/members/components/MemberDetailSheet.tsx`
+
+Side sheet showing:
+- Profile info (from profiles table via join)
+- Membership details (belt rank, role, status, team)
+- Discounts section: active/expired, type, source, percentage/amount, stackable badge, priority, expiration
+- Computed discount preview per context
+- "Add Discount" button for gym owner
+
+### New file: `src/modules/members/components/AddDiscountDialog.tsx`
+
+Form with discount type, source type, percentage OR amount (mutually exclusive), expiration picker, priority, stackable toggle.
+
+### Update: `src/App.tsx`
+
+Add `/members` route wrapped in `ProtectedRoute`.
 
 ---
 
 ## File Summary
 
-### New Files
-| File | Purpose |
+| File | Action |
 |---|---|
-| `src/modules/tournaments/bracketGenerator.ts` | Pure bracket generation logic |
-| `src/modules/tournaments/stateMachine.ts` | Competition lifecycle state machine |
-| `src/modules/tournaments/components/BracketsPanel.tsx` | Bracket management UI |
-| `src/modules/tournaments/components/CompetitionStatusBar.tsx` | Status bar with transitions |
-
-### Modified Files
-| File | Change |
-|---|---|
-| `src/modules/tournaments/api.ts` | Add bracket batch insert, delete, status update |
-| `src/modules/tournaments/hooks.ts` | Add generation, deletion, status hooks |
-| `src/pages/CompetitionDashboard.tsx` | Add Brackets tab + StatusBar |
-
-### Unchanged
-- All Phase 1 architecture (auth, scoring, realtime, mobile judge)
-- DOB picker, age calculation, eligibility enforcement
-- V1_FULL_ACCESS flag
-- Database schema (uses existing tables)
-
----
+| Database migration | CREATE: 4 tables, 2 functions, RLS, indexes |
+| `src/utils/discountResolver.types.ts` | CREATE |
+| `src/utils/discountResolver.ts` | CREATE |
+| `src/modules/members/types.ts` | CREATE |
+| `src/modules/members/api.ts` | CREATE |
+| `src/modules/members/hooks.ts` | CREATE |
+| `src/modules/members/components/MembersPage.tsx` | CREATE |
+| `src/modules/members/components/MemberDetailSheet.tsx` | CREATE |
+| `src/modules/members/components/AddDiscountDialog.tsx` | CREATE |
+| `src/App.tsx` | UPDATE: add /members route |
 
 ## Execution Order
 
-1. Create `stateMachine.ts` (pure logic, no dependencies)
-2. Create `bracketGenerator.ts` (pure logic, uses calculateAge)
-3. Add API functions to `tournaments/api.ts` (batch bracket insert, status update)
-4. Add hooks to `tournaments/hooks.ts`
-5. Create `CompetitionStatusBar.tsx` component
-6. Create `BracketsPanel.tsx` component
-7. Update `CompetitionDashboard.tsx` with new tab and status bar
-8. Test end-to-end: create competition, set age category, register athletes, generate brackets, advance through lifecycle states
+1. Database migration (tables, functions, RLS, indexes)
+2. `discountResolver.types.ts` + `discountResolver.ts`
+3. `members/types.ts`
+4. `members/api.ts`
+5. `members/hooks.ts`
+6. `MembersPage.tsx`, `MemberDetailSheet.tsx`, `AddDiscountDialog.tsx`
+7. Update `App.tsx`
+8. Test end-to-end
 
