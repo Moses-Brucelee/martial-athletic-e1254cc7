@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
+import { V1_FULL_ACCESS } from "@/lib/featureFlags";
 
 interface CompetitionHeaderProps {
   title: string;
@@ -33,7 +34,7 @@ export function CompetitionHeader({
 
   // Use tierName if provided, otherwise fall back to legacy prop
   const resolvedName = tierName ?? subscriptionTier?.toUpperCase();
-  const showBadge = resolvedName && resolvedName !== "FREE" && resolvedName !== "free";
+  const showBadge = !V1_FULL_ACCESS && resolvedName && resolvedName !== "FREE" && resolvedName !== "free";
 
   const initials = displayName
     ? displayName

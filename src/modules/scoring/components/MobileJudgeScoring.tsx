@@ -1,0 +1,184 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ChevronLeft, ChevronRight, Lock, Save } from "lucide-react";
+import { toast } from "sonner";
+import { scoreSchema } from "@/lib/validation";
+import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
+import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
+
+interface MobileJudgeScoringProps {
+  competitionId: string;
+  judgeId?: string;
+}
+
+export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScoringProps) {
+  const { data: teams = [] } = useTeams(competitionId);
+  const { data: workouts = [] } = useWorkouts(competitionId);
+  const { data: scoreRows = [] } = useScores(competitionId);
+  const upsertMutation = useUpsertScores();
+
+  const [localScores, setLocalScores] = useState<Record<string, string>>({});
+  const [currentTeamIndex, setCurrentTeamIndex] = useState(0);
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string>("");
+
+  // Set default workout
+  useEffect(() => {
+    if (workouts.length > 0 && !selectedWorkoutId) {
+      const unlocked = workouts.find((w) => !w.is_locked);
+      setSelectedWorkoutId(unlocked?.id || workouts[0].id);
+    }
+  }, [workouts, selectedWorkoutId]);
+
+  // Sync scores
+  useEffect(() => {
+    const map: Record<string, string> = {};
+    scoreRows.forEach((s) => {
+      map[`${s.team_id}-${s.workout_id}`] = String(s.score);
+    });
+    setLocalScores(map);
+  }, [scoreRows]);
+
+  const currentTeam = teams[currentTeamIndex];
+  const selectedWorkout = workouts.find((w) => w.id === selectedWorkoutId);
+
+  const updateScore = (value: string) => {
+    if (!currentTeam || !selectedWorkoutId) return;
+    setLocalScores((prev) => ({ ...prev, [`${currentTeam.id}-${selectedWorkoutId}`]: value }));
+  };
+
+  const adjustScore = (delta: number) => {
+    if (!currentTeam || !selectedWorkoutId) return;
+    const key = `${currentTeam.id}-${selectedWorkoutId}`;
+    const current = Number(localScores[key] || 0);
+    const newVal = Math.max(0, current + delta);
+    setLocalScores((prev) => ({ ...prev, [key]: String(newVal) }));
+  };
+
+  const saveAllScores = async () => {
+    const invalid = Object.values(localScores).some(
+      (val) => val !== "" && !scoreSchema.safeParse(val).success
+    );
+    if (invalid) {
+      toast.error("Scores must be between 0 and 999,999");
+      return;
+    }
+
+    const upserts = Object.entries(localScores)
+      .filter(([, val]) => val !== "" && !isNaN(Number(val)))
+      .map(([key, val]) => {
+        const [team_id, workout_id] = key.split("-");
+        return { competition_id: competitionId, team_id, workout_id, score: Number(val), judge_id: judgeId || null };
+      });
+
+    try {
+      await upsertMutation.mutateAsync(upserts);
+      toast.success("Scores saved!");
+    } catch {
+      toast.error("Failed to save scores");
+    }
+  };
+
+  if (teams.length === 0 || workouts.length === 0) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-muted-foreground">Add teams and workouts first to enter scores.</p>
+      </div>
+    );
+  }
+
+  const currentScore = currentTeam ? (localScores[`${currentTeam.id}-${selectedWorkoutId}`] || "0") : "0";
+
+  return (
+    <div className="flex flex-col h-full min-h-[60vh]">
+      {/* Workout selector pills */}
+      <div className="flex gap-2 overflow-x-auto pb-3 px-1">
+        {workouts.map((w) => (
+          <button
+            key={w.id}
+            onClick={() => setSelectedWorkoutId(w.id)}
+            className={`flex items-center gap-1 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
+              selectedWorkoutId === w.id
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            WOD {w.workout_number}
+            {w.is_locked && <Lock className="h-3 w-3" />}
+          </button>
+        ))}
+      </div>
+
+      {/* Team card */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
+        <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-lg">
+          {/* Team navigation */}
+          <div className="flex items-center justify-between mb-6">
+            <Button variant="ghost" size="icon" className="h-12 w-12"
+              onClick={() => setCurrentTeamIndex(Math.max(0, currentTeamIndex - 1))}
+              disabled={currentTeamIndex === 0}>
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+            <div className="text-center flex-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                Team {currentTeamIndex + 1} of {teams.length}
+              </p>
+              <h3 className="text-xl font-black text-foreground mt-1">
+                {currentTeam?.team_name}
+              </h3>
+              {currentTeam?.division && (
+                <p className="text-sm text-primary font-medium mt-0.5">{currentTeam.division}</p>
+              )}
+            </div>
+            <Button variant="ghost" size="icon" className="h-12 w-12"
+              onClick={() => setCurrentTeamIndex(Math.min(teams.length - 1, currentTeamIndex + 1))}
+              disabled={currentTeamIndex === teams.length - 1}>
+              <ChevronRight className="h-6 w-6" />
+            </Button>
+          </div>
+
+          {/* Score input */}
+          {selectedWorkout?.is_locked ? (
+            <div className="text-center py-8">
+              <Lock className="h-8 w-8 text-destructive mx-auto mb-2" />
+              <p className="text-sm text-destructive font-bold">This workout is locked</p>
+              <p className="text-3xl font-black text-foreground mt-2">{currentScore}</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Button variant="outline" size="icon" className="h-14 w-14 text-xl font-bold shrink-0"
+                  onClick={() => adjustScore(-1)}>
+                  −
+                </Button>
+                <Input type="number" value={currentScore}
+                  onChange={(e) => updateScore(e.target.value)}
+                  className="h-14 text-center text-2xl font-black bg-background flex-1" />
+                <Button variant="outline" size="icon" className="h-14 w-14 text-xl font-bold shrink-0"
+                  onClick={() => adjustScore(1)}>
+                  +
+                </Button>
+              </div>
+              <div className="flex gap-2 justify-center">
+                {[5, 10, 25].map((n) => (
+                  <Button key={n} variant="secondary" size="sm" className="text-xs" onClick={() => adjustScore(n)}>
+                    +{n}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sticky save button */}
+      <div className="sticky bottom-0 p-4 bg-background border-t border-border">
+        <Button onClick={saveAllScores} disabled={upsertMutation.isPending}
+          className="w-full h-14 bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-lg">
+          <Save className="h-5 w-5 mr-2" />
+          {upsertMutation.isPending ? "Saving..." : "Save All Scores"}
+        </Button>
+      </div>
+    </div>
+  );
+}

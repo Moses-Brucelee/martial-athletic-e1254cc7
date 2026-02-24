@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
-
+import { V1_FULL_ACCESS } from "@/lib/featureFlags";
 interface TierInfo {
   key: string;
   name: string;
@@ -114,6 +114,7 @@ export function useSubscription() {
 
   const canAccess = useCallback(
     (feature: string): boolean => {
+      if (V1_FULL_ACCESS) return true;
       if (isSuperUser) return true;
       return allowedFeatures.has(feature);
     },

@@ -44,8 +44,8 @@ const App = () => (
               <Route path="/dashboard" element={<ProtectedRoute><MainMenu /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ViewProfile /></ProtectedRoute>} />
               <Route path="/competitions" element={<ProtectedRoute><CompetitionList /></ProtectedRoute>} />
-              <Route path="/competition/create" element={<ProtectedRoute><SubscriptionGuard requiredFeature="create_competitions"><CompetitionCreate /></SubscriptionGuard></ProtectedRoute>} />
-              <Route path="/competition/:id/workouts" element={<ProtectedRoute><SubscriptionGuard requiredFeature="create_competitions"><CompetitionWorkouts /></SubscriptionGuard></ProtectedRoute>} />
+              <Route path="/competition/create" element={<ProtectedRoute><CompetitionCreate /></ProtectedRoute>} />
+              <Route path="/competition/:id/workouts" element={<ProtectedRoute><CompetitionWorkouts /></ProtectedRoute>} />
               <Route path="/competition/:id" element={<ProtectedRoute><CompetitionDashboard /></ProtectedRoute>} />
               <Route path="/upgrade" element={<ProtectedRoute><UpgradePackage /></ProtectedRoute>} />
               <Route path="/super-dashboard" element={<ProtectedRoute><SuperUserGuard><SuperDashboard /></SuperUserGuard></ProtectedRoute>} />
