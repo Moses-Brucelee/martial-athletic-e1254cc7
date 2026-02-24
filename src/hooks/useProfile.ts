@@ -10,6 +10,7 @@ export interface Profile {
   full_name: string | null;
   gender: string | null;
   age: number | null;
+  date_of_birth: string | null;
   affiliation: string | null;
   about_me: string | null;
   profile_completed: boolean;

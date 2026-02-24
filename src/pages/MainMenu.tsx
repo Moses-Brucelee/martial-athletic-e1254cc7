@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
+import { V1_FULL_ACCESS } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -222,7 +223,7 @@ export default function MainMenu() {
           <span className="text-lg font-bold text-foreground tracking-tight uppercase">Main Menu</span>
         </div>
         <div className="flex items-center gap-2">
-          {isFree ? (
+          {!V1_FULL_ACCESS && isFree ? (
             <Badge
               variant="outline"
               className="cursor-pointer text-xs font-bold hover:bg-primary hover:text-primary-foreground transition-colors"
@@ -231,11 +232,11 @@ export default function MainMenu() {
               <ArrowUp className="h-3 w-3 mr-1" />
               UPGRADE
             </Badge>
-          ) : (
+          ) : !V1_FULL_ACCESS ? (
             <span className="text-xs font-bold px-2.5 py-1 rounded bg-primary text-primary-foreground">
               {tierName}
             </span>
-          )}
+          ) : null}
           <Avatar className="h-8 w-8">
             <AvatarImage src={profile?.avatar_url || undefined} />
             <AvatarFallback className="bg-muted text-muted-foreground text-xs font-semibold">
@@ -252,7 +253,7 @@ export default function MainMenu() {
       <main className="flex-1 flex items-start justify-center px-4 py-6">
         <div className="w-full max-w-md space-y-1">
           {sections.map(({ tier, items }) => {
-            const sectionActive = canAccess(items[0]?.feature_key ?? "");
+            const sectionActive = V1_FULL_ACCESS || canAccess(items[0]?.feature_key ?? "");
 
             return (
               <div key={tier.key}>
@@ -265,7 +266,7 @@ export default function MainMenu() {
                         ? "VIEW / BUILD YOUR COMP"
                         : item.label;
 
-                    return canAccess(item.feature_key) ? (
+                    return (V1_FULL_ACCESS || canAccess(item.feature_key)) ? (
                       <ActiveMenuItem
                         key={item.id}
                         label={displayLabel}
