@@ -15,7 +15,7 @@ import { Camera, AlertCircle, CalendarIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
-import { profileSchema, validateImageFile, sanitizeError } from "@/lib/validation";
+import { profileSchema, validateImageFile, sanitizeError, calculateAge } from "@/lib/validation";
 
 export default function CreateProfile() {
   const navigate = useNavigate();
@@ -24,7 +24,6 @@ export default function CreateProfile() {
 
   const [fullName, setFullName] = useState("");
   const [gender, setGender] = useState("");
-  const [age, setAge] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
   const [affiliation, setAffiliation] = useState("");
   const [aboutMe, setAboutMe] = useState("");
@@ -34,8 +33,10 @@ export default function CreateProfile() {
   const [error, setError] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  const computedAge = dateOfBirth ? calculateAge(dateOfBirth) : null;
+
   // Real-time validation
-  const validation = profileSchema.safeParse({ fullName, gender, age: age || undefined, affiliation, aboutMe });
+  const validation = profileSchema.safeParse({ fullName, gender, affiliation, aboutMe });
   const fieldErrors: Record<string, string> = {};
   if (!validation.success) {
     validation.error.issues.forEach((issue) => {
@@ -92,8 +93,10 @@ export default function CreateProfile() {
         if (fullName) updates.full_name = fullName.trim();
         if (fullName) updates.display_name = fullName.trim();
         if (gender) updates.gender = gender;
-        if (age) updates.age = parseInt(age);
-        if (dateOfBirth) updates.date_of_birth = format(dateOfBirth, "yyyy-MM-dd");
+        if (dateOfBirth) {
+          updates.date_of_birth = format(dateOfBirth, "yyyy-MM-dd");
+          updates.age = computedAge;
+        }
         if (affiliation) updates.affiliation = affiliation.trim();
         if (aboutMe) updates.about_me = aboutMe.trim();
         if (avatarUrl) updates.avatar_url = avatarUrl;
@@ -221,19 +224,9 @@ export default function CreateProfile() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Age</Label>
-                  <Input
-                    type="number"
-                    placeholder="25"
-                    value={age}
-                    onChange={(e) => setAge(e.target.value)}
-                    onBlur={() => setTouched((p) => ({ ...p, age: true }))}
-                    disabled={loading}
-                    className="h-11 bg-background"
-                    min={5}
-                    max={120}
-                  />
-                  {touched.age && fieldErrors.age && <p className="text-xs text-destructive">{fieldErrors.age}</p>}
-                  {!touched.age && !age && <p className="text-xs text-muted-foreground">Required</p>}
+                  <div className="h-11 flex items-center px-3 rounded-md border border-border bg-muted text-foreground">
+                    {computedAge !== null ? computedAge : <span className="text-muted-foreground">Select DOB</span>}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Affiliation</Label>
