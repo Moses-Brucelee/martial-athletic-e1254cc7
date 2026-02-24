@@ -687,6 +687,220 @@ export type Database = {
           },
         ]
       }
+      gym_default_discounts: {
+        Row: {
+          applies_to: string
+          created_at: string
+          discount_percentage: number
+          discount_type: string
+          gym_id: string
+          id: string
+          is_stackable: boolean
+          metadata: Json | null
+          priority: number
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          applies_to?: string
+          created_at?: string
+          discount_percentage: number
+          discount_type: string
+          gym_id: string
+          id?: string
+          is_stackable?: boolean
+          metadata?: Json | null
+          priority?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          applies_to?: string
+          created_at?: string
+          discount_percentage?: number
+          discount_type?: string
+          gym_id?: string
+          id?: string
+          is_stackable?: boolean
+          metadata?: Json | null
+          priority?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_default_discounts_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gym_members: {
+        Row: {
+          belt_rank: string | null
+          created_at: string
+          gym_id: string
+          id: string
+          join_date: string
+          metadata: Json | null
+          role: string
+          status: string
+          team_assignment: string | null
+          user_id: string
+        }
+        Insert: {
+          belt_rank?: string | null
+          created_at?: string
+          gym_id: string
+          id?: string
+          join_date?: string
+          metadata?: Json | null
+          role?: string
+          status?: string
+          team_assignment?: string | null
+          user_id: string
+        }
+        Update: {
+          belt_rank?: string | null
+          created_at?: string
+          gym_id?: string
+          id?: string
+          join_date?: string
+          metadata?: Json | null
+          role?: string
+          status?: string
+          team_assignment?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_members_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gyms: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          metadata: Json | null
+          name: string
+          owner_id: string
+          slug: string
+          website_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          metadata?: Json | null
+          name: string
+          owner_id: string
+          slug: string
+          website_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          metadata?: Json | null
+          name?: string
+          owner_id?: string
+          slug?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gyms_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_discounts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          discount_amount: number | null
+          discount_percentage: number | null
+          discount_type: string
+          gym_member_id: string
+          id: string
+          is_stackable: boolean
+          metadata: Json | null
+          priority: number
+          source_id: string | null
+          source_type: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          discount_amount?: number | null
+          discount_percentage?: number | null
+          discount_type: string
+          gym_member_id: string
+          id?: string
+          is_stackable?: boolean
+          metadata?: Json | null
+          priority?: number
+          source_id?: string | null
+          source_type: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          discount_amount?: number | null
+          discount_percentage?: number | null
+          discount_type?: string
+          gym_member_id?: string
+          id?: string
+          is_stackable?: boolean
+          metadata?: Json | null
+          priority?: number
+          source_id?: string | null
+          source_type?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_discounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_discounts_gym_member_id_fkey"
+            columns: ["gym_member_id"]
+            isOneToOne: false
+            referencedRelation: "gym_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           created_at: string
@@ -1241,6 +1455,14 @@ export type Database = {
       }
       is_competition_owner: {
         Args: { p_competition_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_gym_member_owner: {
+        Args: { p_gym_member_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_gym_owner: {
+        Args: { p_gym_id: string; p_user_id: string }
         Returns: boolean
       }
       is_super_user: { Args: { p_user_id: string }; Returns: boolean }
