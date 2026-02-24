@@ -5,10 +5,20 @@ import { z } from "zod";
 export const profileSchema = z.object({
   fullName: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be under 100 characters"),
   gender: z.string().min(1, "Please select a gender"),
-  age: z.coerce.number({ invalid_type_error: "Age must be a number" }).int("Age must be a whole number").min(5, "Age must be at least 5").max(120, "Age must be under 120"),
   affiliation: z.string().max(100, "Affiliation must be under 100 characters").optional().or(z.literal("")),
   aboutMe: z.string().max(500, "About Me must be under 500 characters").optional().or(z.literal("")),
 });
+
+/** Calculate age in whole years from a date of birth */
+export function calculateAge(dob: Date): number {
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age;
+}
 
 export const competitionSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be under 100 characters"),

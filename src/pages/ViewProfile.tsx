@@ -16,7 +16,7 @@ import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Camera, AlertCircle, CheckCircle, CalendarIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { profileSchema, validateImageFile, sanitizeError } from "@/lib/validation";
+import { profileSchema, validateImageFile, sanitizeError, calculateAge } from "@/lib/validation";
 
 export default function ViewProfile() {
   const navigate = useNavigate();
@@ -26,7 +26,6 @@ export default function ViewProfile() {
 
   const [fullName, setFullName] = useState("");
   const [gender, setGender] = useState("");
-  const [age, setAge] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
   const [affiliation, setAffiliation] = useState("");
   const [aboutMe, setAboutMe] = useState("");
@@ -37,8 +36,10 @@ export default function ViewProfile() {
   const [success, setSuccess] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  const computedAge = dateOfBirth ? calculateAge(dateOfBirth) : null;
+
   // Real-time validation
-  const validation = profileSchema.safeParse({ fullName, gender, age: age || undefined, affiliation, aboutMe });
+  const validation = profileSchema.safeParse({ fullName, gender, affiliation, aboutMe });
   const fieldErrors: Record<string, string> = {};
   if (!validation.success) {
     validation.error.issues.forEach((issue) => {
@@ -52,7 +53,6 @@ export default function ViewProfile() {
     if (profile) {
       setFullName(profile.full_name || "");
       setGender(profile.gender || "");
-      setAge(profile.age ? String(profile.age) : "");
       setDateOfBirth(profile.date_of_birth ? parseISO(profile.date_of_birth) : undefined);
       setAffiliation(profile.affiliation || "");
       setAboutMe(profile.about_me || "");
@@ -99,7 +99,7 @@ export default function ViewProfile() {
           full_name: fullName.trim() || null,
           display_name: fullName.trim() || profile?.display_name,
           gender: gender || null,
-          age: age ? parseInt(age) : null,
+          age: computedAge,
           date_of_birth: dateOfBirth ? format(dateOfBirth, "yyyy-MM-dd") : null,
           affiliation: affiliation.trim() || null,
           about_me: aboutMe.trim() || null,
@@ -242,9 +242,9 @@ export default function ViewProfile() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Age</Label>
-                  <Input type="number" placeholder="25" value={age} onChange={(e) => setAge(e.target.value)} onBlur={() => setTouched((p) => ({ ...p, age: true }))} disabled={saving} className="h-11 bg-background" min={5} max={120} />
-                  {touched.age && fieldErrors.age && <p className="text-xs text-destructive">{fieldErrors.age}</p>}
-                  {!touched.age && !age && <p className="text-xs text-muted-foreground">Required</p>}
+                  <div className="h-11 flex items-center px-3 rounded-md border border-border bg-muted text-foreground">
+                    {computedAge !== null ? computedAge : <span className="text-muted-foreground">Select DOB</span>}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Affiliation</Label>
