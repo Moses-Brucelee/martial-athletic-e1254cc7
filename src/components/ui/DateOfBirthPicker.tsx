@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -28,11 +28,27 @@ export function DateOfBirthPicker({ value, onChange, disabled, error }: DateOfBi
   const today = new Date();
   const currentYear = today.getFullYear();
 
-  const parsed = useMemo(() => {
+  // Parse initial value into local state
+  const initial = useMemo(() => {
     if (!value) return { year: "", month: "", day: "" };
     const [y, m, d] = value.split("-");
-    return { year: y || "", month: m ? String(parseInt(m, 10)) : "", day: d ? String(parseInt(d, 10)) : "" };
+    return {
+      year: y || "",
+      month: m ? String(parseInt(m, 10)) : "",
+      day: d ? String(parseInt(d, 10)) : "",
+    };
   }, [value]);
+
+  const [year, setYear] = useState(initial.year);
+  const [month, setMonth] = useState(initial.month);
+  const [day, setDay] = useState(initial.day);
+
+  // Sync from parent when value changes externally
+  useEffect(() => {
+    setYear(initial.year);
+    setMonth(initial.month);
+    setDay(initial.day);
+  }, [initial.year, initial.month, initial.day]);
 
   const years = useMemo(() => {
     const arr: number[] = [];
@@ -41,9 +57,9 @@ export function DateOfBirthPicker({ value, onChange, disabled, error }: DateOfBi
   }, [currentYear]);
 
   const maxDays = useMemo(() => {
-    if (!parsed.year || !parsed.month) return 31;
-    return daysInMonth(parseInt(parsed.month, 10), parseInt(parsed.year, 10));
-  }, [parsed.year, parsed.month]);
+    if (!year || !month) return 31;
+    return daysInMonth(parseInt(month, 10), parseInt(year, 10));
+  }, [year, month]);
 
   const days = useMemo(() => {
     const arr: number[] = [];
@@ -51,70 +67,68 @@ export function DateOfBirthPicker({ value, onChange, disabled, error }: DateOfBi
     return arr;
   }, [maxDays]);
 
-  const emitChange = (year: string, month: string, day: string) => {
-    if (!year || !month || !day) {
-      onChange(undefined);
+  const tryEmit = (y: string, m: string, d: string) => {
+    if (!y || !m || !d) {
+      // Don't clear — just wait for all three
       return;
     }
-    const y = parseInt(year, 10);
-    const m = parseInt(month, 10);
-    let d = parseInt(day, 10);
-    const maxD = daysInMonth(m, y);
-    if (d > maxD) d = maxD;
+    const yi = parseInt(y, 10);
+    const mi = parseInt(m, 10);
+    let di = parseInt(d, 10);
+    const maxD = daysInMonth(mi, yi);
+    if (di > maxD) di = maxD;
 
-    const candidate = new Date(y, m - 1, d);
-    if (candidate > today) {
-      onChange(undefined);
-      return;
-    }
+    const candidate = new Date(yi, mi - 1, di);
+    if (candidate > today) return;
 
-    const iso = `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const iso = `${String(yi).padStart(4, "0")}-${String(mi).padStart(2, "0")}-${String(di).padStart(2, "0")}`;
     onChange(iso);
+  };
+
+  const handleYear = (v: string) => {
+    setYear(v);
+    tryEmit(v, month, day);
+  };
+  const handleMonth = (v: string) => {
+    setMonth(v);
+    tryEmit(year, v, day);
+  };
+  const handleDay = (v: string) => {
+    setDay(v);
+    tryEmit(year, month, v);
   };
 
   return (
     <div className="space-y-2">
       <Label className="text-foreground font-medium">Date of Birth</Label>
       <div className="grid grid-cols-3 gap-2">
-        <Select
-          value={parsed.year}
-          onValueChange={(v) => emitChange(v, parsed.month, parsed.day)}
-          disabled={disabled}
-        >
+        <Select value={year} onValueChange={handleYear} disabled={disabled}>
           <SelectTrigger className="h-11 bg-background">
             <SelectValue placeholder="Year" />
           </SelectTrigger>
-          <SelectContent className="max-h-60">
+          <SelectContent className="max-h-60 z-50 bg-popover">
             {years.map((y) => (
               <SelectItem key={y} value={String(y)}>{y}</SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <Select
-          value={parsed.month}
-          onValueChange={(v) => emitChange(parsed.year, v, parsed.day)}
-          disabled={disabled}
-        >
+        <Select value={month} onValueChange={handleMonth} disabled={disabled}>
           <SelectTrigger className="h-11 bg-background">
             <SelectValue placeholder="Month" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-50 bg-popover">
             {MONTHS.map((name, i) => (
               <SelectItem key={i + 1} value={String(i + 1)}>{name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <Select
-          value={parsed.day}
-          onValueChange={(v) => emitChange(parsed.year, parsed.month, v)}
-          disabled={disabled}
-        >
+        <Select value={day} onValueChange={handleDay} disabled={disabled}>
           <SelectTrigger className="h-11 bg-background">
             <SelectValue placeholder="Day" />
           </SelectTrigger>
-          <SelectContent className="max-h-60">
+          <SelectContent className="max-h-60 z-50 bg-popover">
             {days.map((d) => (
               <SelectItem key={d} value={String(d)}>{d}</SelectItem>
             ))}
