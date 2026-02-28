@@ -467,10 +467,14 @@ export type Database = {
           created_at: string
           id: string
           judge_id: string | null
+          load_value: number | null
           locked: boolean
           locked_at: string | null
+          points_awarded: number | null
+          reps_completed: number | null
           score: number
           team_id: string
+          time_seconds: number | null
           updated_at: string
           workout_id: string
         }
@@ -479,10 +483,14 @@ export type Database = {
           created_at?: string
           id?: string
           judge_id?: string | null
+          load_value?: number | null
           locked?: boolean
           locked_at?: string | null
+          points_awarded?: number | null
+          reps_completed?: number | null
           score?: number
           team_id: string
+          time_seconds?: number | null
           updated_at?: string
           workout_id: string
         }
@@ -491,10 +499,14 @@ export type Database = {
           created_at?: string
           id?: string
           judge_id?: string | null
+          load_value?: number | null
           locked?: boolean
           locked_at?: string | null
+          points_awarded?: number | null
+          reps_completed?: number | null
           score?: number
           team_id?: string
+          time_seconds?: number | null
           updated_at?: string
           workout_id?: string
         }
@@ -572,7 +584,10 @@ export type Database = {
           is_locked: boolean
           measurement_type: string
           name: string | null
+          scoring_type: string
+          time_cap_seconds: number | null
           workout_number: number
+          workout_type: string
         }
         Insert: {
           competition_id: string
@@ -581,7 +596,10 @@ export type Database = {
           is_locked?: boolean
           measurement_type?: string
           name?: string | null
+          scoring_type?: string
+          time_cap_seconds?: number | null
           workout_number: number
+          workout_type?: string
         }
         Update: {
           competition_id?: string
@@ -590,7 +608,10 @@ export type Database = {
           is_locked?: boolean
           measurement_type?: string
           name?: string | null
+          scoring_type?: string
+          time_cap_seconds?: number | null
           workout_number?: number
+          workout_type?: string
         }
         Relationships: [
           {
@@ -608,14 +629,18 @@ export type Database = {
           created_at: string
           created_by: string
           date: string | null
+          description: string | null
           divisions: string | null
+          end_date: string | null
           host_gym: string | null
           id: string
           max_age: number | null
           min_age: number | null
           name: string
           poster_url: string | null
+          registration_deadline: string | null
           season_id: string | null
+          start_date: string | null
           status: string
           type: string | null
           updated_at: string
@@ -626,14 +651,18 @@ export type Database = {
           created_at?: string
           created_by: string
           date?: string | null
+          description?: string | null
           divisions?: string | null
+          end_date?: string | null
           host_gym?: string | null
           id?: string
           max_age?: number | null
           min_age?: number | null
           name: string
           poster_url?: string | null
+          registration_deadline?: string | null
           season_id?: string | null
+          start_date?: string | null
           status?: string
           type?: string | null
           updated_at?: string
@@ -644,14 +673,18 @@ export type Database = {
           created_at?: string
           created_by?: string
           date?: string | null
+          description?: string | null
           divisions?: string | null
+          end_date?: string | null
           host_gym?: string | null
           id?: string
           max_age?: number | null
           min_age?: number | null
           name?: string
           poster_url?: string | null
+          registration_deadline?: string | null
           season_id?: string | null
+          start_date?: string | null
           status?: string
           type?: string | null
           updated_at?: string
@@ -1428,6 +1461,47 @@ export type Database = {
           },
         ]
       }
+      workout_movements: {
+        Row: {
+          created_at: string
+          id: string
+          movement_name: string
+          reps: number | null
+          sequence_order: number
+          unit: string | null
+          weight: number | null
+          workout_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          movement_name: string
+          reps?: number | null
+          sequence_order?: number
+          unit?: string | null
+          weight?: number | null
+          workout_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          movement_name?: string
+          reps?: number | null
+          sequence_order?: number
+          unit?: string | null
+          weight?: number | null
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_movements_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "competition_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1442,6 +1516,10 @@ export type Database = {
           team_name: string
           total_points: number
         }[]
+      }
+      get_competition_status: {
+        Args: { p_competition_id: string }
+        Returns: string
       }
       get_season_leaderboard: {
         Args: { p_season_id: string }

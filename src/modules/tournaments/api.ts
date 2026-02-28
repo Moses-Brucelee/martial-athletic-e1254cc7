@@ -1,6 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Competition, Division, Team, Workout, Bracket, Bout } from "./types";
-import type { CreateCompetitionInput, AddTeamInput, AddWorkoutInput, CreateBracketInput } from "./types";
+import type { Competition, Division, Team, Workout, WorkoutMovement, Bracket, Bout } from "./types";
+import type { CreateCompetitionInput, AddTeamInput, AddWorkoutInput, CreateBracketInput, SaveWorkoutWithMovementsInput } from "./types";
+import { deriveStatus, isMutable } from "./stateMachine";
+
+// ── Mutation guard ────────────────────────────────────────────────────
+
+export async function assertCompetitionMutable(competitionId: string): Promise<void> {
+  const comp = await fetchCompetition(competitionId);
+  const status = deriveStatus(comp);
+  if (!isMutable(status)) {
+    throw new Error("Competition is locked and cannot be modified");
+  }
+}
 
 // ── Competitions ──────────────────────────────────────────────────────
 
@@ -15,9 +26,12 @@ export async function fetchCompetition(id: string): Promise<Competition> {
 }
 
 export async function fetchCompetitions(): Promise<Competition[]> {
+  // Filter: only competitions where end_date >= now - 30 days OR end_date is null (drafts)
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("competitions")
     .select("*")
+    .or(`end_date.gte.${cutoff},end_date.is.null`)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as Competition[];
@@ -29,7 +43,11 @@ export async function createCompetition(input: CreateCompetitionInput): Promise<
     .insert({
       created_by: input.created_by,
       name: input.name.trim(),
+      description: input.description || null,
       date: input.date || null,
+      start_date: input.start_date || null,
+      end_date: input.end_date || null,
+      registration_deadline: input.registration_deadline || null,
       venue: input.venue || null,
       type: input.type || null,
       host_gym: input.host_gym || null,
@@ -66,6 +84,7 @@ export async function fetchTeams(competitionId: string): Promise<Team[]> {
 }
 
 export async function addTeam(input: AddTeamInput): Promise<Team> {
+  await assertCompetitionMutable(input.competition_id);
   const { data, error } = await supabase
     .from("competition_teams")
     .insert({
@@ -80,7 +99,8 @@ export async function addTeam(input: AddTeamInput): Promise<Team> {
   return data as Team;
 }
 
-export async function removeTeam(teamId: string): Promise<void> {
+export async function removeTeam(teamId: string, competitionId: string): Promise<void> {
+  await assertCompetitionMutable(competitionId);
   const { error } = await supabase
     .from("competition_teams")
     .delete()
@@ -101,12 +121,16 @@ export async function fetchWorkouts(competitionId: string): Promise<Workout[]> {
 }
 
 export async function addWorkout(input: AddWorkoutInput): Promise<Workout> {
+  await assertCompetitionMutable(input.competition_id);
   const { data, error } = await supabase
     .from("competition_workouts")
     .insert({
       competition_id: input.competition_id,
       workout_number: input.workout_number,
       measurement_type: input.measurement_type,
+      workout_type: input.workout_type || "custom",
+      time_cap_seconds: input.time_cap_seconds ?? null,
+      scoring_type: input.scoring_type || "reps",
     })
     .select("*")
     .single();
@@ -114,7 +138,8 @@ export async function addWorkout(input: AddWorkoutInput): Promise<Workout> {
   return data as Workout;
 }
 
-export async function removeWorkout(workoutId: string): Promise<void> {
+export async function removeWorkout(workoutId: string, competitionId: string): Promise<void> {
+  await assertCompetitionMutable(competitionId);
   const { error } = await supabase
     .from("competition_workouts")
     .delete()
@@ -131,6 +156,7 @@ export async function updateWorkoutMeasurement(workoutId: string, measurement: s
 }
 
 export async function saveWorkouts(competitionId: string, workouts: { workout_number: number; measurement_type: string }[]): Promise<void> {
+  await assertCompetitionMutable(competitionId);
   await supabase.from("competition_workouts").delete().eq("competition_id", competitionId);
   const rows = workouts.map((w, i) => ({
     competition_id: competitionId,
@@ -139,6 +165,54 @@ export async function saveWorkouts(competitionId: string, workouts: { workout_nu
   }));
   const { error } = await supabase.from("competition_workouts").insert(rows);
   if (error) throw error;
+}
+
+// ── Workout Movements ─────────────────────────────────────────────────
+
+export async function fetchWorkoutMovements(workoutId: string): Promise<WorkoutMovement[]> {
+  const { data, error } = await supabase
+    .from("workout_movements")
+    .select("*")
+    .eq("workout_id", workoutId)
+    .order("sequence_order");
+  if (error) throw error;
+  return (data ?? []) as WorkoutMovement[];
+}
+
+export async function saveWorkoutWithMovements(input: SaveWorkoutWithMovementsInput): Promise<Workout> {
+  await assertCompetitionMutable(input.competition_id);
+
+  // Insert workout
+  const { data: workout, error: wErr } = await supabase
+    .from("competition_workouts")
+    .insert({
+      competition_id: input.competition_id,
+      workout_number: input.workout_number,
+      name: input.name || null,
+      workout_type: input.workout_type,
+      time_cap_seconds: input.time_cap_seconds ?? null,
+      scoring_type: input.scoring_type,
+      measurement_type: input.measurement_type,
+    })
+    .select("*")
+    .single();
+  if (wErr) throw wErr;
+
+  // Insert movements
+  if (input.movements.length > 0) {
+    const rows = input.movements.map((m) => ({
+      workout_id: workout.id,
+      movement_name: m.movement_name,
+      reps: m.reps,
+      weight: m.weight,
+      unit: m.unit,
+      sequence_order: m.sequence_order,
+    }));
+    const { error: mErr } = await supabase.from("workout_movements").insert(rows);
+    if (mErr) throw mErr;
+  }
+
+  return workout as Workout;
 }
 
 // ── Divisions (re-export from data layer for backward compat) ─────────
@@ -216,7 +290,6 @@ export async function createBracketWithBouts(
 }
 
 export async function deleteBrackets(competitionId: string): Promise<void> {
-  // Bouts cascade via bracket_id FK — but we delete explicitly for safety
   const { data: brackets } = await supabase
     .from("brackets")
     .select("id")

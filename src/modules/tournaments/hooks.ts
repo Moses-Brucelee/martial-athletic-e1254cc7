@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "./api";
-import type { CreateCompetitionInput, AddTeamInput, AddWorkoutInput, CreateBracketInput } from "./types";
+import type { CreateCompetitionInput, AddTeamInput, AddWorkoutInput, CreateBracketInput, SaveWorkoutWithMovementsInput } from "./types";
 
 // ── Competition queries ───────────────────────────────────────────────
 
@@ -62,7 +62,7 @@ export function useRemoveTeam() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ teamId, competitionId }: { teamId: string; competitionId: string }) =>
-      api.removeTeam(teamId),
+      api.removeTeam(teamId, competitionId),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["teams", variables.competitionId] });
     },
@@ -93,7 +93,7 @@ export function useRemoveWorkout() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ workoutId, competitionId }: { workoutId: string; competitionId: string }) =>
-      api.removeWorkout(workoutId),
+      api.removeWorkout(workoutId, competitionId),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["workouts", variables.competitionId] });
     },
@@ -118,6 +118,26 @@ export function useSaveWorkouts() {
       api.saveWorkouts(competitionId, workouts),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["workouts", variables.competitionId] });
+    },
+  });
+}
+
+// ── Workout Movements ─────────────────────────────────────────────────
+
+export function useWorkoutMovements(workoutId: string | undefined) {
+  return useQuery({
+    queryKey: ["workout-movements", workoutId],
+    queryFn: () => api.fetchWorkoutMovements(workoutId!),
+    enabled: !!workoutId,
+  });
+}
+
+export function useSaveWorkoutWithMovements() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SaveWorkoutWithMovementsInput) => api.saveWorkoutWithMovements(input),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["workouts", variables.competition_id] });
     },
   });
 }

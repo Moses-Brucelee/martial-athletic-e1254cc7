@@ -9,6 +9,10 @@ export interface Score {
   judge_id: string | null;
   locked: boolean;
   locked_at: string | null;
+  reps_completed: number | null;
+  time_seconds: number | null;
+  load_value: number | null;
+  points_awarded: number | null;
   created_at: string;
   updated_at: string;
 }

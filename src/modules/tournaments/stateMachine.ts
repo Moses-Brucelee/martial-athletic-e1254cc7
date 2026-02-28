@@ -1,127 +1,75 @@
-// Pure tournament lifecycle state machine — no framework or DB imports
+// Date-driven competition lifecycle — no framework or DB imports
+
+import type { Competition } from "@/domain/competition";
 
 export type CompetitionStatus =
   | "draft"
-  | "registration"
-  | "seeding"
-  | "in_progress"
-  | "completed";
+  | "published"
+  | "live"
+  | "completed"
+  | "expired";
 
 export const STATUSES: CompetitionStatus[] = [
   "draft",
-  "registration",
-  "seeding",
-  "in_progress",
+  "published",
+  "live",
   "completed",
+  "expired",
 ];
 
-export interface TransitionContext {
-  teamCount: number;
-  workoutCount: number;
-  participantCount: number;
-  bracketCount: number;
-  allBoutsResolved: boolean;
-  isAdmin: boolean;
-}
+/**
+ * Derive the competition status from its date fields and current time.
+ * This mirrors the DB function `get_competition_status`.
+ */
+export function deriveStatus(comp: Competition): CompetitionStatus {
+  const now = new Date();
 
-interface TransitionRule {
-  to: CompetitionStatus;
-  check: (ctx: TransitionContext) => string | null; // null = allowed, string = reason blocked
-}
+  if (comp.status === "draft") return "draft";
 
-const FORWARD_TRANSITIONS: Record<string, TransitionRule[]> = {
-  draft: [
-    {
-      to: "registration",
-      check: (ctx) => {
-        if (ctx.teamCount < 1) return "At least 1 team is required";
-        if (ctx.workoutCount < 1) return "At least 1 workout is required";
-        return null;
-      },
-    },
-  ],
-  registration: [
-    {
-      to: "seeding",
-      check: (ctx) => {
-        if (ctx.participantCount < 2)
-          return "At least 2 registered participants are required";
-        return null;
-      },
-    },
-  ],
-  seeding: [
-    {
-      to: "in_progress",
-      check: (ctx) => {
-        if (ctx.bracketCount < 1) return "Brackets must be generated first";
-        return null;
-      },
-    },
-  ],
-  in_progress: [
-    {
-      to: "completed",
-      check: (ctx) => {
-        if (!ctx.allBoutsResolved)
-          return "All bouts must be resolved or use manual override";
-        return null;
-      },
-    },
-  ],
-};
+  const endDate = comp.end_date ? new Date(comp.end_date) : null;
+  const startDate = comp.start_date ? new Date(comp.start_date) : null;
+  const regDeadline = comp.registration_deadline ? new Date(comp.registration_deadline) : null;
 
-const BACKWARD_TRANSITIONS: Record<string, CompetitionStatus[]> = {
-  registration: ["draft"],
-  seeding: ["registration"],
-};
-
-export function getAvailableTransitions(
-  status: CompetitionStatus,
-  ctx: TransitionContext,
-): { to: CompetitionStatus; blocked: string | null }[] {
-  const results: { to: CompetitionStatus; blocked: string | null }[] = [];
-
-  // Forward
-  const forward = FORWARD_TRANSITIONS[status] ?? [];
-  for (const rule of forward) {
-    results.push({ to: rule.to, blocked: rule.check(ctx) });
+  if (endDate) {
+    const expiry = new Date(endDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+    if (now > expiry) return "expired";
+    if (now > endDate) return "completed";
   }
 
-  // Backward (admin only)
-  if (ctx.isAdmin) {
-    const backward = BACKWARD_TRANSITIONS[status] ?? [];
-    for (const to of backward) {
-      results.push({ to, blocked: null });
-    }
-  }
+  if (startDate && now >= startDate && (!endDate || now <= endDate)) return "live";
 
-  return results;
+  if (regDeadline && now < regDeadline) return "published";
+  if (startDate && now < startDate) return "published";
+
+  return comp.status as CompetitionStatus;
 }
 
-export function canTransition(
-  from: CompetitionStatus,
-  to: CompetitionStatus,
-  ctx: TransitionContext,
-): { allowed: boolean; reason?: string } {
-  const available = getAvailableTransitions(from, ctx);
-  const match = available.find((t) => t.to === to);
-  if (!match) return { allowed: false, reason: "Invalid transition" };
-  if (match.blocked) return { allowed: false, reason: match.blocked };
-  return { allowed: true };
+export function isMutable(status: CompetitionStatus): boolean {
+  return status !== "completed" && status !== "expired";
 }
 
 export function getStatusLabel(status: CompetitionStatus): string {
   const labels: Record<CompetitionStatus, string> = {
     draft: "Draft",
-    registration: "Registration",
-    seeding: "Seeding",
-    in_progress: "In Progress",
+    published: "Published",
+    live: "Live",
     completed: "Completed",
+    expired: "Expired",
   };
   return labels[status] ?? status;
 }
 
 export function getStatusIndex(status: CompetitionStatus): number {
   return STATUSES.indexOf(status);
+}
+
+export function getStatusColor(status: CompetitionStatus): string {
+  switch (status) {
+    case "draft": return "bg-muted text-muted-foreground";
+    case "published": return "bg-primary/20 text-primary";
+    case "live": return "bg-green-500/20 text-green-700 dark:text-green-400";
+    case "completed": return "bg-accent/20 text-accent-foreground";
+    case "expired": return "bg-destructive/20 text-destructive";
+    default: return "bg-muted text-muted-foreground";
+  }
 }

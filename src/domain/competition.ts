@@ -3,7 +3,11 @@
 export interface Competition {
   id: string;
   name: string;
+  description: string | null;
   date: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  registration_deadline: string | null;
   venue: string | null;
   host_gym: string | null;
   type: string | null;
@@ -41,8 +45,22 @@ export interface Workout {
   competition_id: string;
   workout_number: number;
   measurement_type: string;
+  workout_type: string;
+  time_cap_seconds: number | null;
+  scoring_type: string;
   name: string | null;
   is_locked: boolean;
+  created_at: string;
+}
+
+export interface WorkoutMovement {
+  id: string;
+  workout_id: string;
+  movement_name: string;
+  reps: number | null;
+  weight: number | null;
+  unit: string;
+  sequence_order: number;
   created_at: string;
 }
 

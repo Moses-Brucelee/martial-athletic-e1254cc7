@@ -15,7 +15,7 @@ import MainMenu from "./pages/MainMenu";
 import CreateProfile from "./pages/CreateProfile";
 import ViewProfile from "./pages/ViewProfile";
 import CompetitionCreate from "./pages/CompetitionCreate";
-import CompetitionWorkouts from "./pages/CompetitionWorkouts";
+// CompetitionWorkouts merged into CompetitionCreate wizard
 import CompetitionDashboard from "./pages/CompetitionDashboard";
 import CompetitionList from "./pages/CompetitionList";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -53,7 +53,7 @@ const App = () => (
               <Route path="/profile" element={<ProtectedRoute><ViewProfile /></ProtectedRoute>} />
               <Route path="/competitions" element={<ProtectedRoute><CompetitionList /></ProtectedRoute>} />
               <Route path="/competition/create" element={<ProtectedRoute><CompetitionCreate /></ProtectedRoute>} />
-              <Route path="/competition/:id/workouts" element={<ProtectedRoute><CompetitionWorkouts /></ProtectedRoute>} />
+              {/* /competition/:id/workouts removed — now part of creation wizard */}
               <Route path="/competition/:id" element={<ProtectedRoute><CompetitionDashboard /></ProtectedRoute>} />
               <Route path="/upgrade" element={<ProtectedRoute><UpgradePackage /></ProtectedRoute>} />
               <Route path="/super-dashboard" element={<ProtectedRoute><SuperUserGuard><SuperDashboard /></SuperUserGuard></ProtectedRoute>} />
