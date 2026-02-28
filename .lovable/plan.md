@@ -1,106 +1,237 @@
 
 
-# Main Menu Redesign + 404 Route Fixes
+# Competition Lifecycle, Workout Builder, and Scoring Overhaul
 
-## Overview
+This is a major feature set spanning database schema changes, API-layer enforcement, and a multi-step creation wizard. The work is broken into 4 phases.
 
-Redesign the post-login dashboard (`/dashboard`) to include content spotlight sections below the existing DB-driven menu, and fix all 404 routes with placeholder pages. All existing menu logic, subscription gating, and DB queries remain untouched.
+---
 
-## Phase 1 -- Create Spotlight Components
+## Phase 1: Database Schema Changes
 
-Four new modular components will be created in `src/components/dashboard/`:
+### 1A. Update `competitions` table
 
-### UpcomingCompetitionsSpotlight.tsx
-- Uses TanStack Query (`useQuery`) to fetch from the `competitions` table
-- Query: competitions where `date >= today`, ordered by date ascending, limit 5
-- Fallback: if none found, fetches 5 most recent (date descending)
-- Shows cards with competition name, date, venue, host gym
-- Each card has a "View" button linking to `/competition/:id`
-- Loading state: skeleton cards
-- Error state: renders nothing (never blocks dashboard)
+Add new date/time columns for lifecycle management:
 
-### BrowseMarketplaceSection.tsx
-- Static tab buttons: Programs, Competitions, Apparel, Equipment
-- Tabs defined as a constant array
-- All tabs navigate to `/browse`
-- Placeholder content below tabs ("Coming soon" style)
+- `start_date` (timestamptz, nullable) -- when competition goes live
+- `end_date` (timestamptz, nullable) -- when competition ends
+- `registration_deadline` (timestamptz, nullable) -- cutoff for registration
+- `description` (text, nullable) -- new field for Step 1
 
-### ShopSpotlight.tsx
-- Static placeholder card with image placeholder area
-- Title, short description, CTA button linking to `/browse`
+The existing `status` column (text) will remain but its values change to: `draft`, `published`, `live`, `completed`, `expired`. The existing `date` column is kept for backward compatibility.
 
-### ProgramSpotlight.tsx
-- Static placeholder card
-- Title, description, CTA button linking to `/browse`
+### 1B. New `workout_movements` table
 
-## Phase 2 -- Update MainMenu.tsx
-
-All existing logic preserved exactly as-is:
-- `useProfile`, `useSubscription`, `useAuth`, `V1_FULL_ACCESS`
-- `menu_items` and `pricing_tiers` DB queries
-- Section grouping, tier gating, `handleItemClick`
-- Loading/error states
-
-Changes:
-- Import the 4 new spotlight components
-- Add them below the existing menu sections in the `<main>` area
-- Menu button styling updated to be more compact with inline tier badges matching the reference image style
-- Spotlight section errors never block dashboard rendering
-
-Layout order:
 ```text
-Header (unchanged)
-DB-driven menu sections (logic unchanged, styling updated)
-Upcoming Competitions Spotlight
-Browse Marketplace
-Shop Spotlight
-Program Spotlight
+workout_movements
+  id                uuid PK default gen_random_uuid()
+  workout_id        uuid NOT NULL -> competition_workouts.id (ON DELETE CASCADE)
+  movement_name     text NOT NULL
+  reps              integer
+  weight            numeric
+  unit              text default 'kg'
+  sequence_order    integer NOT NULL default 0
+  created_at        timestamptz default now()
 ```
 
-## Phase 3 -- Create Placeholder Pages
+RLS: Same pattern as workouts -- authenticated SELECT, owner/super INSERT/UPDATE/DELETE.
 
-Four new pages, each with consistent styling:
-- Header with logo and back button
-- Descriptive icon, title, description
-- "Back to Main Menu" button
+### 1C. Update `competition_workouts` table
 
-| File | Route | Title |
-|---|---|---|
-| `src/pages/Affiliation.tsx` | `/affiliation` | Manage Affiliation |
-| `src/pages/GymWebsite.tsx` | `/gym-website` | Link Gym Website |
-| `src/pages/Performances.tsx` | `/performances` | Track Performances |
-| `src/pages/Browse.tsx` | `/browse` | Browse Marketplace |
+Add columns:
+- `workout_type` (text, default 'custom') -- values: amrap, for_time, max_load, rounds, custom
+- `time_cap_seconds` (integer, nullable)
+- `scoring_type` (text, default 'reps') -- values: time, reps, load, points
 
-## Phase 4 -- Update App.tsx Routes
+The existing `measurement_type` column is replaced by `scoring_type` logically. We keep `measurement_type` for backward compat and map it in code.
 
-Add 4 new routes above the catch-all:
-- `/affiliation` -- wrapped in `ProtectedRoute`
-- `/gym-website` -- wrapped in `ProtectedRoute`
-- `/performances` -- wrapped in `ProtectedRoute`
-- `/browse` -- public (no auth required)
+### 1D. Update `competition_scores` table
 
-## Files Summary
+Add columns:
+- `reps_completed` (integer, nullable)
+- `time_seconds` (integer, nullable)
+- `load_value` (numeric, nullable)
+- `points_awarded` (numeric, nullable)
 
-| File | Action |
-|---|---|
-| `src/components/dashboard/UpcomingCompetitionsSpotlight.tsx` | CREATE |
-| `src/components/dashboard/BrowseMarketplaceSection.tsx` | CREATE |
-| `src/components/dashboard/ShopSpotlight.tsx` | CREATE |
-| `src/components/dashboard/ProgramSpotlight.tsx` | CREATE |
-| `src/pages/MainMenu.tsx` | UPDATE -- import spotlights, add below menu, restyle buttons |
-| `src/pages/Affiliation.tsx` | CREATE |
-| `src/pages/GymWebsite.tsx` | CREATE |
-| `src/pages/Performances.tsx` | CREATE |
-| `src/pages/Browse.tsx` | CREATE |
-| `src/App.tsx` | UPDATE -- add 4 routes |
+The existing `score` column is kept as the canonical ranking value. The new columns store the raw data; `score` is computed/populated based on workout scoring_type.
 
-## What Does NOT Change
+### 1E. Server-side status derivation function
 
-- No database schema changes
-- No new tables
-- No RLS policy changes
-- No subscription logic changes
-- No menu_items or pricing_tiers query changes
-- No changes to existing routes
-- Dashboard renders even if spotlight queries fail
+Create a database function `get_competition_status(p_competition_id uuid)` that returns the derived status based on dates:
+
+```text
+IF now() < registration_deadline -> 'published'
+IF start_date <= now() <= end_date -> 'live'
+IF end_date < now() <= end_date + 30 days -> 'completed'
+IF end_date + 30 days < now() -> 'expired'
+ELSE -> status column value (for drafts)
+```
+
+---
+
+## Phase 2: API-Layer Mutation Blocking
+
+### 2A. Competition lock guard
+
+Create a reusable helper in `src/modules/tournaments/api.ts`:
+
+```typescript
+async function assertCompetitionMutable(competitionId: string): Promise<void> {
+  const comp = await fetchCompetition(competitionId);
+  const status = deriveStatus(comp); // client-side derivation using same logic
+  if (status === 'completed' || status === 'expired') {
+    throw new Error('Competition is locked and cannot be modified');
+  }
+}
+```
+
+Every mutation function (addTeam, removeTeam, addWorkout, upsertScores, etc.) will call this guard before proceeding.
+
+### 2B. Update state machine
+
+Replace the current `stateMachine.ts` with the new date-driven status model. The `CompetitionStatus` type becomes:
+
+```typescript
+type CompetitionStatus = 'draft' | 'published' | 'live' | 'completed' | 'expired';
+```
+
+A pure `deriveStatus(comp)` function computes status from `start_date`, `end_date`, `registration_deadline` and `now()`. The manual status toggle (CompetitionStatusBar) is removed for non-draft competitions -- status transitions are automatic.
+
+### 2C. Domain model update
+
+Update `src/domain/competition.ts` Competition interface to include new fields: `start_date`, `end_date`, `registration_deadline`, `description`.
+
+Update `src/domain/competition.ts` Workout interface to include: `workout_type`, `time_cap_seconds`, `scoring_type`.
+
+Add new domain interface `WorkoutMovement` with fields: `id`, `workout_id`, `movement_name`, `reps`, `weight`, `unit`, `sequence_order`.
+
+Update `src/domain/scoring.ts` Score interface to include: `reps_completed`, `time_seconds`, `load_value`, `points_awarded`.
+
+---
+
+## Phase 3: Competition List Filtering
+
+### 3A. Update `fetchCompetitions` query
+
+Filter to only competitions where `end_date >= now() - 30 days` OR `end_date IS NULL` (drafts). Order by `start_date`.
+
+### 3B. Update `CompetitionList.tsx`
+
+Group competitions into sections:
+- **Upcoming** (published, start_date > now)
+- **Live** (start_date <= now <= end_date)
+- **Completed** (end_date passed, within 30 days)
+
+Each section gets a distinct visual treatment. Expired competitions are excluded from the list but remain accessible via direct URL `/competition/:id`.
+
+### 3C. Dashboard enforcement
+
+In `CompetitionDashboard.tsx`, derive status and conditionally:
+- Hide all mutation tabs/buttons when status is `completed` or `expired`
+- Show only leaderboard tab for completed/expired
+- Display a banner: "This competition has ended. Viewing leaderboard only."
+
+---
+
+## Phase 4: Step-Based Competition Creation Wizard
+
+### 4A. New multi-step wizard page
+
+Replace the current single-page `CompetitionCreate.tsx` with a step-based wizard with 3 steps:
+
+**Step 1 -- Core Setup:**
+- Name (required)
+- Description (new, textarea)
+- Location/Venue
+- Start Date (required)
+- End Date (required)
+- Registration Deadline (required)
+- Type (e.g. CrossFit, MMA)
+- Host Gym
+- Save creates a `draft` competition.
+
+**Step 2 -- Divisions:**
+- Reuses the existing `DivisionsPanel` component in an inline wizard context
+- Each division: Name, Age range (optional), Gender (optional)
+- Add/remove divisions dynamically
+
+**Step 3 -- Workouts (New Workout Builder):**
+- For each workout:
+  - Workout Name
+  - Workout Type selector (AMRAP, For Time, Max Load, Rounds, Custom)
+  - Time Cap (seconds input, shown for AMRAP/For Time)
+  - Scoring Type (auto-suggested based on workout type, overridable)
+  - **Movements sub-form** (dynamic list):
+    - Movement Name (text input)
+    - Reps (number)
+    - Weight (number, optional)
+    - Unit (kg/lb selector, optional)
+    - Reorder via up/down buttons
+  - Add/remove movements
+- Add/remove workouts
+- Save all workouts + movements, then navigate to competition dashboard
+
+### 4B. Wizard navigation
+
+- Step indicator bar at the top (Step 1 of 3, Step 2 of 3, etc.)
+- Back/Next buttons
+- Draft is saved at Step 1; Steps 2-3 update the existing draft
+- User can leave and resume (data persists in DB)
+
+### 4C. Workout Builder component
+
+New component `src/modules/tournaments/components/WorkoutBuilder.tsx`:
+- Self-contained workout editor with movement sub-forms
+- Manages local state, saves via new API functions
+- Validates: at least 1 movement per workout, movement name required
+
+### 4D. New API functions
+
+In `src/modules/tournaments/api.ts`:
+- `fetchWorkoutMovements(workoutId: string): Promise<WorkoutMovement[]>`
+- `saveWorkoutWithMovements(competitionId, workout, movements[])` -- upserts workout row + deletes/inserts movements
+- `removeWorkoutMovement(id: string)`
+
+In `src/modules/tournaments/hooks.ts`:
+- `useWorkoutMovements(workoutId)` -- query hook
+- `useSaveWorkoutWithMovements()` -- mutation hook
+
+---
+
+## Files Changed Summary
+
+| File | Change |
+|------|--------|
+| DB migration | Add columns to competitions, competition_workouts, competition_scores; create workout_movements table; create get_competition_status function; add RLS policies |
+| `src/domain/competition.ts` | Add new fields to Competition and Workout interfaces; add WorkoutMovement interface |
+| `src/domain/scoring.ts` | Add reps_completed, time_seconds, load_value, points_awarded to Score |
+| `src/modules/tournaments/types.ts` | Re-export WorkoutMovement; update CreateCompetitionInput |
+| `src/modules/tournaments/stateMachine.ts` | Replace with date-driven deriveStatus logic |
+| `src/modules/tournaments/api.ts` | Add mutation guard, movement CRUD, update fetchCompetitions filter |
+| `src/modules/tournaments/hooks.ts` | Add movement hooks, update competition hooks |
+| `src/modules/scoring/types.ts` | Update Score re-export |
+| `src/lib/validation.ts` | Add workout/movement validation schemas |
+| `src/pages/CompetitionCreate.tsx` | Rewrite as 3-step wizard |
+| `src/pages/CompetitionWorkouts.tsx` | Remove (merged into wizard Step 3) |
+| `src/pages/CompetitionList.tsx` | Add grouped sections, filter expired |
+| `src/pages/CompetitionDashboard.tsx` | Add completed/expired enforcement, hide mutations |
+| `src/modules/tournaments/components/WorkoutBuilder.tsx` | New -- workout + movement builder UI |
+| `src/modules/tournaments/components/CompetitionStatusBar.tsx` | Update for date-driven statuses |
+| `src/modules/tournaments/components/WorkoutsPanel.tsx` | Show workout type, movements, scoring type |
+| `src/modules/scoring/components/ScoresPanel.tsx` | Support multi-field scoring (reps, time, load) |
+| `src/App.tsx` | Remove `/competition/:id/workouts` route (now part of wizard) |
+
+---
+
+## Implementation Order
+
+1. Database migration (schema + RLS + function)
+2. Domain interfaces update
+3. State machine rewrite (deriveStatus)
+4. API layer (mutation guard + movement CRUD + filtered fetch)
+5. Hooks layer
+6. Competition List page (grouped sections)
+7. Competition Create wizard (3 steps)
+8. Workout Builder component
+9. Dashboard enforcement (read-only for completed/expired)
+10. Scores Panel update (multi-field scoring)
 
