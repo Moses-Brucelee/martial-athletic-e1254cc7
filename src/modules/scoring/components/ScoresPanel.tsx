@@ -76,7 +76,7 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
     const map: Record<string, string> = {};
     scoreRows.forEach((s) => {
       const scoringType = workoutScoringMap[s.workout_id] || "reps";
-      map[`${s.team_id}-${s.workout_id}`] = getDisplayValue(s, scoringType);
+      map[`${s.team_id}::${s.workout_id}`] = getDisplayValue(s, scoringType);
     });
     setLocalScores(map);
   }, [scoreRows, workoutScoringMap]);
