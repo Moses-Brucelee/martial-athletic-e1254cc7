@@ -128,7 +128,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
     );
   }
 
-  const currentScore = currentTeam ? (localScores[`${currentTeam.id}-${selectedWorkoutId}`] || "0") : "0";
+  const currentScore = currentTeam ? (localScores[`${currentTeam.id}::${selectedWorkoutId}`] || "0") : "0";
 
   // Quick-adjust buttons depend on scoring type
   const quickAdjusts = currentScoringType === "load" ? [5, 10, 25] :
