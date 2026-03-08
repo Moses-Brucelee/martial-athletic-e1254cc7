@@ -234,6 +234,7 @@ export default function CompetitionDashboard() {
           </>
         )}
         <CompetitionStatusBar status={derivedStatus} />
+        <CompetitionStatusActions competitionId={id!} currentStatus={derivedStatus} canAdmin={canAdmin} />
 
         {compError && (
           <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-destructive/10 border border-destructive/20">
