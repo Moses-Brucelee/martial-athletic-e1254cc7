@@ -116,7 +116,7 @@ export function JudgeAssignmentPanel({ competitionId, canAdmin }: JudgeAssignmen
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Workout (optional)</Label>
-              <Select value={selectedWorkout} onValueChange={(v) => { setSelectedWorkout(v); setSelectedHeat(""); }}>
+              <Select value={selectedWorkout || "__all__"} onValueChange={(v) => { setSelectedWorkout(v === "__all__" ? "" : v); setSelectedHeat(""); }}>
                 <SelectTrigger className="h-9 bg-background text-sm"><SelectValue placeholder="All workouts" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__all__">All Workouts</SelectItem>
