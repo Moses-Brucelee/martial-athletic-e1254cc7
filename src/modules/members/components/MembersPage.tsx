@@ -130,21 +130,7 @@ export default function MembersPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border bg-card">
-        <div className="flex items-center gap-3">
-          <img src={logoCompact} alt="Logo" className="w-10 h-10 object-contain" />
-          <div>
-            <span className="text-lg font-bold text-foreground tracking-tight uppercase">{gym.name}</span>
-            <p className="text-xs text-muted-foreground">Member Management</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </div>
-      </header>
+      <AppHeader title={`${gym.name} — Members`} />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-4">
         {/* Search + Add */}
