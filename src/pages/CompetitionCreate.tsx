@@ -190,6 +190,7 @@ export default function CompetitionCreate() {
         )}
 
         {/* Step 1: Core Setup */}
+        {step === 0 && <TemplateSelector onSelect={handleTemplateSelect} />}
         {step === 0 && (
           <div className="bg-card border border-border rounded-xl p-6 space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
