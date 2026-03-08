@@ -221,12 +221,13 @@ export default function CompetitionDashboard() {
           <>
             <p className="text-muted-foreground mb-2">{competition.name}</p>
             {effectiveCanAdmin && (
-              <div className="mb-4">
+              <div className="mb-4 flex items-center gap-3 flex-wrap">
                 <PosterUpload
                   competitionId={id!}
                   currentPosterUrl={competition.poster_url}
                   onPosterUpdated={() => refetchComp()}
                 />
+                <SaveAsTemplate competition={competition} competitionId={id!} />
               </div>
             )}
           </>
