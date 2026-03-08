@@ -201,7 +201,7 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
                   )}
                 </td>
                 {workouts.map((w) => {
-                  const key = `${team.id}-${w.id}`;
+                  const key = `${team.id}::${w.id}`;
                   const isLocked = w.is_locked;
                   const st = (w.scoring_type as ScoringType) || "reps";
                   return (

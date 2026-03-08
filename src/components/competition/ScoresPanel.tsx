@@ -131,7 +131,7 @@ export function ScoresPanel({ competitionId, teams, workouts, canScore, judgeId 
               <tr key={team.id} className="border-b border-border/50">
                 <td className="py-2 px-2 font-semibold text-foreground text-xs whitespace-nowrap">{team.team_name}</td>
                 {workouts.map((w) => {
-                  const key = `${team.id}-${w.id}`;
+                  const key = `${team.id}::${w.id}`;
                   const isLocked = w.is_locked;
                   return (
                     <td key={w.id} className="py-2 px-1 text-center">
