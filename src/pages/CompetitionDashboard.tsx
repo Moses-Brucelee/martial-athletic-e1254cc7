@@ -22,6 +22,7 @@ import { LeaderboardPanel } from "@/modules/leaderboard/components/LeaderboardPa
 import { ParticipantsPanel } from "@/modules/athletes/components/ParticipantsPanel";
 import { BracketsPanel } from "@/modules/tournaments/components/BracketsPanel";
 import { CompetitionStatusBar } from "@/modules/tournaments/components/CompetitionStatusBar";
+import { CommandCenter } from "@/modules/tournaments/components/CommandCenter";
 import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 import { V1_FULL_ACCESS } from "@/lib/featureFlags";
 import { PosterUpload } from "@/components/competition/PosterUpload";
