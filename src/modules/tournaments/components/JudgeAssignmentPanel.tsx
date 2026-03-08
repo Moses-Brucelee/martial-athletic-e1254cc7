@@ -128,7 +128,7 @@ export function JudgeAssignmentPanel({ competitionId, canAdmin }: JudgeAssignmen
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Heat (optional)</Label>
-              <Select value={selectedHeat} onValueChange={setSelectedHeat}>
+              <Select value={selectedHeat || "__all__"} onValueChange={(v) => setSelectedHeat(v === "__all__" ? "" : v)}>
                 <SelectTrigger className="h-9 bg-background text-sm"><SelectValue placeholder="All heats" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__all__">All Heats</SelectItem>

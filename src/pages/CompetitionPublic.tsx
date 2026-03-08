@@ -291,7 +291,7 @@ export default function CompetitionPublic() {
                   <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
                     <SelectTrigger className="h-10 bg-background"><SelectValue placeholder="Individual / No team" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Individual</SelectItem>
+                      <SelectItem value="__none__">Individual</SelectItem>
                       {teams.map((t) => (
                         <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>
                       ))}
