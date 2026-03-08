@@ -22,6 +22,7 @@ import { LeaderboardPanel } from "@/modules/leaderboard/components/LeaderboardPa
 import { ParticipantsPanel } from "@/modules/athletes/components/ParticipantsPanel";
 import { BracketsPanel } from "@/modules/tournaments/components/BracketsPanel";
 import { CompetitionStatusBar } from "@/modules/tournaments/components/CompetitionStatusBar";
+import { CompetitionStatusActions } from "@/modules/tournaments/components/CompetitionStatusActions";
 import { CommandCenter } from "@/modules/tournaments/components/CommandCenter";
 import { HeatManagementPanel } from "@/modules/tournaments/components/HeatManagementPanel";
 import { JudgeAssignmentPanel } from "@/modules/tournaments/components/JudgeAssignmentPanel";
@@ -233,6 +234,7 @@ export default function CompetitionDashboard() {
           </>
         )}
         <CompetitionStatusBar status={derivedStatus} />
+        <CompetitionStatusActions competitionId={id!} currentStatus={derivedStatus} canAdmin={canAdmin} />
 
         {compError && (
           <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-destructive/10 border border-destructive/20">
