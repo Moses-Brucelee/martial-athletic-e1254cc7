@@ -20,6 +20,7 @@ import { MobileJudgeScoring } from "@/modules/scoring/components/MobileJudgeScor
 import { ScoreLockControls } from "@/modules/scoring/components/ScoreLockControls";
 import { LeaderboardPanel } from "@/modules/leaderboard/components/LeaderboardPanel";
 import { ParticipantsPanel } from "@/modules/athletes/components/ParticipantsPanel";
+import { RegistrationManager } from "@/modules/athletes/components/RegistrationManager";
 import { BracketsPanel } from "@/modules/tournaments/components/BracketsPanel";
 import { CompetitionStatusBar } from "@/modules/tournaments/components/CompetitionStatusBar";
 import { CompetitionStatusActions } from "@/modules/tournaments/components/CompetitionStatusActions";
