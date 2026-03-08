@@ -8,7 +8,8 @@ import { StepIndicator } from "@/modules/tournaments/components/create/StepIndic
 import { StepDetails } from "@/modules/tournaments/components/create/StepDetails";
 import { StepSportType } from "@/modules/tournaments/components/create/StepSportType";
 import { DivisionsPanel } from "@/modules/tournaments/components/DivisionsPanel";
-import { WorkoutBuilder, emptyWorkout, type LocalWorkout } from "@/modules/tournaments/components/WorkoutBuilder";
+import { WorkoutBuilderPro } from "@/modules/tournaments/components/workout-builder/WorkoutBuilderPro";
+import { emptyWorkout, type LocalWorkout } from "@/modules/tournaments/components/workout-builder/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, AlertCircle, Check } from "lucide-react";
@@ -80,6 +81,11 @@ export default function CompetitionCreate() {
         toast.error(`Workout #${i + 1} needs at least one named movement`);
         return;
       }
+      // Validation: AMRAP needs time cap
+      if (w.workout_type === "amrap" && !w.time_cap_seconds) {
+        toast.error(`Workout #${i + 1}: AMRAP requires a time cap`);
+        return;
+      }
     }
 
     try {
@@ -120,7 +126,6 @@ export default function CompetitionCreate() {
 
   const handleNext = () => {
     if (step === 1) {
-      // After sport selection, create the competition
       handleCreateCompetition();
     } else if (step === 3) {
       handleSaveWorkouts();
@@ -133,7 +138,6 @@ export default function CompetitionCreate() {
     if (step === 0) {
       navigate("/dashboard");
     } else if (step > 2 || !competitionId) {
-      // Can go back freely before creation, or within post-creation steps
       setStep(step - 1);
     }
   };
@@ -156,11 +160,14 @@ export default function CompetitionCreate() {
     );
   }
 
+  // Workouts step uses full width for 3-column layout
+  const isWorkoutsStep = step === 3;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <CompetitionHeader title="Create Competition" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
+      <main className={`flex-1 w-full px-4 py-8 ${isWorkoutsStep ? "max-w-7xl mx-auto" : "max-w-2xl mx-auto"}`}>
         <StepIndicator steps={STEPS} currentStep={step} />
 
         <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase mb-6">
@@ -174,7 +181,6 @@ export default function CompetitionCreate() {
           </div>
         )}
 
-        {/* Step 1: Details */}
         {step === 0 && (
           <StepDetails
             name={name} setName={setName}
@@ -188,7 +194,6 @@ export default function CompetitionCreate() {
           />
         )}
 
-        {/* Step 2: Sport Type */}
         {step === 1 && (
           <StepSportType
             selected={competitionType}
@@ -197,17 +202,14 @@ export default function CompetitionCreate() {
           />
         )}
 
-        {/* Step 3: Divisions */}
         {step === 2 && competitionId && (
           <DivisionsPanel competitionId={competitionId} canAdmin={true} />
         )}
 
-        {/* Step 4: Workouts */}
         {step === 3 && (
-          <WorkoutBuilder workouts={workouts} setWorkouts={setWorkouts} disabled={isPending} />
+          <WorkoutBuilderPro workouts={workouts} setWorkouts={setWorkouts} disabled={isPending} />
         )}
 
-        {/* Navigation */}
         <div className="flex justify-between mt-8">
           <Button
             variant="outline"
