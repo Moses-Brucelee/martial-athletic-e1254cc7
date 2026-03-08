@@ -3,17 +3,12 @@ import { CompetitionManager } from "@/components/super/CompetitionManager";
 import { SeasonManager } from "@/components/super/SeasonManager";
 import { AuditLog } from "@/components/super/AuditLog";
 import { ScoreOverride } from "@/components/super/ScoreOverride";
-import { Shield } from "lucide-react";
+import { AppHeader } from "@/components/AppHeader";
 
 export default function SuperDashboard() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-border bg-card px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center gap-3">
-          <Shield className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-bold text-foreground uppercase tracking-tight">Platform Administration</h1>
-        </div>
-      </header>
+      <AppHeader title="Platform Administration" />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
         <Tabs defaultValue="competitions" className="w-full">
