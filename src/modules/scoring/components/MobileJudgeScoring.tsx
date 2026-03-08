@@ -88,7 +88,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
 
   const adjustScore = (delta: number) => {
     if (!currentTeam || !selectedWorkoutId) return;
-    const key = `${currentTeam.id}-${selectedWorkoutId}`;
+    const key = `${currentTeam.id}::${selectedWorkoutId}`;
     const current = Number(localScores[key] || 0);
     const newVal = Math.max(0, current + delta);
     setLocalScores((prev) => ({ ...prev, [key]: String(newVal) }));
