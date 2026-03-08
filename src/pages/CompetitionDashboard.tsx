@@ -128,6 +128,11 @@ export default function CompetitionDashboard() {
       </TabsContent>
 
       <TabsContent value="setup">
+      
+      <TabsContent value="registrations">
+        <RegistrationManager competitionId={id!} canAdmin={effectiveCanAdmin} />
+      </TabsContent>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
           <TeamsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
