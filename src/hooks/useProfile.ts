@@ -38,8 +38,8 @@ export function useProfile() {
     const { data, error: fetchError } = await supabase
       .from("profiles")
       .select("*")
-      .eq("user_id", user.id)
-      .single();
+    .eq("user_id", user.id)
+      .maybeSingle();
 
     if (fetchError) {
       setError(fetchError.message);

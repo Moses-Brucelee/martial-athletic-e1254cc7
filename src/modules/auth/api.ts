@@ -6,8 +6,9 @@ export async function fetchProfile(userId: string): Promise<Profile> {
     .from("profiles")
     .select("*")
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
   if (error) throw error;
+  if (!data) throw new Error("Profile not found");
   return data as unknown as Profile;
 }
 
