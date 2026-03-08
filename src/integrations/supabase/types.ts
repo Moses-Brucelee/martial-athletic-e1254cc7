@@ -883,6 +883,8 @@ export type Database = {
         Row: {
           competition_id: string
           created_at: string
+          description: string | null
+          display_order: number
           id: string
           is_locked: boolean
           measurement_type: string
@@ -896,6 +898,8 @@ export type Database = {
         Insert: {
           competition_id: string
           created_at?: string
+          description?: string | null
+          display_order?: number
           id?: string
           is_locked?: boolean
           measurement_type?: string
@@ -909,6 +913,8 @@ export type Database = {
         Update: {
           competition_id?: string
           created_at?: string
+          description?: string | null
+          display_order?: number
           id?: string
           is_locked?: boolean
           measurement_type?: string
@@ -1992,32 +1998,50 @@ export type Database = {
       }
       workout_movements: {
         Row: {
+          box_height: number | null
+          calories: number | null
           created_at: string
+          description: string | null
+          distance: number | null
           id: string
           movement_name: string
           reps: number | null
           sequence_order: number
+          target_height: number | null
           unit: string | null
+          video_url: string | null
           weight: number | null
           workout_id: string
         }
         Insert: {
+          box_height?: number | null
+          calories?: number | null
           created_at?: string
+          description?: string | null
+          distance?: number | null
           id?: string
           movement_name: string
           reps?: number | null
           sequence_order?: number
+          target_height?: number | null
           unit?: string | null
+          video_url?: string | null
           weight?: number | null
           workout_id: string
         }
         Update: {
+          box_height?: number | null
+          calories?: number | null
           created_at?: string
+          description?: string | null
+          distance?: number | null
           id?: string
           movement_name?: string
           reps?: number | null
           sequence_order?: number
+          target_height?: number | null
           unit?: string | null
+          video_url?: string | null
           weight?: number | null
           workout_id?: string
         }
