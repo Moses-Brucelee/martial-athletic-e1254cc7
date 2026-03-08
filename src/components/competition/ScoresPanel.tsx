@@ -43,7 +43,7 @@ export function ScoresPanel({ competitionId, teams, workouts, canScore, judgeId 
       if (data) {
         const map: Record<string, string> = {};
         data.forEach((s) => {
-          map[`${s.team_id}-${s.workout_id}`] = String(s.score);
+          map[`${s.team_id}::${s.workout_id}`] = String(s.score);
         });
         setScores(map);
       }
