@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, ArrowLeft } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -20,6 +20,10 @@ interface CompetitionHeaderProps {
   displayName?: string | null;
   /** @deprecated Use tierName instead */
   subscriptionTier?: string;
+  /** Show back arrow (default: true) */
+  showBack?: boolean;
+  /** Custom back route (default: /dashboard) */
+  backTo?: string;
 }
 
 export function CompetitionHeader({
@@ -28,6 +32,8 @@ export function CompetitionHeader({
   avatarUrl,
   displayName,
   subscriptionTier,
+  showBack = true,
+  backTo = "/dashboard",
 }: CompetitionHeaderProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -46,26 +52,41 @@ export function CompetitionHeader({
     : "MA";
 
   return (
-    <header className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-border bg-card">
-      <div className="flex items-center gap-3">
+    <header className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-30">
+      <div className="flex items-center gap-2 min-w-0">
+        {showBack && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            onClick={() => navigate(backTo)}
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
         <img
           src={logoCompact}
           alt="Martial Athletic"
-          className="w-9 h-9 object-contain"
+          className="w-9 h-9 object-contain cursor-pointer shrink-0"
+          onClick={() => navigate("/dashboard")}
         />
-        <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight uppercase">
+        <h1 className="text-sm sm:text-base font-bold text-foreground tracking-tight uppercase truncate">
           {title}
         </h1>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0">
         {showBadge && (
           <span className="hidden sm:inline-flex text-xs font-bold px-2.5 py-1 rounded bg-primary text-primary-foreground">
             {resolvedName}
           </span>
         )}
 
-        <Avatar className="h-8 w-8">
+        <Avatar
+          className="h-8 w-8 cursor-pointer"
+          onClick={() => navigate("/profile")}
+        >
           <AvatarImage src={avatarUrl || undefined} />
           <AvatarFallback className="bg-muted text-muted-foreground text-xs font-semibold">
             {initials}
