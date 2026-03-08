@@ -28,6 +28,7 @@ import { JudgeAssignmentPanel } from "@/modules/tournaments/components/JudgeAssi
 import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 import { V1_FULL_ACCESS } from "@/lib/featureFlags";
 import { PosterUpload } from "@/components/competition/PosterUpload";
+import { SaveAsTemplate } from "@/modules/tournaments/components/SaveAsTemplate";
 
 export default function CompetitionDashboard() {
   const { id } = useParams<{ id: string }>();
@@ -220,12 +221,13 @@ export default function CompetitionDashboard() {
           <>
             <p className="text-muted-foreground mb-2">{competition.name}</p>
             {effectiveCanAdmin && (
-              <div className="mb-4">
+              <div className="mb-4 flex items-center gap-3 flex-wrap">
                 <PosterUpload
                   competitionId={id!}
                   currentPosterUrl={competition.poster_url}
                   onPosterUpdated={() => refetchComp()}
                 />
+                <SaveAsTemplate competition={competition} competitionId={id!} />
               </div>
             )}
           </>

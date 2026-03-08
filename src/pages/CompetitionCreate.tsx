@@ -6,6 +6,7 @@ import { useCreateCompetition, useSaveWorkoutWithMovements } from "@/modules/tou
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { DivisionsPanel } from "@/modules/tournaments/components/DivisionsPanel";
 import { WorkoutBuilder, emptyWorkout, type LocalWorkout } from "@/modules/tournaments/components/WorkoutBuilder";
+import { TemplateSelector, type TemplateData } from "@/modules/tournaments/components/TemplateSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +46,23 @@ export default function CompetitionCreate() {
 
   // Step 3 fields
   const [workouts, setWorkouts] = useState<LocalWorkout[]>([emptyWorkout()]);
+
+  const handleTemplateSelect = (_template: any, data: TemplateData) => {
+    if (data.competition_type) setType(data.competition_type);
+    if (data.age_category_type) setAgeCategoryType(data.age_category_type);
+    if (data.min_age != null) setMinAge(String(data.min_age));
+    if (data.max_age != null) setMaxAge(String(data.max_age));
+    if (data.workouts && data.workouts.length > 0) {
+      setWorkouts(data.workouts.map((w) => ({
+        name: w.name || "",
+        workout_type: w.workout_type || "amrap",
+        time_cap_seconds: w.time_cap_seconds ? String(w.time_cap_seconds) : "",
+        scoring_type: w.scoring_type || "reps",
+        movements: [{ movement_name: "", reps: "", weight: "", unit: "kg" }],
+      })));
+    }
+    toast.success("Template applied!");
+  };
 
   const validation = competitionSchema.safeParse({ name, venue, type, hostGym });
   const liveFieldErrors: Record<string, string> = {};
@@ -172,6 +190,7 @@ export default function CompetitionCreate() {
         )}
 
         {/* Step 1: Core Setup */}
+        {step === 0 && <TemplateSelector onSelect={handleTemplateSelect} />}
         {step === 0 && (
           <div className="bg-card border border-border rounded-xl p-6 space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

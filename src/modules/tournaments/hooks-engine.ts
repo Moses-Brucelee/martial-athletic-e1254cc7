@@ -157,6 +157,27 @@ export function useCompetitionTemplates() {
   });
 }
 
+export function useSaveTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof engineApi.saveTemplate>[0]) =>
+      engineApi.saveTemplate(input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["competition-templates"] });
+    },
+  });
+}
+
+export function useDeleteTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (templateId: string) => engineApi.deleteTemplate(templateId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["competition-templates"] });
+    },
+  });
+}
+
 // ── Workout Rankings (cached, read-only) ──────────────────────────────
 
 export function useWorkoutRankings(competitionId: string | undefined) {
