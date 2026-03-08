@@ -358,6 +358,53 @@ export type Database = {
           },
         ]
       }
+      competition_audit_events: {
+        Row: {
+          actor_id: string | null
+          competition_id: string
+          created_at: string
+          device_id: string | null
+          entity_id: string | null
+          entity_type: string | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          payload: Json | null
+        }
+        Insert: {
+          actor_id?: string | null
+          competition_id: string
+          created_at?: string
+          device_id?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          payload?: Json | null
+        }
+        Update: {
+          actor_id?: string | null
+          competition_id?: string
+          created_at?: string
+          device_id?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_audit_events_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_divisions: {
         Row: {
           competition_id: string
@@ -419,6 +466,61 @@ export type Database = {
           },
         ]
       }
+      competition_leaderboards: {
+        Row: {
+          competition_id: string
+          division_id: string | null
+          id: string
+          overall_rank: number
+          recomputed_at: string
+          team_id: string
+          tie_broken_by: string | null
+          total_rank_sum: number
+        }
+        Insert: {
+          competition_id: string
+          division_id?: string | null
+          id?: string
+          overall_rank?: number
+          recomputed_at?: string
+          team_id: string
+          tie_broken_by?: string | null
+          total_rank_sum?: number
+        }
+        Update: {
+          competition_id?: string
+          division_id?: string | null
+          id?: string
+          overall_rank?: number
+          recomputed_at?: string
+          team_id?: string
+          tie_broken_by?: string | null
+          total_rank_sum?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_leaderboards_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_leaderboards_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "competition_divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_leaderboards_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "competition_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_participants: {
         Row: {
           athlete_name: string
@@ -461,53 +563,130 @@ export type Database = {
           },
         ]
       }
-      competition_scores: {
+      competition_rounds: {
         Row: {
           competition_id: string
           created_at: string
           id: string
-          judge_id: string | null
-          load_value: number | null
-          locked: boolean
-          locked_at: string | null
-          points_awarded: number | null
-          reps_completed: number | null
-          score: number
-          team_id: string
-          time_seconds: number | null
-          updated_at: string
-          workout_id: string
+          name: string
+          round_number: number
+          scheduled_end: string | null
+          scheduled_start: string | null
+          scoring_weight: number
+          status: string
         }
         Insert: {
           competition_id: string
           created_at?: string
           id?: string
-          judge_id?: string | null
-          load_value?: number | null
-          locked?: boolean
-          locked_at?: string | null
-          points_awarded?: number | null
-          reps_completed?: number | null
-          score?: number
-          team_id: string
-          time_seconds?: number | null
-          updated_at?: string
-          workout_id: string
+          name: string
+          round_number: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          scoring_weight?: number
+          status?: string
         }
         Update: {
           competition_id?: string
           created_at?: string
           id?: string
+          name?: string
+          round_number?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          scoring_weight?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_rounds_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_scores: {
+        Row: {
+          competition_id: string
+          created_at: string
+          device_id: string | null
+          heat_id: string | null
+          id: string
+          idempotency_key: string | null
+          judge_id: string | null
+          load_value: number | null
+          locked: boolean
+          locked_at: string | null
+          normalized_score: number | null
+          notes: string | null
+          points_awarded: number | null
+          rank: number | null
+          reps_completed: number | null
+          review_notes: string | null
+          round_id: string | null
+          score: number
+          team_id: string
+          time_seconds: number | null
+          updated_at: string
+          validation_status: string | null
+          video_url: string | null
+          video_verified: boolean | null
+          workout_id: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          device_id?: string | null
+          heat_id?: string | null
+          id?: string
+          idempotency_key?: string | null
           judge_id?: string | null
           load_value?: number | null
           locked?: boolean
           locked_at?: string | null
+          normalized_score?: number | null
+          notes?: string | null
           points_awarded?: number | null
+          rank?: number | null
           reps_completed?: number | null
+          review_notes?: string | null
+          round_id?: string | null
+          score?: number
+          team_id: string
+          time_seconds?: number | null
+          updated_at?: string
+          validation_status?: string | null
+          video_url?: string | null
+          video_verified?: boolean | null
+          workout_id: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          device_id?: string | null
+          heat_id?: string | null
+          id?: string
+          idempotency_key?: string | null
+          judge_id?: string | null
+          load_value?: number | null
+          locked?: boolean
+          locked_at?: string | null
+          normalized_score?: number | null
+          notes?: string | null
+          points_awarded?: number | null
+          rank?: number | null
+          reps_completed?: number | null
+          review_notes?: string | null
+          round_id?: string | null
           score?: number
           team_id?: string
           time_seconds?: number | null
           updated_at?: string
+          validation_status?: string | null
+          video_url?: string | null
+          video_verified?: boolean | null
           workout_id?: string
         }
         Relationships: [
@@ -516,6 +695,20 @@ export type Database = {
             columns: ["competition_id"]
             isOneToOne: false
             referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_scores_heat_id_fkey"
+            columns: ["heat_id"]
+            isOneToOne: false
+            referencedRelation: "heat_schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_scores_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "competition_rounds"
             referencedColumns: ["id"]
           },
           {
@@ -530,6 +723,56 @@ export type Database = {
             columns: ["workout_id"]
             isOneToOne: false
             referencedRelation: "competition_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_settings: {
+        Row: {
+          allow_remote_submissions: boolean
+          auto_publish_leaderboard: boolean
+          competition_id: string
+          created_at: string
+          id: string
+          require_video_verification: boolean
+          scoring_method: string
+          settings_json: Json | null
+          tie_breaker_policy: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          allow_remote_submissions?: boolean
+          auto_publish_leaderboard?: boolean
+          competition_id: string
+          created_at?: string
+          id?: string
+          require_video_verification?: boolean
+          scoring_method?: string
+          settings_json?: Json | null
+          tie_breaker_policy?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          allow_remote_submissions?: boolean
+          auto_publish_leaderboard?: boolean
+          competition_id?: string
+          created_at?: string
+          id?: string
+          require_video_verification?: boolean
+          scoring_method?: string
+          settings_json?: Json | null
+          tie_breaker_policy?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_settings_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: true
+            referencedRelation: "competitions"
             referencedColumns: ["id"]
           },
         ]
@@ -576,6 +819,66 @@ export type Database = {
           },
         ]
       }
+      competition_templates: {
+        Row: {
+          competition_type: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_public: boolean
+          name: string
+          template_data: Json
+        }
+        Insert: {
+          competition_type?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name: string
+          template_data?: Json
+        }
+        Update: {
+          competition_type?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name?: string
+          template_data?: Json
+        }
+        Relationships: []
+      }
+      competition_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       competition_workouts: {
         Row: {
           competition_id: string
@@ -584,6 +887,7 @@ export type Database = {
           is_locked: boolean
           measurement_type: string
           name: string | null
+          round_id: string | null
           scoring_type: string
           time_cap_seconds: number | null
           workout_number: number
@@ -596,6 +900,7 @@ export type Database = {
           is_locked?: boolean
           measurement_type?: string
           name?: string | null
+          round_id?: string | null
           scoring_type?: string
           time_cap_seconds?: number | null
           workout_number: number
@@ -608,6 +913,7 @@ export type Database = {
           is_locked?: boolean
           measurement_type?: string
           name?: string | null
+          round_id?: string | null
           scoring_type?: string
           time_cap_seconds?: number | null
           workout_number?: number
@@ -621,11 +927,19 @@ export type Database = {
             referencedRelation: "competitions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "competition_workouts_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "competition_rounds"
+            referencedColumns: ["id"]
+          },
         ]
       }
       competitions: {
         Row: {
           age_category_type: string | null
+          competition_type: string | null
           created_at: string
           created_by: string
           date: string | null
@@ -648,6 +962,7 @@ export type Database = {
         }
         Insert: {
           age_category_type?: string | null
+          competition_type?: string | null
           created_at?: string
           created_by: string
           date?: string | null
@@ -670,6 +985,7 @@ export type Database = {
         }
         Update: {
           age_category_type?: string | null
+          competition_type?: string | null
           created_at?: string
           created_by?: string
           date?: string | null
@@ -867,6 +1183,187 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      heat_assignments: {
+        Row: {
+          created_at: string
+          heat_id: string
+          id: string
+          lane_number: number | null
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          heat_id: string
+          id?: string
+          lane_number?: number | null
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          heat_id?: string
+          id?: string
+          lane_number?: number | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "heat_assignments_heat_id_fkey"
+            columns: ["heat_id"]
+            isOneToOne: false
+            referencedRelation: "heat_schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "heat_assignments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "competition_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      heat_schedule: {
+        Row: {
+          competition_id: string
+          created_at: string
+          heat_number: number
+          id: string
+          lane_count: number
+          round_id: string | null
+          scheduled_start: string | null
+          status: string
+          workout_id: string | null
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          heat_number: number
+          id?: string
+          lane_count?: number
+          round_id?: string | null
+          scheduled_start?: string | null
+          status?: string
+          workout_id?: string | null
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          heat_number?: number
+          id?: string
+          lane_count?: number
+          round_id?: string | null
+          scheduled_start?: string | null
+          status?: string
+          workout_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "heat_schedule_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "heat_schedule_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "competition_rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "heat_schedule_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "competition_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      judge_assignments: {
+        Row: {
+          competition_id: string
+          created_at: string
+          heat_id: string | null
+          id: string
+          judge_id: string
+          lane_number: number | null
+          workout_id: string | null
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          heat_id?: string | null
+          id?: string
+          judge_id: string
+          lane_number?: number | null
+          workout_id?: string | null
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          heat_id?: string | null
+          id?: string
+          judge_id?: string
+          lane_number?: number | null
+          workout_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "judge_assignments_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "judge_assignments_heat_id_fkey"
+            columns: ["heat_id"]
+            isOneToOne: false
+            referencedRelation: "heat_schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "judge_assignments_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "competition_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leaderboard_history: {
+        Row: {
+          competition_id: string
+          created_at: string
+          id: string
+          snapshot_data: Json
+          triggered_by: string | null
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          id?: string
+          snapshot_data: Json
+          triggered_by?: string | null
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          id?: string
+          snapshot_data?: Json
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_history_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
             referencedColumns: ["id"]
           },
         ]
@@ -1461,6 +1958,38 @@ export type Database = {
           },
         ]
       }
+      workout_configs: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          updated_at: string
+          workout_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          workout_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_configs_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: true
+            referencedRelation: "competition_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workout_movements: {
         Row: {
           created_at: string
@@ -1495,6 +2024,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "workout_movements_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "competition_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_rankings: {
+        Row: {
+          competition_id: string
+          division_id: string | null
+          id: string
+          normalized_score: number
+          points_earned: number
+          rank: number
+          recomputed_at: string
+          team_id: string
+          workout_id: string
+        }
+        Insert: {
+          competition_id: string
+          division_id?: string | null
+          id?: string
+          normalized_score?: number
+          points_earned?: number
+          rank?: number
+          recomputed_at?: string
+          team_id: string
+          workout_id: string
+        }
+        Update: {
+          competition_id?: string
+          division_id?: string | null
+          id?: string
+          normalized_score?: number
+          points_earned?: number
+          rank?: number
+          recomputed_at?: string
+          team_id?: string
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_rankings_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_rankings_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "competition_divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_rankings_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "competition_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_rankings_workout_id_fkey"
             columns: ["workout_id"]
             isOneToOne: false
             referencedRelation: "competition_workouts"
@@ -1547,6 +2141,14 @@ export type Database = {
         Returns: boolean
       }
       is_super_user: { Args: { p_user_id: string }; Returns: boolean }
+      recompute_competition_leaderboard: {
+        Args: { p_competition_id: string }
+        Returns: undefined
+      }
+      recompute_workout_rankings: {
+        Args: { p_competition_id: string; p_workout_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
