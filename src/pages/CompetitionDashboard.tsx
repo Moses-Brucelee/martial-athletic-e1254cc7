@@ -105,16 +105,20 @@ export default function CompetitionDashboard() {
   }
 
   const renderOwnerTabs = () => (
-    <Tabs defaultValue="setup" className="w-full">
+    <Tabs defaultValue="command" className="w-full">
       <TabsList className="w-full overflow-x-auto flex mb-6">
+        <TabsTrigger value="command" className="flex-1">Command</TabsTrigger>
         <TabsTrigger value="setup" className="flex-1">Setup</TabsTrigger>
         <TabsTrigger value="judges" className="flex-1">Judges</TabsTrigger>
         <TabsTrigger value="brackets" className="flex-1">Brackets</TabsTrigger>
         <TabsTrigger value="scores" className="flex-1">Scores</TabsTrigger>
         <TabsTrigger value="leaderboard" className="flex-1">Leaderboard</TabsTrigger>
         <TabsTrigger value="roster" className="flex-1">Roster</TabsTrigger>
-        <TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger>
       </TabsList>
+
+      <TabsContent value="command">
+        <CommandCenter competitionId={id!} />
+      </TabsContent>
 
       <TabsContent value="setup">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
