@@ -7,14 +7,14 @@ interface StepIndicatorProps {
 
 export function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
   return (
-    <div className="flex items-center gap-1 mb-8">
+    <div className="flex items-center gap-1 mb-8 overflow-x-auto scrollbar-none -mx-1 px-1">
       {steps.map((label, i) => (
-        <div key={i} className="flex items-center gap-1 flex-1">
+        <div key={i} className="flex items-center gap-1 flex-1 min-w-0">
           {i > 0 && (
-            <div className={`h-px flex-1 transition-colors ${i <= currentStep ? "bg-accent" : "bg-border"}`} />
+            <div className={`h-px flex-1 min-w-2 transition-colors ${i <= currentStep ? "bg-accent" : "bg-border"}`} />
           )}
           <div
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
               i === currentStep
                 ? "bg-primary text-primary-foreground"
                 : i < currentStep
