@@ -250,6 +250,19 @@ export default function CompetitionPublic() {
           </div>
         )}
 
+        {/* Owner shortcut to manage registrations */}
+        {user && competition.created_by === user.id && (
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-foreground">You own this competition</p>
+              <p className="text-xs text-muted-foreground">{pendingCount} pending registration{pendingCount !== 1 ? "s" : ""} to review</p>
+            </div>
+            <Button onClick={() => navigate(`/competition/${id}`)} className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
+              Manage Registrations
+            </Button>
+          </div>
+        )}
+
         {/* Registration form */}
         <div className="bg-card border border-border rounded-xl p-6">
           <h2 className="text-lg font-bold text-foreground uppercase mb-4">Register</h2>
