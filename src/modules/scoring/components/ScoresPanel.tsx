@@ -100,7 +100,7 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
     const upserts = Object.entries(localScores)
       .filter(([, val]) => val !== "" && !isNaN(Number(val)))
       .map(([key, val]) => {
-        const [team_id, workout_id] = key.split("-");
+        const [team_id, workout_id] = key.split("::");
         const scoringType = workoutScoringMap[workout_id] || "reps";
         const numVal = Number(val);
         const rawField = getRawFieldKey(scoringType);
