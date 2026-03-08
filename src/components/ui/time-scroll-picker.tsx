@@ -1,6 +1,10 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface TimeScrollPickerProps {
   hours: number;
@@ -10,49 +14,8 @@ interface TimeScrollPickerProps {
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
-
-function Stepper({
-  value,
-  max,
-  onChange,
-  disabled,
-}: {
-  value: number;
-  max: number;
-  onChange: (v: number) => void;
-  disabled?: boolean;
-}) {
-  const increment = () => onChange((value + 1) % (max + 1));
-  const decrement = () => onChange((value - 1 + max + 1) % (max + 1));
-
-  return (
-    <div className="flex flex-col items-center gap-0.5">
-      <button
-        type="button"
-        onClick={increment}
-        disabled={disabled}
-        className="min-h-[36px] min-w-[44px] flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/20 active:bg-accent/30 transition-colors disabled:opacity-50"
-        aria-label="Increment"
-      >
-        <ChevronUp className="h-5 w-5" />
-      </button>
-      <div className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-accent/15 border border-accent/25">
-        <span className="text-xl font-bold text-foreground tabular-nums select-none">
-          {pad(value)}
-        </span>
-      </div>
-      <button
-        type="button"
-        onClick={decrement}
-        disabled={disabled}
-        className="min-h-[36px] min-w-[44px] flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/20 active:bg-accent/30 transition-colors disabled:opacity-50"
-        aria-label="Decrement"
-      >
-        <ChevronDown className="h-5 w-5" />
-      </button>
-    </div>
-  );
-}
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const MINUTES = Array.from({ length: 60 }, (_, i) => i);
 
 export function TimeScrollPicker({
   hours,
@@ -62,19 +25,41 @@ export function TimeScrollPicker({
 }: TimeScrollPickerProps) {
   return (
     <div className="flex items-center justify-center gap-2 py-3 px-4">
-      <Stepper
-        value={hours}
-        max={23}
-        onChange={(h) => onChange(h, minutes)}
+      <Select
+        value={String(hours)}
+        onValueChange={(v) => onChange(Number(v), minutes)}
         disabled={disabled}
-      />
-      <span className="text-2xl font-bold text-foreground select-none mt-0.5">:</span>
-      <Stepper
-        value={minutes}
-        max={59}
-        onChange={(m) => onChange(hours, m)}
+      >
+        <SelectTrigger className="w-20 h-11 bg-background text-center font-bold tabular-nums">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="max-h-52 z-50 bg-popover">
+          {HOURS.map((h) => (
+            <SelectItem key={h} value={String(h)}>
+              {pad(h)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <span className="text-xl font-bold text-foreground select-none">:</span>
+
+      <Select
+        value={String(minutes)}
+        onValueChange={(v) => onChange(hours, Number(v))}
         disabled={disabled}
-      />
+      >
+        <SelectTrigger className="w-20 h-11 bg-background text-center font-bold tabular-nums">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="max-h-52 z-50 bg-popover">
+          {MINUTES.map((m) => (
+            <SelectItem key={m} value={String(m)}>
+              {pad(m)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
