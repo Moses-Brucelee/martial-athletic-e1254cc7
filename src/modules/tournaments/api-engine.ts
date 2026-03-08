@@ -216,6 +216,38 @@ export async function fetchTemplates(): Promise<CompetitionTemplate[]> {
   return (data ?? []) as CompetitionTemplate[];
 }
 
+export async function saveTemplate(input: {
+  name: string;
+  description?: string | null;
+  competition_type?: string;
+  template_data: unknown;
+  is_public?: boolean;
+  created_by: string;
+}): Promise<CompetitionTemplate> {
+  const { data, error } = await supabase
+    .from("competition_templates")
+    .insert({
+      name: input.name,
+      description: input.description || null,
+      competition_type: input.competition_type || "crossfit",
+      template_data: input.template_data as any,
+      is_public: input.is_public ?? false,
+      created_by: input.created_by,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as CompetitionTemplate;
+}
+
+export async function deleteTemplate(templateId: string): Promise<void> {
+  const { error } = await supabase
+    .from("competition_templates")
+    .delete()
+    .eq("id", templateId);
+  if (error) throw error;
+}
+
 // ── Workout Rankings (read-only cache) ────────────────────────────────
 
 export interface WorkoutRankingRow {
