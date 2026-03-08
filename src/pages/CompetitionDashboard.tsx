@@ -127,11 +127,11 @@ export default function CompetitionDashboard() {
         <CommandCenter competitionId={id!} />
       </TabsContent>
 
-      <TabsContent value="setup">
-      
       <TabsContent value="registrations">
         <RegistrationManager competitionId={id!} canAdmin={effectiveCanAdmin} />
       </TabsContent>
+
+      <TabsContent value="setup">
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
