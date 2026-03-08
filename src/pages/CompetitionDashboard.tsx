@@ -23,6 +23,7 @@ import { ParticipantsPanel } from "@/modules/athletes/components/ParticipantsPan
 import { BracketsPanel } from "@/modules/tournaments/components/BracketsPanel";
 import { CompetitionStatusBar } from "@/modules/tournaments/components/CompetitionStatusBar";
 import { CommandCenter } from "@/modules/tournaments/components/CommandCenter";
+import { HeatManagementPanel } from "@/modules/tournaments/components/HeatManagementPanel";
 import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 import { V1_FULL_ACCESS } from "@/lib/featureFlags";
 import { PosterUpload } from "@/components/competition/PosterUpload";
@@ -110,6 +111,7 @@ export default function CompetitionDashboard() {
         <TabsTrigger value="command" className="flex-1">Command</TabsTrigger>
         <TabsTrigger value="setup" className="flex-1">Setup</TabsTrigger>
         <TabsTrigger value="judges" className="flex-1">Judges</TabsTrigger>
+        <TabsTrigger value="heats" className="flex-1">Heats</TabsTrigger>
         <TabsTrigger value="brackets" className="flex-1">Brackets</TabsTrigger>
         <TabsTrigger value="scores" className="flex-1">Scores</TabsTrigger>
         <TabsTrigger value="leaderboard" className="flex-1">Leaderboard</TabsTrigger>
@@ -152,6 +154,10 @@ export default function CompetitionDashboard() {
 
       <TabsContent value="judges">
         <JudgesPanelLazy competitionId={id!} canAdmin={effectiveCanAdmin} />
+      </TabsContent>
+
+      <TabsContent value="heats">
+        <HeatManagementPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
       </TabsContent>
 
       <TabsContent value="brackets">
