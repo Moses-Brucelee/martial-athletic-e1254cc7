@@ -40,12 +40,10 @@ export async function upsertCompetitionSettings(
   competitionId: string,
   settings: Partial<Omit<CompetitionSettings, "id" | "competition_id" | "created_at" | "updated_at">>
 ): Promise<CompetitionSettings> {
+  const row = { competition_id: competitionId, ...settings } as Record<string, unknown>;
   const { data, error } = await supabase
     .from("competition_settings")
-    .upsert(
-      { competition_id: competitionId, ...settings },
-      { onConflict: "competition_id" }
-    )
+    .upsert(row as any, { onConflict: "competition_id" })
     .select("*")
     .single();
   if (error) throw error;
