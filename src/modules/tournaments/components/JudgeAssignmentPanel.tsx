@@ -131,7 +131,7 @@ export function JudgeAssignmentPanel({ competitionId, canAdmin }: JudgeAssignmen
               <Select value={selectedHeat} onValueChange={setSelectedHeat}>
                 <SelectTrigger className="h-9 bg-background text-sm"><SelectValue placeholder="All heats" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Heats</SelectItem>
+                  <SelectItem value="__all__">All Heats</SelectItem>
                   {filteredHeats.map((h) => (
                     <SelectItem key={h.id} value={h.id}>Heat #{h.heat_number}</SelectItem>
                   ))}
