@@ -56,10 +56,11 @@ export default function CompetitionCreate() {
     if (data.workouts && data.workouts.length > 0) {
       setWorkouts(data.workouts.map((w) => ({
         name: w.name || "",
+        description: "",
         workout_type: w.workout_type || "amrap",
         time_cap_seconds: w.time_cap_seconds ? String(w.time_cap_seconds) : "",
         scoring_type: w.scoring_type || "reps",
-        movements: [{ movement_name: "", reps: "", weight: "", unit: "kg" }],
+        movements: [{ movement_name: "", reps: "", weight: "", unit: "kg", distance: "", calories: "", description: "", video_url: "" }],
       })));
     }
     toast.success("Template applied!");
