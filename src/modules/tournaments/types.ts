@@ -8,6 +8,15 @@ export type {
   Bracket,
   Bout,
   AthleteRegistration,
+  CompetitionType,
+  CompetitionSettings,
+  CompetitionRound,
+  WorkoutConfig,
+  Heat,
+  HeatAssignment,
+  JudgeAssignment,
+  CompetitionTemplate,
+  CompetitionAuditEvent,
 } from "@/domain/competition";
 
 export interface CreateCompetitionInput {
@@ -19,6 +28,7 @@ export interface CreateCompetitionInput {
   registration_deadline?: string | null;
   venue?: string | null;
   type?: string | null;
+  competition_type?: string | null;
   host_gym?: string | null;
   divisions?: string | null;
   age_category_type?: string | null;
@@ -41,6 +51,7 @@ export interface AddWorkoutInput {
   workout_type?: string;
   time_cap_seconds?: number | null;
   scoring_type?: string;
+  round_id?: string | null;
 }
 
 export interface CreateBracketInput {
@@ -58,6 +69,7 @@ export interface SaveWorkoutWithMovementsInput {
   time_cap_seconds?: number | null;
   scoring_type: string;
   measurement_type: string;
+  round_id?: string | null;
   movements: {
     movement_name: string;
     reps: number | null;
@@ -65,4 +77,30 @@ export interface SaveWorkoutWithMovementsInput {
     unit: string;
     sequence_order: number;
   }[];
+}
+
+export interface AddRoundInput {
+  competition_id: string;
+  name: string;
+  round_number: number;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
+  scoring_weight?: number;
+}
+
+export interface AddHeatInput {
+  competition_id: string;
+  workout_id?: string | null;
+  round_id?: string | null;
+  heat_number: number;
+  lane_count?: number;
+  scheduled_start?: string | null;
+}
+
+export interface AssignJudgeInput {
+  competition_id: string;
+  judge_id: string;
+  heat_id?: string | null;
+  workout_id?: string | null;
+  lane_number?: number | null;
 }
