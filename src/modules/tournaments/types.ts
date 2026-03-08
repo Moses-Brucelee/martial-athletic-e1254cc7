@@ -65,6 +65,7 @@ export interface SaveWorkoutWithMovementsInput {
   competition_id: string;
   workout_number: number;
   name?: string | null;
+  description?: string | null;
   workout_type: string;
   time_cap_seconds?: number | null;
   scoring_type: string;
@@ -76,6 +77,10 @@ export interface SaveWorkoutWithMovementsInput {
     weight: number | null;
     unit: string;
     sequence_order: number;
+    distance?: number | null;
+    calories?: number | null;
+    description?: string | null;
+    video_url?: string | null;
   }[];
 }
 

@@ -125,10 +125,11 @@ export default function CompetitionCreate() {
           competition_id: competitionId,
           workout_number: i + 1,
           name: w.name || null,
+          description: w.description || null,
           workout_type: w.workout_type,
           time_cap_seconds: w.time_cap_seconds ? parseInt(w.time_cap_seconds) : null,
           scoring_type: w.scoring_type,
-          measurement_type: w.scoring_type, // map scoring_type to measurement_type
+          measurement_type: w.scoring_type,
           movements: w.movements
             .filter((m) => m.movement_name.trim())
             .map((m, mi) => ({
@@ -137,6 +138,10 @@ export default function CompetitionCreate() {
               weight: m.weight ? parseFloat(m.weight) : null,
               unit: m.unit,
               sequence_order: mi,
+              distance: m.distance ? parseFloat(m.distance) : null,
+              calories: m.calories ? parseInt(m.calories) : null,
+              description: m.description || null,
+              video_url: m.video_url || null,
             })),
         });
       }
