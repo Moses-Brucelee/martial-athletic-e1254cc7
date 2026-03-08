@@ -10,10 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Plus, Search, Users, Trash2 } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import logoCompact from "@/assets/martial-athletic-logo-compact.png";
+import { Plus, Search, Users, Trash2 } from "lucide-react";
+import { AppHeader } from "@/components/AppHeader";
 import type { GymMember } from "../types";
+import { toast } from "sonner";
 import { toast } from "sonner";
 
 export default function MembersPage() {
