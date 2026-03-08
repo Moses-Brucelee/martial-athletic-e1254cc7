@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { ChevronUp, ChevronDown } from "lucide-react";
 
 interface TimeScrollPickerProps {
   hours: number;
@@ -8,133 +9,50 @@ interface TimeScrollPickerProps {
   disabled?: boolean;
 }
 
-const ITEM_HEIGHT = 40;
-const VISIBLE_ITEMS = 5;
-const CENTER_INDEX = Math.floor(VISIBLE_ITEMS / 2);
+const pad = (n: number) => String(n).padStart(2, "0");
 
-function useScrollWheel(
-  items: number[],
-  selectedValue: number,
-  onSelect: (value: number) => void
-) {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const isScrolling = React.useRef(false);
-  const scrollTimeout = React.useRef<ReturnType<typeof setTimeout>>();
-
-  const selectedIndex = items.indexOf(selectedValue);
-
-  // Scroll to selected on mount and when value changes externally
-  React.useEffect(() => {
-    const el = containerRef.current;
-    if (!el || isScrolling.current) return;
-    el.scrollTop = selectedIndex * ITEM_HEIGHT;
-  }, [selectedIndex]);
-
-  const handleScroll = () => {
-    isScrolling.current = true;
-    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-
-    scrollTimeout.current = setTimeout(() => {
-      const el = containerRef.current;
-      if (!el) return;
-
-      const index = Math.round(el.scrollTop / ITEM_HEIGHT);
-      const clampedIndex = Math.max(0, Math.min(index, items.length - 1));
-
-      // Snap to position
-      el.scrollTo({ top: clampedIndex * ITEM_HEIGHT, behavior: "smooth" });
-
-      if (items[clampedIndex] !== selectedValue) {
-        onSelect(items[clampedIndex]);
-      }
-
-      setTimeout(() => {
-        isScrolling.current = false;
-      }, 100);
-    }, 80);
-  };
-
-  return { containerRef, handleScroll };
-}
-
-function ScrollColumn({
-  items,
-  selectedValue,
-  onSelect,
-  formatValue,
+function Stepper({
+  value,
+  max,
+  onChange,
   disabled,
 }: {
-  items: number[];
-  selectedValue: number;
-  onSelect: (v: number) => void;
-  formatValue: (v: number) => string;
+  value: number;
+  max: number;
+  onChange: (v: number) => void;
   disabled?: boolean;
 }) {
-  const { containerRef, handleScroll } = useScrollWheel(items, selectedValue, onSelect);
+  const increment = () => onChange((value + 1) % (max + 1));
+  const decrement = () => onChange((value - 1 + max + 1) % (max + 1));
 
   return (
-    <div className="relative" style={{ height: ITEM_HEIGHT * VISIBLE_ITEMS }}>
-      {/* Selection highlight */}
-      <div
-        className="absolute left-0 right-0 z-0 rounded-md bg-accent/20 border border-accent/30 pointer-events-none"
-        style={{
-          top: CENTER_INDEX * ITEM_HEIGHT,
-          height: ITEM_HEIGHT,
-        }}
-      />
-
-      {/* Fade masks */}
-      <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-popover to-transparent z-10 pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-popover to-transparent z-10 pointer-events-none" />
-
-      {/* Scroll container */}
-      <div
-        ref={containerRef}
-        onScroll={handleScroll}
-        className={cn(
-          "h-full overflow-y-auto scrollbar-hide relative z-[1]",
-          disabled && "opacity-50 pointer-events-none"
-        )}
-        style={{
-          scrollSnapType: "y mandatory",
-          WebkitOverflowScrolling: "touch",
-        }}
+    <div className="flex flex-col items-center gap-0.5">
+      <button
+        type="button"
+        onClick={increment}
+        disabled={disabled}
+        className="min-h-[36px] min-w-[44px] flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/20 active:bg-accent/30 transition-colors disabled:opacity-50"
+        aria-label="Increment"
       >
-        {/* Top padding */}
-        <div style={{ height: CENTER_INDEX * ITEM_HEIGHT }} />
-
-        {items.map((item) => (
-          <div
-            key={item}
-            className={cn(
-              "flex items-center justify-center cursor-pointer transition-all duration-150 select-none",
-              item === selectedValue
-                ? "text-foreground font-bold text-lg"
-                : "text-muted-foreground text-base"
-            )}
-            style={{
-              height: ITEM_HEIGHT,
-              scrollSnapAlign: "start",
-            }}
-            onClick={() => {
-              if (!disabled) onSelect(item);
-            }}
-          >
-            {formatValue(item)}
-          </div>
-        ))}
-
-        {/* Bottom padding */}
-        <div style={{ height: CENTER_INDEX * ITEM_HEIGHT }} />
+        <ChevronUp className="h-5 w-5" />
+      </button>
+      <div className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-accent/15 border border-accent/25">
+        <span className="text-xl font-bold text-foreground tabular-nums select-none">
+          {pad(value)}
+        </span>
       </div>
+      <button
+        type="button"
+        onClick={decrement}
+        disabled={disabled}
+        className="min-h-[36px] min-w-[44px] flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/20 active:bg-accent/30 transition-colors disabled:opacity-50"
+        aria-label="Decrement"
+      >
+        <ChevronDown className="h-5 w-5" />
+      </button>
     </div>
   );
 }
-
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const MINUTES = Array.from({ length: 60 }, (_, i) => i);
-
-const pad = (n: number) => String(n).padStart(2, "0");
 
 export function TimeScrollPicker({
   hours,
@@ -143,28 +61,20 @@ export function TimeScrollPicker({
   disabled = false,
 }: TimeScrollPickerProps) {
   return (
-    <div className="flex items-center justify-center gap-1 py-2 px-3">
-      <div className="w-16">
-        <ScrollColumn
-          items={HOURS}
-          selectedValue={hours}
-          onSelect={(h) => onChange(h, minutes)}
-          formatValue={pad}
-          disabled={disabled}
-        />
-      </div>
-
-      <span className="text-xl font-bold text-foreground select-none pb-0.5">:</span>
-
-      <div className="w-16">
-        <ScrollColumn
-          items={MINUTES}
-          selectedValue={minutes}
-          onSelect={(m) => onChange(hours, m)}
-          formatValue={pad}
-          disabled={disabled}
-        />
-      </div>
+    <div className="flex items-center justify-center gap-2 py-3 px-4">
+      <Stepper
+        value={hours}
+        max={23}
+        onChange={(h) => onChange(h, minutes)}
+        disabled={disabled}
+      />
+      <span className="text-2xl font-bold text-foreground select-none mt-0.5">:</span>
+      <Stepper
+        value={minutes}
+        max={59}
+        onChange={(m) => onChange(hours, m)}
+        disabled={disabled}
+      />
     </div>
   );
 }
