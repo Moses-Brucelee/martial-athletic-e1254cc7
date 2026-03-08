@@ -98,7 +98,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
     const upserts = Object.entries(localScores)
       .filter(([, val]) => val !== "" && !isNaN(Number(val)))
       .map(([key, val]) => {
-        const [team_id, workout_id] = key.split("-");
+        const [team_id, workout_id] = key.split("::");
         const st = workoutScoringMap[workout_id] || "reps";
         const numVal = Number(val);
         const rawField = getRawFieldKey(st);
