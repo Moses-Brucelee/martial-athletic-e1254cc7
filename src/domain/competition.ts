@@ -11,6 +11,7 @@ export interface Competition {
   venue: string | null;
   host_gym: string | null;
   type: string | null;
+  competition_type: string | null;
   divisions: string | null;
   status: string;
   poster_url: string | null;
@@ -50,6 +51,7 @@ export interface Workout {
   scoring_type: string;
   name: string | null;
   is_locked: boolean;
+  round_id: string | null;
   created_at: string;
 }
 
@@ -101,5 +103,104 @@ export interface AthleteRegistration {
   athlete_name: string;
   team_id: string | null;
   status: string;
+  created_at: string;
+}
+
+// ── New Phase 1 Entities ──────────────────────────────────
+
+export interface CompetitionType {
+  key: string;
+  label: string;
+  description: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface CompetitionSettings {
+  id: string;
+  competition_id: string;
+  timezone: string;
+  scoring_method: string;
+  tie_breaker_policy: string;
+  allow_remote_submissions: boolean;
+  require_video_verification: boolean;
+  auto_publish_leaderboard: boolean;
+  settings_json: unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CompetitionRound {
+  id: string;
+  competition_id: string;
+  name: string;
+  round_number: number;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
+  status: string;
+  scoring_weight: number;
+  created_at: string;
+}
+
+export interface WorkoutConfig {
+  id: string;
+  workout_id: string;
+  config: unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Heat {
+  id: string;
+  competition_id: string;
+  workout_id: string | null;
+  round_id: string | null;
+  heat_number: number;
+  lane_count: number;
+  scheduled_start: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface HeatAssignment {
+  id: string;
+  heat_id: string;
+  team_id: string;
+  lane_number: number | null;
+  created_at: string;
+}
+
+export interface JudgeAssignment {
+  id: string;
+  competition_id: string;
+  judge_id: string;
+  heat_id: string | null;
+  workout_id: string | null;
+  lane_number: number | null;
+  created_at: string;
+}
+
+export interface CompetitionTemplate {
+  id: string;
+  name: string;
+  competition_type: string;
+  description: string | null;
+  template_data: unknown;
+  is_public: boolean;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface CompetitionAuditEvent {
+  id: string;
+  competition_id: string;
+  actor_id: string | null;
+  event_type: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  payload: unknown;
+  device_id: string | null;
+  ip_address: string | null;
   created_at: string;
 }
