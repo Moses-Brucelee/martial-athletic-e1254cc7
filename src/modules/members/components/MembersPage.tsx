@@ -14,7 +14,6 @@ import { Plus, Search, Users, Trash2 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import type { GymMember } from "../types";
 import { toast } from "sonner";
-import { toast } from "sonner";
 
 export default function MembersPage() {
   const navigate = useNavigate();
