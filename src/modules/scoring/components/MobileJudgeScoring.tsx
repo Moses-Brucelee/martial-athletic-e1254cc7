@@ -1,15 +1,47 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, Lock, Save } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock, Save, Clock, Dumbbell, Repeat, Award } from "lucide-react";
 import { toast } from "sonner";
-import { scoreSchema } from "@/lib/validation";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
 
 interface MobileJudgeScoringProps {
   competitionId: string;
   judgeId?: string;
+}
+
+type ScoringType = "time" | "reps" | "load" | "points";
+
+const SCORING_LABELS: Record<ScoringType, string> = {
+  time: "Time (seconds)",
+  reps: "Total Reps",
+  load: "Load (kg)",
+  points: "Points",
+};
+
+const SCORING_ICONS: Record<ScoringType, typeof Clock> = {
+  time: Clock,
+  reps: Repeat,
+  load: Dumbbell,
+  points: Award,
+};
+
+function getRawFieldKey(scoringType: ScoringType): "time_seconds" | "reps_completed" | "load_value" | "points_awarded" {
+  switch (scoringType) {
+    case "time": return "time_seconds";
+    case "reps": return "reps_completed";
+    case "load": return "load_value";
+    case "points": return "points_awarded";
+  }
+}
+
+function getDisplayValue(scoreRow: any, scoringType: ScoringType): string {
+  const fieldKey = getRawFieldKey(scoringType);
+  const raw = scoreRow?.[fieldKey];
+  if (raw != null) return String(raw);
+  if (scoreRow?.score != null) return String(scoreRow.score);
+  return "0";
 }
 
 export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScoringProps) {
@@ -22,7 +54,12 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
   const [currentTeamIndex, setCurrentTeamIndex] = useState(0);
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string>("");
 
-  // Set default workout
+  const workoutScoringMap = useMemo(() => {
+    const map: Record<string, ScoringType> = {};
+    workouts.forEach((w) => { map[w.id] = (w.scoring_type as ScoringType) || "reps"; });
+    return map;
+  }, [workouts]);
+
   useEffect(() => {
     if (workouts.length > 0 && !selectedWorkoutId) {
       const unlocked = workouts.find((w) => !w.is_locked);
@@ -30,17 +67,19 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
     }
   }, [workouts, selectedWorkoutId]);
 
-  // Sync scores
   useEffect(() => {
     const map: Record<string, string> = {};
     scoreRows.forEach((s) => {
-      map[`${s.team_id}-${s.workout_id}`] = String(s.score);
+      const st = workoutScoringMap[s.workout_id] || "reps";
+      map[`${s.team_id}-${s.workout_id}`] = getDisplayValue(s, st);
     });
     setLocalScores(map);
-  }, [scoreRows]);
+  }, [scoreRows, workoutScoringMap]);
 
   const currentTeam = teams[currentTeamIndex];
   const selectedWorkout = workouts.find((w) => w.id === selectedWorkoutId);
+  const currentScoringType: ScoringType = selectedWorkoutId ? (workoutScoringMap[selectedWorkoutId] || "reps") : "reps";
+  const CurrentIcon = SCORING_ICONS[currentScoringType];
 
   const updateScore = (value: string) => {
     if (!currentTeam || !selectedWorkoutId) return;
@@ -56,19 +95,21 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
   };
 
   const saveAllScores = async () => {
-    const invalid = Object.values(localScores).some(
-      (val) => val !== "" && !scoreSchema.safeParse(val).success
-    );
-    if (invalid) {
-      toast.error("Scores must be between 0 and 999,999");
-      return;
-    }
-
     const upserts = Object.entries(localScores)
       .filter(([, val]) => val !== "" && !isNaN(Number(val)))
       .map(([key, val]) => {
         const [team_id, workout_id] = key.split("-");
-        return { competition_id: competitionId, team_id, workout_id, score: Number(val), judge_id: judgeId || null };
+        const st = workoutScoringMap[workout_id] || "reps";
+        const numVal = Number(val);
+        const rawField = getRawFieldKey(st);
+        return {
+          competition_id: competitionId,
+          team_id,
+          workout_id,
+          score: numVal,
+          judge_id: judgeId || null,
+          [rawField]: numVal,
+        };
       });
 
     try {
@@ -89,30 +130,39 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
 
   const currentScore = currentTeam ? (localScores[`${currentTeam.id}-${selectedWorkoutId}`] || "0") : "0";
 
+  // Quick-adjust buttons depend on scoring type
+  const quickAdjusts = currentScoringType === "load" ? [5, 10, 25] :
+                        currentScoringType === "time" ? [5, 15, 30] :
+                        [1, 5, 10];
+
   return (
     <div className="flex flex-col h-full min-h-[60vh]">
       {/* Workout selector pills */}
       <div className="flex gap-2 overflow-x-auto pb-3 px-1">
-        {workouts.map((w) => (
-          <button
-            key={w.id}
-            onClick={() => setSelectedWorkoutId(w.id)}
-            className={`flex items-center gap-1 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
-              selectedWorkoutId === w.id
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            }`}
-          >
-            WOD {w.workout_number}
-            {w.is_locked && <Lock className="h-3 w-3" />}
-          </button>
-        ))}
+        {workouts.map((w) => {
+          const st = (w.scoring_type as ScoringType) || "reps";
+          const Icon = SCORING_ICONS[st];
+          return (
+            <button
+              key={w.id}
+              onClick={() => setSelectedWorkoutId(w.id)}
+              className={`flex items-center gap-1 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
+                selectedWorkoutId === w.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              <Icon className="h-3 w-3" />
+              WOD {w.workout_number}
+              {w.is_locked && <Lock className="h-3 w-3" />}
+            </button>
+          );
+        })}
       </div>
 
       {/* Team card */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
         <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-lg">
-          {/* Team navigation */}
           <div className="flex items-center justify-between mb-6">
             <Button variant="ghost" size="icon" className="h-12 w-12"
               onClick={() => setCurrentTeamIndex(Math.max(0, currentTeamIndex - 1))}
@@ -123,9 +173,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
               <p className="text-xs text-muted-foreground uppercase tracking-wider">
                 Team {currentTeamIndex + 1} of {teams.length}
               </p>
-              <h3 className="text-xl font-black text-foreground mt-1">
-                {currentTeam?.team_name}
-              </h3>
+              <h3 className="text-xl font-black text-foreground mt-1">{currentTeam?.team_name}</h3>
               {currentTeam?.division && (
                 <p className="text-sm text-primary font-medium mt-0.5">{currentTeam.division}</p>
               )}
@@ -137,30 +185,42 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
             </Button>
           </div>
 
-          {/* Score input */}
+          {/* Scoring type label */}
+          <div className="flex items-center justify-center gap-1 mb-3 text-xs text-muted-foreground uppercase tracking-wider">
+            <CurrentIcon className="h-3.5 w-3.5" />
+            {SCORING_LABELS[currentScoringType]}
+          </div>
+
           {selectedWorkout?.is_locked ? (
             <div className="text-center py-8">
               <Lock className="h-8 w-8 text-destructive mx-auto mb-2" />
               <p className="text-sm text-destructive font-bold">This workout is locked</p>
-              <p className="text-3xl font-black text-foreground mt-2">{currentScore}</p>
+              <p className="text-3xl font-black text-foreground mt-2">
+                {currentScoringType === "time" ? `${currentScore}s` :
+                 currentScoringType === "load" ? `${currentScore}kg` : currentScore}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <Button variant="outline" size="icon" className="h-14 w-14 text-xl font-bold shrink-0"
-                  onClick={() => adjustScore(-1)}>
-                  −
-                </Button>
-                <Input type="number" value={currentScore}
-                  onChange={(e) => updateScore(e.target.value)}
-                  className="h-14 text-center text-2xl font-black bg-background flex-1" />
+                  onClick={() => adjustScore(-1)}>−</Button>
+                <div className="flex-1 relative">
+                  <Input type="number" value={currentScore}
+                    onChange={(e) => updateScore(e.target.value)}
+                    className="h-14 text-center text-2xl font-black bg-background pr-8" />
+                  {currentScoringType === "time" && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">s</span>
+                  )}
+                  {currentScoringType === "load" && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">kg</span>
+                  )}
+                </div>
                 <Button variant="outline" size="icon" className="h-14 w-14 text-xl font-bold shrink-0"
-                  onClick={() => adjustScore(1)}>
-                  +
-                </Button>
+                  onClick={() => adjustScore(1)}>+</Button>
               </div>
               <div className="flex gap-2 justify-center">
-                {[5, 10, 25].map((n) => (
+                {quickAdjusts.map((n) => (
                   <Button key={n} variant="secondary" size="sm" className="text-xs" onClick={() => adjustScore(n)}>
                     +{n}
                   </Button>
