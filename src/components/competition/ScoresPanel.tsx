@@ -74,7 +74,7 @@ export function ScoresPanel({ competitionId, teams, workouts, canScore, judgeId 
       const upserts = Object.entries(scores)
         .filter(([, val]) => val !== "" && !isNaN(Number(val)))
         .map(([key, val]) => {
-          const [team_id, workout_id] = key.split("-");
+          const [team_id, workout_id] = key.split("::");
           return { competition_id: competitionId, team_id, workout_id, score: Number(val), judge_id: judgeId || null };
         });
 
