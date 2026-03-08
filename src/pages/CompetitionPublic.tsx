@@ -288,7 +288,7 @@ export default function CompetitionPublic() {
               {teams.length > 0 && (
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-foreground">Team (optional)</Label>
-                  <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+                  <Select value={selectedTeamId || "__none__"} onValueChange={(v) => setSelectedTeamId(v === "__none__" ? "" : v)}>
                     <SelectTrigger className="h-10 bg-background"><SelectValue placeholder="Individual / No team" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">Individual</SelectItem>
