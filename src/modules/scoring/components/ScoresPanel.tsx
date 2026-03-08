@@ -93,7 +93,7 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
     : teams.filter((t) => t.division === filterDivision);
 
   const updateScore = (teamId: string, workoutId: string, value: string) => {
-    setLocalScores((prev) => ({ ...prev, [`${teamId}-${workoutId}`]: value }));
+    setLocalScores((prev) => ({ ...prev, [`${teamId}::${workoutId}`]: value }));
   };
 
   const saveScores = async () => {
