@@ -211,21 +211,36 @@ export default function CompetitionCreate() {
                   placeholder="Brief description of the competition" className="bg-background min-h-[80px]" disabled={isPending} maxLength={500} />
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground font-medium">Start Date *</Label>
-                <Input type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                  className="h-11 bg-background" disabled={isPending} />
+                <Label className="text-foreground font-medium">Start Date & Time *</Label>
+                <DateTimePicker
+                  value={startDate}
+                  onChange={setStartDate}
+                  placeholder="Select start date & time"
+                  disabled={isPending}
+                  minDate={today}
+                />
                 {!startDate && <p className="text-xs text-muted-foreground">Required</p>}
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground font-medium">End Date *</Label>
-                <Input type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                  className="h-11 bg-background" disabled={isPending} />
+                <Label className="text-foreground font-medium">End Date & Time *</Label>
+                <DateTimePicker
+                  value={endDate}
+                  onChange={setEndDate}
+                  placeholder="Select end date & time"
+                  disabled={isPending}
+                  minDate={startDate || today}
+                />
                 {!endDate && <p className="text-xs text-muted-foreground">Required</p>}
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground font-medium">Registration Deadline *</Label>
-                <Input type="datetime-local" value={regDeadline} onChange={(e) => setRegDeadline(e.target.value)}
-                  className="h-11 bg-background" disabled={isPending} />
+                <DateTimePicker
+                  value={regDeadline}
+                  onChange={setRegDeadline}
+                  placeholder="Select registration deadline"
+                  disabled={isPending}
+                  minDate={today}
+                />
                 {!regDeadline && <p className="text-xs text-muted-foreground">Required</p>}
               </div>
               <div className="space-y-2">
