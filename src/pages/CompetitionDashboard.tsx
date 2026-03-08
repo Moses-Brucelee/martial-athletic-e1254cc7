@@ -24,6 +24,7 @@ import { BracketsPanel } from "@/modules/tournaments/components/BracketsPanel";
 import { CompetitionStatusBar } from "@/modules/tournaments/components/CompetitionStatusBar";
 import { CommandCenter } from "@/modules/tournaments/components/CommandCenter";
 import { HeatManagementPanel } from "@/modules/tournaments/components/HeatManagementPanel";
+import { JudgeAssignmentPanel } from "@/modules/tournaments/components/JudgeAssignmentPanel";
 import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 import { V1_FULL_ACCESS } from "@/lib/featureFlags";
 import { PosterUpload } from "@/components/competition/PosterUpload";
