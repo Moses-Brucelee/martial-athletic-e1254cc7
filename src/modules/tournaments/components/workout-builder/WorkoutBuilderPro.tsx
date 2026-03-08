@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Dumbbell, FileDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkoutSettingsPanel } from "./WorkoutSettingsPanel";
 import { MovementBuilderPanel } from "./MovementBuilderPanel";
 import { WorkoutPreviewPanel } from "./WorkoutPreviewPanel";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { LocalWorkout } from "./types";
 import { emptyWorkout, WORKOUT_TEMPLATES, SCORING_DEFAULTS, generateMovementId } from "./types";
 
@@ -17,6 +18,7 @@ interface WorkoutBuilderProProps {
 
 export function WorkoutBuilderPro({ workouts, setWorkouts, disabled }: WorkoutBuilderProProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const isMobile = useIsMobile();
   const workout = workouts[activeIndex] || workouts[0];
 
   const updateWorkoutField = (field: keyof LocalWorkout, value: string) => {
@@ -66,11 +68,14 @@ export function WorkoutBuilderPro({ workouts, setWorkouts, disabled }: WorkoutBu
       {/* Workout Tabs */}
       <div className="flex items-center gap-2 flex-wrap">
         {workouts.map((w, i) => (
-          <button
+          <div
             key={i}
+            role="button"
+            tabIndex={0}
             onClick={() => setActiveIndex(i)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setActiveIndex(i); }}
             className={`
-              flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
+              flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none
               ${i === activeIndex
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-card border border-border text-foreground hover:border-primary/30"
@@ -80,15 +85,17 @@ export function WorkoutBuilderPro({ workouts, setWorkouts, disabled }: WorkoutBu
             <Dumbbell className="h-3 w-3" />
             {w.name || `Workout ${i + 1}`}
             {workouts.length > 1 && i === activeIndex && (
-              <button
+              <span
+                role="button"
+                tabIndex={0}
                 onClick={(e) => { e.stopPropagation(); removeWorkout(i); }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); removeWorkout(i); } }}
                 className="ml-1 hover:text-destructive"
-                disabled={disabled}
               >
                 <Trash2 className="h-3 w-3" />
-              </button>
+              </span>
             )}
-          </button>
+          </div>
         ))}
         <Button variant="outline" size="sm" onClick={addWorkout} disabled={disabled}
           className="h-7 text-xs border-dashed">
@@ -111,36 +118,69 @@ export function WorkoutBuilderPro({ workouts, setWorkouts, disabled }: WorkoutBu
         </Select>
       </div>
 
-      {/* 3-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Left: Settings */}
-        <div className="lg:col-span-3 bg-card border border-border rounded-xl p-4">
-          <WorkoutSettingsPanel
-            workout={workout}
-            workoutIndex={activeIndex}
-            onUpdate={updateWorkoutField}
-            disabled={disabled}
-          />
+      {/* Mobile: Tabbed Layout / Desktop: 3-Column Grid */}
+      {isMobile ? (
+        <Tabs defaultValue="settings" className="w-full">
+          <TabsList className="w-full grid grid-cols-3 h-10">
+            <TabsTrigger value="settings" className="text-xs">Settings</TabsTrigger>
+            <TabsTrigger value="movements" className="text-xs">Movements</TabsTrigger>
+            <TabsTrigger value="preview" className="text-xs">Preview</TabsTrigger>
+          </TabsList>
+          <TabsContent value="settings" className="mt-3">
+            <div className="bg-card border border-border rounded-xl p-4">
+              <WorkoutSettingsPanel
+                workout={workout}
+                workoutIndex={activeIndex}
+                onUpdate={updateWorkoutField}
+                disabled={disabled}
+              />
+            </div>
+          </TabsContent>
+          <TabsContent value="movements" className="mt-3">
+            <div className="bg-card border border-border rounded-xl p-4">
+              <MovementBuilderPanel
+                workout={workout}
+                workoutIndex={activeIndex}
+                onSetWorkouts={setWorkouts}
+                disabled={disabled}
+              />
+            </div>
+          </TabsContent>
+          <TabsContent value="preview" className="mt-3">
+            <div className="bg-card border border-border rounded-xl p-4">
+              <WorkoutPreviewPanel
+                workout={workout}
+                workoutIndex={activeIndex}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-3 bg-card border border-border rounded-xl p-4">
+            <WorkoutSettingsPanel
+              workout={workout}
+              workoutIndex={activeIndex}
+              onUpdate={updateWorkoutField}
+              disabled={disabled}
+            />
+          </div>
+          <div className="lg:col-span-5 bg-card border border-border rounded-xl p-4">
+            <MovementBuilderPanel
+              workout={workout}
+              workoutIndex={activeIndex}
+              onSetWorkouts={setWorkouts}
+              disabled={disabled}
+            />
+          </div>
+          <div className="lg:col-span-4 bg-card border border-border rounded-xl p-4">
+            <WorkoutPreviewPanel
+              workout={workout}
+              workoutIndex={activeIndex}
+            />
+          </div>
         </div>
-
-        {/* Center: Movement Builder */}
-        <div className="lg:col-span-5 bg-card border border-border rounded-xl p-4">
-          <MovementBuilderPanel
-            workout={workout}
-            workoutIndex={activeIndex}
-            onSetWorkouts={setWorkouts}
-            disabled={disabled}
-          />
-        </div>
-
-        {/* Right: Preview */}
-        <div className="lg:col-span-4 bg-card border border-border rounded-xl p-4">
-          <WorkoutPreviewPanel
-            workout={workout}
-            workoutIndex={activeIndex}
-          />
-        </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Eye, Trophy, Gavel, Timer, ArrowUp, ArrowDown, CheckCircle2 } from "lucide-react";
+import { Eye, Trophy, Gavel, Timer, ArrowUp, ArrowDown, CheckCircle2, BarChart3 } from "lucide-react";
 import type { LocalWorkout } from "./types";
 import { WORKOUT_FORMATS, SCORING_LABELS, calcRepsPerRound, needsTimeCap } from "./types";
 
@@ -15,6 +15,12 @@ export function WorkoutPreviewPanel({ workout, workoutIndex }: Props) {
   const hasMovements = workout.movements.some((m) => m.movement_name.trim());
   const timeCap = parseInt(workout.time_cap_seconds) || 0;
   const timeCapDisplay = timeCap > 0 ? `${Math.floor(timeCap / 60)}:${(timeCap % 60).toString().padStart(2, "0")}` : null;
+
+  // Difficulty estimator
+  const estimatedRounds = timeCap > 0 && repsPerRound > 0
+    ? Math.round((timeCap / 60) * (repsPerRound / repsPerRound) * 0.85) // ~0.85 rounds/min for avg athlete
+    : null;
+  const estimatedTotalReps = estimatedRounds && repsPerRound ? estimatedRounds * repsPerRound : null;
 
   return (
     <div className="space-y-4">
@@ -80,6 +86,31 @@ export function WorkoutPreviewPanel({ workout, workoutIndex }: Props) {
         </div>
       </div>
 
+      {/* Difficulty Estimator */}
+      {(workout.workout_type === "amrap" || workout.workout_type === "emom") && repsPerRound > 0 && timeCap > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 className="h-4 w-4 text-accent" />
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Difficulty</h3>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-3 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Est. Rounds</span>
+              <span className="text-xs font-bold text-foreground">{estimatedRounds}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Est. Total Reps</span>
+              <span className="text-xs font-bold text-foreground">{estimatedTotalReps}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Reps / Round</span>
+              <span className="text-xs font-bold text-foreground">{repsPerRound}</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground pt-1">*Average athlete pace estimate</p>
+          </div>
+        </div>
+      )}
+
       {/* Scoring Logic */}
       <div>
         <div className="flex items-center gap-2 mb-3">
@@ -139,16 +170,16 @@ export function WorkoutPreviewPanel({ workout, workoutIndex }: Props) {
           )}
 
           <div className="grid grid-cols-2 gap-1.5 pt-2">
-            <div className="rounded-md bg-accent/10 border border-accent/20 py-1.5 text-center text-[10px] font-bold text-accent uppercase">
+            <div className="rounded-md bg-accent/10 border border-accent/20 py-2 sm:py-1.5 text-center text-[10px] font-bold text-accent uppercase">
               + Rep
             </div>
-            <div className="rounded-md bg-accent/10 border border-accent/20 py-1.5 text-center text-[10px] font-bold text-accent uppercase">
+            <div className="rounded-md bg-accent/10 border border-accent/20 py-2 sm:py-1.5 text-center text-[10px] font-bold text-accent uppercase">
               Complete Movement
             </div>
-            <div className="rounded-md bg-primary/10 border border-primary/20 py-1.5 text-center text-[10px] font-bold text-primary uppercase">
+            <div className="rounded-md bg-primary/10 border border-primary/20 py-2 sm:py-1.5 text-center text-[10px] font-bold text-primary uppercase">
               Complete Round
             </div>
-            <div className="rounded-md bg-primary/10 border border-primary/20 py-1.5 text-center text-[10px] font-bold text-primary uppercase">
+            <div className="rounded-md bg-primary/10 border border-primary/20 py-2 sm:py-1.5 text-center text-[10px] font-bold text-primary uppercase">
               Finish
             </div>
           </div>

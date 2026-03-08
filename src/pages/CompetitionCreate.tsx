@@ -81,7 +81,6 @@ export default function CompetitionCreate() {
         toast.error(`Workout #${i + 1} needs at least one named movement`);
         return;
       }
-      // Validation: AMRAP needs time cap
       if (w.workout_type === "amrap" && !w.time_cap_seconds) {
         toast.error(`Workout #${i + 1}: AMRAP requires a time cap`);
         return;
@@ -160,17 +159,16 @@ export default function CompetitionCreate() {
     );
   }
 
-  // Workouts step uses full width for 3-column layout
   const isWorkoutsStep = step === 3;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <CompetitionHeader title="Create Competition" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
 
-      <main className={`flex-1 w-full px-4 py-8 ${isWorkoutsStep ? "max-w-7xl mx-auto" : "max-w-2xl mx-auto"}`}>
+      <main className={`flex-1 w-full px-3 sm:px-4 py-6 sm:py-8 ${isWorkoutsStep ? "max-w-7xl mx-auto" : "max-w-2xl mx-auto"}`}>
         <StepIndicator steps={STEPS} currentStep={step} />
 
-        <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight uppercase mb-6">
           {STEPS[step]}
         </h2>
 
@@ -181,40 +179,46 @@ export default function CompetitionCreate() {
           </div>
         )}
 
-        {step === 0 && (
-          <StepDetails
-            name={name} setName={setName}
-            description={description} setDescription={setDescription}
-            venue={venue} setVenue={setVenue}
-            hostGym={hostGym} setHostGym={setHostGym}
-            startDate={startDate} setStartDate={setStartDate}
-            endDate={endDate} setEndDate={setEndDate}
-            regDeadline={regDeadline} setRegDeadline={setRegDeadline}
-            disabled={isPending}
-          />
-        )}
+        <div className="pb-20 sm:pb-0">
+          {step === 0 && (
+            <StepDetails
+              name={name} setName={setName}
+              description={description} setDescription={setDescription}
+              venue={venue} setVenue={setVenue}
+              hostGym={hostGym} setHostGym={setHostGym}
+              startDate={startDate} setStartDate={setStartDate}
+              endDate={endDate} setEndDate={setEndDate}
+              regDeadline={regDeadline} setRegDeadline={setRegDeadline}
+              disabled={isPending}
+            />
+          )}
 
-        {step === 1 && (
-          <StepSportType
-            selected={competitionType}
-            onSelect={setCompetitionType}
-            disabled={isPending}
-          />
-        )}
+          {step === 1 && (
+            <StepSportType
+              selected={competitionType}
+              onSelect={setCompetitionType}
+              disabled={isPending}
+            />
+          )}
 
-        {step === 2 && competitionId && (
-          <DivisionsPanel competitionId={competitionId} canAdmin={true} />
-        )}
+          {step === 2 && competitionId && (
+            <DivisionsPanel competitionId={competitionId} canAdmin={true} />
+          )}
 
-        {step === 3 && (
-          <WorkoutBuilderPro workouts={workouts} setWorkouts={setWorkouts} disabled={isPending} />
-        )}
+          {step === 3 && (
+            <WorkoutBuilderPro workouts={workouts} setWorkouts={setWorkouts} disabled={isPending} />
+          )}
+        </div>
+      </main>
 
-        <div className="flex justify-between mt-8">
+      {/* Sticky bottom nav on mobile */}
+      <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:relative sm:border-0 sm:bg-transparent sm:backdrop-blur-none sm:p-0">
+        <div className={`flex justify-between ${isWorkoutsStep ? "max-w-7xl" : "max-w-2xl"} mx-auto sm:px-4 sm:pb-8`}>
           <Button
             variant="outline"
             onClick={handleBack}
             disabled={isPending || (step === 2 && !!competitionId)}
+            className="h-11 sm:h-10"
           >
             <ChevronLeft className="h-4 w-4 mr-1" /> Back
           </Button>
@@ -222,7 +226,7 @@ export default function CompetitionCreate() {
           <Button
             onClick={handleNext}
             disabled={isNextDisabled()}
-            className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-6"
+            className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-6 h-11 sm:h-10"
           >
             {isPending ? (
               <div className="w-5 h-5 border-2 border-accent-foreground border-t-transparent rounded-full animate-spin" />
@@ -233,7 +237,7 @@ export default function CompetitionCreate() {
             )}
           </Button>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

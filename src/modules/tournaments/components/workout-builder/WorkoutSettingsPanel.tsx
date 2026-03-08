@@ -2,7 +2,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Settings2 } from "lucide-react";
 import type { LocalWorkout } from "./types";
 import { WORKOUT_FORMATS, SCORING_DEFAULTS, needsTimeCap } from "./types";
@@ -30,6 +29,7 @@ export function WorkoutSettingsPanel({ workout, workoutIndex, onUpdate, disabled
   };
 
   const selectedFormat = WORKOUT_FORMATS.find((f) => f.value === workout.workout_type);
+  const timeCap = parseInt(workout.time_cap_seconds) || 0;
 
   return (
     <div className="space-y-4">
@@ -44,7 +44,7 @@ export function WorkoutSettingsPanel({ workout, workoutIndex, onUpdate, disabled
           value={workout.name}
           onChange={(e) => onUpdate("name", e.target.value)}
           placeholder={`Workout ${workoutIndex + 1}`}
-          className="h-9 bg-background text-sm"
+          className="h-10 sm:h-9 bg-background text-sm"
           disabled={disabled}
           maxLength={100}
         />
@@ -53,7 +53,7 @@ export function WorkoutSettingsPanel({ workout, workoutIndex, onUpdate, disabled
       <div className="space-y-1.5">
         <Label className="text-xs font-medium text-foreground">Format</Label>
         <Select value={workout.workout_type} onValueChange={handleFormatChange} disabled={disabled}>
-          <SelectTrigger className="h-9 bg-background text-sm">
+          <SelectTrigger className="h-10 sm:h-9 bg-background text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -77,14 +77,14 @@ export function WorkoutSettingsPanel({ workout, workoutIndex, onUpdate, disabled
             value={workout.time_cap_seconds}
             onChange={(e) => onUpdate("time_cap_seconds", e.target.value)}
             placeholder="e.g. 720"
-            className="h-9 bg-background text-sm"
+            className="h-10 sm:h-9 bg-background text-sm"
             disabled={disabled}
             min={0}
           />
-          {workout.time_cap_seconds && parseInt(workout.time_cap_seconds) > 0 && (
-            <Badge variant="outline" className="text-[10px]">
-              {Math.floor(parseInt(workout.time_cap_seconds) / 60)}:{(parseInt(workout.time_cap_seconds) % 60).toString().padStart(2, "0")} min
-            </Badge>
+          {timeCap > 0 && (
+            <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold text-foreground">
+              {Math.floor(timeCap / 60)}:{(timeCap % 60).toString().padStart(2, "0")} min
+            </span>
           )}
         </div>
       )}
@@ -92,7 +92,7 @@ export function WorkoutSettingsPanel({ workout, workoutIndex, onUpdate, disabled
       <div className="space-y-1.5">
         <Label className="text-xs font-medium text-foreground">Scoring Type</Label>
         <Select value={workout.scoring_type} onValueChange={(v) => onUpdate("scoring_type", v)} disabled={disabled}>
-          <SelectTrigger className="h-9 bg-background text-sm">
+          <SelectTrigger className="h-10 sm:h-9 bg-background text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
