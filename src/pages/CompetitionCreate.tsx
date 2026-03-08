@@ -75,6 +75,8 @@ export default function CompetitionCreate() {
   }
 
   const isStep1Valid = validation.success && !!startDate && !!endDate && !!regDeadline;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   const handleStep1Next = async () => {
     if (!user) return;
