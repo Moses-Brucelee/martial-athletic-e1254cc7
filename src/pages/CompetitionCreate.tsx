@@ -36,9 +36,9 @@ export default function CompetitionCreate() {
   const [venue, setVenue] = useState("");
   const [type, setType] = useState("");
   const [hostGym, setHostGym] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [regDeadline, setRegDeadline] = useState("");
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [regDeadline, setRegDeadline] = useState<Date | undefined>();
   const [ageCategoryType, setAgeCategoryType] = useState("open");
   const [minAge, setMinAge] = useState("");
   const [maxAge, setMaxAge] = useState("");
