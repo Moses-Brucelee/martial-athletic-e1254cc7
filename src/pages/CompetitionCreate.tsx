@@ -6,6 +6,7 @@ import { useCreateCompetition, useSaveWorkoutWithMovements } from "@/modules/tou
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { DivisionsPanel } from "@/modules/tournaments/components/DivisionsPanel";
 import { WorkoutBuilder, emptyWorkout, type LocalWorkout } from "@/modules/tournaments/components/WorkoutBuilder";
+import { TemplateSelector, type TemplateData } from "@/modules/tournaments/components/TemplateSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
