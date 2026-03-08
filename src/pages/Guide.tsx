@@ -42,11 +42,29 @@ const sections = [
     title: "Creating a Competition",
     content: (
       <ul className="space-y-2 list-disc list-inside text-muted-foreground">
-        <li><strong className="text-foreground">Required fields</strong> — Name your competition, set the date, venue, and host gym.</li>
+        <li><strong className="text-foreground">Required fields</strong> — Name your competition, set the start/end dates, venue, host gym, and registration deadline.</li>
         <li><strong className="text-foreground">Competition type</strong> — Choose between <em>Tournament</em> (bracket-based elimination) or <em>Straightforward</em> (workout scoring only).</li>
         <li><strong className="text-foreground">Age categories</strong> — Set to <em>Open</em> (no age restriction), <em>Under X</em> (maximum age), or <em>Age Range</em> (min–max).</li>
-        <li><strong className="text-foreground">After creation</strong> — You'll be redirected to the workout setup page to configure your events.</li>
+        <li><strong className="text-foreground">Templates</strong> — Save any competition setup as a template for reuse, or start from an existing template when creating a new competition.</li>
+        <li><strong className="text-foreground">Poster</strong> — Upload a poster image for your competition from the dashboard to make it visually appealing on public listings.</li>
+        <li><strong className="text-foreground">After creation</strong> — You'll be redirected to the competition dashboard where you can configure workouts, divisions, teams, and more.</li>
       </ul>
+    ),
+  },
+  {
+    id: "dashboard",
+    icon: Play,
+    title: "Competition Dashboard & Command Center",
+    content: (
+      <div className="space-y-3 text-muted-foreground">
+        <p>The competition dashboard is your <strong className="text-foreground">central hub</strong> for managing everything about your competition.</p>
+        <ul className="space-y-2 list-disc list-inside">
+          <li><strong className="text-foreground">Command Center</strong> — A quick-glance overview showing team count, workout count, score entry progress, and status — all in one place.</li>
+          <li><strong className="text-foreground">Tabs</strong> — The dashboard is organized into tabs: Command, Setup, Registrations, Judges, Heats, Brackets, Scores, Leaderboard, and Roster.</li>
+          <li><strong className="text-foreground">Status actions</strong> — Use the status bar to transition your competition through its lifecycle (Draft → Published → Live → Completed).</li>
+          <li><strong className="text-foreground">Role-based views</strong> — Owners see all tabs. Judges see Scores, Brackets, Leaderboard, and Roster. Viewers see Leaderboard, Roster, and Overview.</li>
+        </ul>
+      </div>
     ),
   },
   {
@@ -58,7 +76,7 @@ const sections = [
         <p>Divisions are <strong className="text-foreground">categories</strong> that group teams for fair competition. They can represent weight classes, skill levels, age groups, or any custom grouping.</p>
         <ul className="space-y-2 list-disc list-inside">
           <li><strong className="text-foreground">Examples</strong> — "Lightweight", "Heavyweight", "Beginner", "Advanced", "Under 18", "Masters 40+"</li>
-          <li><strong className="text-foreground">Creating divisions</strong> — Go to the Divisions tab in your competition dashboard and add as many as needed.</li>
+          <li><strong className="text-foreground">Creating divisions</strong> — Go to the Setup tab in your competition dashboard and add as many as needed.</li>
           <li><strong className="text-foreground">Impact</strong> — Divisions affect team grouping, bracket generation (one bracket per division), and leaderboard filtering.</li>
           <li><strong className="text-foreground">Best practice</strong> — Create divisions before adding teams so you can assign teams to divisions right away.</li>
         </ul>
@@ -73,7 +91,7 @@ const sections = [
       <div className="space-y-3 text-muted-foreground">
         <p>Teams are the <strong className="text-foreground">competing units</strong> in your competition. A team can be a single individual or a group of athletes.</p>
         <ul className="space-y-2 list-disc list-inside">
-          <li><strong className="text-foreground">Creating a team</strong> — Go to the Teams tab, enter a team name, and optionally assign it to a division.</li>
+          <li><strong className="text-foreground">Creating a team</strong> — Go to the Setup tab, find the Teams panel, enter a team name, and optionally assign it to a division.</li>
           <li><strong className="text-foreground">Division assignment</strong> — Each team can belong to one division. This determines which bracket they compete in and which leaderboard section shows their scores.</li>
           <li><strong className="text-foreground">Naming tips</strong> — Use clear, unique names. For individual competitors, use their name or nickname as the team name.</li>
         </ul>
@@ -81,16 +99,18 @@ const sections = [
     ),
   },
   {
-    id: "roster",
+    id: "registrations",
     icon: ClipboardList,
-    title: "Managing the Roster (Participants)",
+    title: "Registration & Athlete Management",
     content: (
       <div className="space-y-3 text-muted-foreground">
-        <p>The <strong className="text-foreground">roster</strong> (Participants tab) lists individual athletes within each team.</p>
+        <p>Once your competition is <strong className="text-foreground">published</strong>, athletes can register to participate via the public competition page.</p>
         <ul className="space-y-2 list-disc list-inside">
-          <li><strong className="text-foreground">Admin adds athletes</strong> — Competition owners can manually add athletes to any team by entering their name.</li>
-          <li><strong className="text-foreground">Self-registration</strong> — When the competition status moves to "Registration", athletes can register themselves and request to join a team.</li>
-          <li><strong className="text-foreground">Teams vs Roster</strong> — Think of <em>Teams</em> as the competing unit that gets scored, and the <em>Roster</em> as the individual people on that team. Scores are entered per team, not per individual.</li>
+          <li><strong className="text-foreground">Public registration</strong> — Share the competition link. Athletes fill in their details and submit a registration request.</li>
+          <li><strong className="text-foreground">Reviewing registrations</strong> — Go to the <em>Registrations</em> tab on the dashboard. You'll see all pending, confirmed, and rejected registrations with summary counts.</li>
+          <li><strong className="text-foreground">Accept or reject</strong> — Review each registration and accept or reject it. You can also reset a decision if needed.</li>
+          <li><strong className="text-foreground">Roster</strong> — The <em>Roster</em> tab shows individual athletes within each team. Owners can also manually add athletes to any team.</li>
+          <li><strong className="text-foreground">Teams vs Roster</strong> — <em>Teams</em> are the competing unit that gets scored. The <em>Roster</em> lists the individual people on each team. Scores are entered per team, not per individual.</li>
         </ul>
       </div>
     ),
@@ -121,14 +141,31 @@ const sections = [
   {
     id: "judges",
     icon: Gavel,
-    title: "Adding Judges",
+    title: "Judges & Judge Assignments",
     content: (
       <ul className="space-y-2 list-disc list-inside text-muted-foreground">
         <li><strong className="text-foreground">What judges do</strong> — Judges can enter and update scores for teams on each workout. They use a mobile-friendly scoring view.</li>
-        <li><strong className="text-foreground">Adding a judge</strong> — Go to the Judges tab and search for a registered user by name. Once added, they'll have access to score the competition.</li>
+        <li><strong className="text-foreground">Adding a judge</strong> — Go to the <em>Judges</em> tab and search for a registered user by name. Once added, they'll have access to score the competition.</li>
+        <li><strong className="text-foreground">Judge assignments</strong> — Assign judges to specific workouts, heats, or lanes using the Judge Assignment panel for organized scoring during large events.</li>
         <li><strong className="text-foreground">Judge vs Owner</strong> — The competition owner has full control (add/remove teams, change status, etc.). Judges can only enter scores.</li>
         <li><strong className="text-foreground">Mobile scoring</strong> — Judges get a simplified mobile view showing one team/workout at a time for quick score entry during live events.</li>
       </ul>
+    ),
+  },
+  {
+    id: "heats",
+    icon: RefreshCw,
+    title: "Heat Management",
+    content: (
+      <div className="space-y-3 text-muted-foreground">
+        <p>Heats allow you to <strong className="text-foreground">schedule groups of teams</strong> to compete at specific times during a workout.</p>
+        <ul className="space-y-2 list-disc list-inside">
+          <li><strong className="text-foreground">When to use</strong> — Use heats when you have more teams than can compete simultaneously, such as track events or fitness floors with limited stations.</li>
+          <li><strong className="text-foreground">Creating heats</strong> — Go to the <em>Heats</em> tab, select a workout, set the number of lanes, and create heats.</li>
+          <li><strong className="text-foreground">Lane assignments</strong> — Assign teams to specific lanes within each heat for organized scheduling.</li>
+          <li><strong className="text-foreground">Heat status</strong> — Heats can be scheduled, started, or completed to track progress during live events.</li>
+        </ul>
+      </div>
     ),
   },
   {
@@ -140,11 +177,39 @@ const sections = [
         <p>Brackets provide <strong className="text-foreground">elimination-style matchups</strong> between teams. Use brackets for tournament-style competitions where teams face off head-to-head.</p>
         <ul className="space-y-2 list-disc list-inside">
           <li><strong className="text-foreground">When to use</strong> — Use brackets for combat sports, 1v1 challenges, or any format where teams are eliminated through direct matchups.</li>
-          <li><strong className="text-foreground">Generation</strong> — Brackets are auto-generated per division. Move competition status to "Seeding" and the system creates single-elimination brackets.</li>
+          <li><strong className="text-foreground">Generation</strong> — Brackets are auto-generated per division from the Brackets tab.</li>
           <li><strong className="text-foreground">Managing bouts</strong> — Each matchup (bout) shows two teams. Set the winner to advance them to the next round.</li>
           <li><strong className="text-foreground">Byes</strong> — If the number of teams isn't a power of 2, some teams receive automatic byes (advance without competing).</li>
           <li><strong className="text-foreground">Regenerating</strong> — If teams change before the competition starts, you can regenerate brackets.</li>
         </ul>
+      </div>
+    ),
+  },
+  {
+    id: "lifecycle",
+    icon: RefreshCw,
+    title: "Competition Lifecycle (Status Flow)",
+    content: (
+      <div className="space-y-3 text-muted-foreground">
+        <div className="flex flex-wrap gap-2 mb-3">
+          {["Draft", "Published", "Live", "Completed", "Expired"].map((s, i) => (
+            <div key={s} className="flex items-center gap-1">
+              <span className="px-2.5 py-1 rounded bg-primary/10 text-primary text-xs font-bold uppercase">{s}</span>
+              {i < 4 && <span className="text-muted-foreground">→</span>}
+            </div>
+          ))}
+        </div>
+        <ul className="space-y-2 list-disc list-inside">
+          <li><strong className="text-foreground">Draft</strong> — Set up teams, workouts, divisions, and judges. No public visibility yet.</li>
+          <li><strong className="text-foreground">Published</strong> — Competition is visible to athletes. Registration is open and athletes can sign up. Use the Registrations tab to accept or reject sign-ups.</li>
+          <li><strong className="text-foreground">Live</strong> — Scoring is active. Judges enter scores, heats run, and bracket bouts are resolved. The leaderboard updates in real-time.</li>
+          <li><strong className="text-foreground">Completed</strong> — Final leaderboard is locked. No more score changes. The competition remains viewable for 30 days.</li>
+          <li><strong className="text-foreground">Expired</strong> — After 30 days past the end date, the competition enters a read-only archived state.</li>
+        </ul>
+        <div className="bg-muted/30 rounded-lg p-4 border border-border mt-3">
+          <p className="text-foreground font-semibold mb-2">Transitioning status:</p>
+          <p>Use the status action buttons on the dashboard to manually move your competition through each stage. Each transition includes a confirmation step and description of what changes.</p>
+        </div>
       </div>
     ),
   },
@@ -158,41 +223,18 @@ const sections = [
         <div className="bg-muted/30 rounded-lg p-4 border border-border">
           <p className="text-foreground font-semibold mb-2">Step-by-step:</p>
           <ol className="space-y-1.5 list-decimal list-inside">
-            <li>Create your competition (choose any type)</li>
+            <li>Create your competition with start/end dates and registration deadline</li>
             <li>Add divisions to categorize competitors</li>
             <li>Add teams and assign them to divisions</li>
             <li>Configure workouts with measurement types</li>
-            <li>Move status to <em>Registration</em> to let athletes join</li>
-            <li>Skip <em>Seeding</em> — move directly to <em>In Progress</em></li>
+            <li><strong className="text-foreground">Publish</strong> — Makes the competition visible and opens registration</li>
+            <li>Accept athlete registrations from the Registrations tab</li>
+            <li><strong className="text-foreground">Go Live</strong> — Activates scoring</li>
             <li>Have judges enter scores for each team per workout</li>
             <li>View the leaderboard for real-time rankings</li>
-            <li>Move to <em>Completed</em> when done</li>
+            <li><strong className="text-foreground">Complete</strong> — Locks the final leaderboard</li>
           </ol>
         </div>
-      </div>
-    ),
-  },
-  {
-    id: "lifecycle",
-    icon: RefreshCw,
-    title: "Competition Lifecycle (Status Flow)",
-    content: (
-      <div className="space-y-3 text-muted-foreground">
-        <div className="flex flex-wrap gap-2 mb-3">
-          {["Draft", "Registration", "Seeding", "In Progress", "Completed"].map((s, i) => (
-            <div key={s} className="flex items-center gap-1">
-              <span className="px-2.5 py-1 rounded bg-primary/10 text-primary text-xs font-bold uppercase">{s}</span>
-              {i < 4 && <span className="text-muted-foreground">→</span>}
-            </div>
-          ))}
-        </div>
-        <ul className="space-y-2 list-disc list-inside">
-          <li><strong className="text-foreground">Draft</strong> — Set up teams, workouts, and divisions. No athletes can register yet.</li>
-          <li><strong className="text-foreground">Registration</strong> — Athletes can self-register and join teams. Requires at least 1 team and 1 workout.</li>
-          <li><strong className="text-foreground">Seeding</strong> — Generate brackets (tournament mode). Skip this stage for straightforward competitions by advancing directly to In Progress.</li>
-          <li><strong className="text-foreground">In Progress</strong> — Scoring is live. Judges enter scores and bracket bouts are resolved.</li>
-          <li><strong className="text-foreground">Completed</strong> — Final leaderboard is locked. No more score changes.</li>
-        </ul>
       </div>
     ),
   },
@@ -203,7 +245,8 @@ const sections = [
     content: (
       <ul className="space-y-2 list-disc list-inside text-muted-foreground">
         <li><strong className="text-foreground">Entering scores</strong> — Navigate to the Scores tab. Select a workout and enter each team's score. Judges can also use the mobile scoring view.</li>
-        <li><strong className="text-foreground">Score locking</strong> — Once scores are finalized for a workout, the owner can lock it. Locked scores cannot be edited by judges (owners can still override).</li>
+        <li><strong className="text-foreground">Score locking</strong> — Once scores are finalized for a workout, the owner can lock it. Locked scores cannot be edited by judges (owners and super users can still override).</li>
+        <li><strong className="text-foreground">Leaderboard updates</strong> — The leaderboard automatically recalculates when scores are saved, giving real-time rankings.</li>
         <li><strong className="text-foreground">Leaderboard calculation</strong> — Teams are ranked by total points across all workouts. Lower scores in time-based events earn more points; higher scores in reps/weight/points/distance earn more.</li>
       </ul>
     ),
@@ -217,11 +260,11 @@ const sections = [
         <li><strong className="text-foreground">Rankings</strong> — Teams are ranked by total accumulated points across all scored workouts.</li>
         <li><strong className="text-foreground">Division filtering</strong> — Filter the leaderboard by division to see rankings within specific categories.</li>
         <li><strong className="text-foreground">Real-time updates</strong> — The leaderboard updates as scores are entered, giving spectators and participants live standings.</li>
+        <li><strong className="text-foreground">Public access</strong> — The leaderboard is visible to all viewers on the competition page, even without an account.</li>
       </ul>
     ),
   },
 ];
-
 export default function Guide() {
   const navigate = useNavigate();
 
