@@ -20,6 +20,7 @@ import { MobileJudgeScoring } from "@/modules/scoring/components/MobileJudgeScor
 import { ScoreLockControls } from "@/modules/scoring/components/ScoreLockControls";
 import { LeaderboardPanel } from "@/modules/leaderboard/components/LeaderboardPanel";
 import { ParticipantsPanel } from "@/modules/athletes/components/ParticipantsPanel";
+import { RegistrationManager } from "@/modules/athletes/components/RegistrationManager";
 import { BracketsPanel } from "@/modules/tournaments/components/BracketsPanel";
 import { CompetitionStatusBar } from "@/modules/tournaments/components/CompetitionStatusBar";
 import { CompetitionStatusActions } from "@/modules/tournaments/components/CompetitionStatusActions";
@@ -113,6 +114,7 @@ export default function CompetitionDashboard() {
       <TabsList className="w-full overflow-x-auto flex mb-6">
         <TabsTrigger value="command" className="flex-1">Command</TabsTrigger>
         <TabsTrigger value="setup" className="flex-1">Setup</TabsTrigger>
+        <TabsTrigger value="registrations" className="flex-1">Registrations</TabsTrigger>
         <TabsTrigger value="judges" className="flex-1">Judges</TabsTrigger>
         <TabsTrigger value="heats" className="flex-1">Heats</TabsTrigger>
         <TabsTrigger value="brackets" className="flex-1">Brackets</TabsTrigger>
@@ -125,7 +127,12 @@ export default function CompetitionDashboard() {
         <CommandCenter competitionId={id!} />
       </TabsContent>
 
+      <TabsContent value="registrations">
+        <RegistrationManager competitionId={id!} canAdmin={effectiveCanAdmin} />
+      </TabsContent>
+
       <TabsContent value="setup">
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
           <TeamsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
