@@ -116,10 +116,10 @@ export function JudgeAssignmentPanel({ competitionId, canAdmin }: JudgeAssignmen
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Workout (optional)</Label>
-              <Select value={selectedWorkout} onValueChange={(v) => { setSelectedWorkout(v); setSelectedHeat(""); }}>
+              <Select value={selectedWorkout || "__all__"} onValueChange={(v) => { setSelectedWorkout(v === "__all__" ? "" : v); setSelectedHeat(""); }}>
                 <SelectTrigger className="h-9 bg-background text-sm"><SelectValue placeholder="All workouts" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Workouts</SelectItem>
+                  <SelectItem value="__all__">All Workouts</SelectItem>
                   {workouts.map((w) => (
                     <SelectItem key={w.id} value={w.id}>{w.name || `WOD #${w.workout_number}`}</SelectItem>
                   ))}
@@ -128,10 +128,10 @@ export function JudgeAssignmentPanel({ competitionId, canAdmin }: JudgeAssignmen
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Heat (optional)</Label>
-              <Select value={selectedHeat} onValueChange={setSelectedHeat}>
+              <Select value={selectedHeat || "__all__"} onValueChange={(v) => setSelectedHeat(v === "__all__" ? "" : v)}>
                 <SelectTrigger className="h-9 bg-background text-sm"><SelectValue placeholder="All heats" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Heats</SelectItem>
+                  <SelectItem value="__all__">All Heats</SelectItem>
                   {filteredHeats.map((h) => (
                     <SelectItem key={h.id} value={h.id}>Heat #{h.heat_number}</SelectItem>
                   ))}
