@@ -1,10 +1,10 @@
 import * as React from "react";
-import { format, parse, isValid } from "date-fns";
-import { CalendarIcon, Clock } from "lucide-react";
+import { format, isValid } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
+import { TimeScrollPicker } from "@/components/ui/time-scroll-picker";
 import {
   Popover,
   PopoverContent,
@@ -34,28 +34,16 @@ export function DateTimePicker({
 }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
 
-  const timeStr = value ? format(value, "HH:mm") : "";
-
   const handleDateSelect = (day: Date | undefined) => {
     if (!day) {
       onChange(undefined);
       return;
     }
-    // Preserve existing time when changing date
     if (value) {
       day.setHours(value.getHours(), value.getMinutes());
     }
     onChange(day);
     if (dateOnly) setOpen(false);
-  };
-
-  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const t = e.target.value; // "HH:mm"
-    if (!t) return;
-    const [h, m] = t.split(":").map(Number);
-    const next = value ? new Date(value) : new Date();
-    next.setHours(h, m, 0, 0);
-    onChange(next);
   };
 
   return (
@@ -92,13 +80,15 @@ export function DateTimePicker({
           className={cn("p-3 pointer-events-auto")}
         />
         {!dateOnly && (
-          <div className="border-t border-border px-3 py-3 flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-            <Input
-              type="time"
-              value={timeStr}
-              onChange={handleTimeChange}
-              className="h-9 w-full bg-background"
+          <div className="border-t border-border">
+            <TimeScrollPicker
+              hours={value ? value.getHours() : 0}
+              minutes={value ? value.getMinutes() : 0}
+              onChange={(h, m) => {
+                const next = value ? new Date(value) : new Date();
+                next.setHours(h, m, 0, 0);
+                onChange(next);
+              }}
               disabled={disabled}
             />
           </div>
