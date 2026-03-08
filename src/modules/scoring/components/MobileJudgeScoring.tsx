@@ -71,7 +71,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
     const map: Record<string, string> = {};
     scoreRows.forEach((s) => {
       const st = workoutScoringMap[s.workout_id] || "reps";
-      map[`${s.team_id}-${s.workout_id}`] = getDisplayValue(s, st);
+      map[`${s.team_id}::${s.workout_id}`] = getDisplayValue(s, st);
     });
     setLocalScores(map);
   }, [scoreRows, workoutScoringMap]);
