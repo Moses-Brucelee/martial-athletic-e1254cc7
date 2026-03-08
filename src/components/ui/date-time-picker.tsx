@@ -92,13 +92,15 @@ export function DateTimePicker({
           className={cn("p-3 pointer-events-auto")}
         />
         {!dateOnly && (
-          <div className="border-t border-border px-3 py-3 flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-            <Input
-              type="time"
-              value={timeStr}
-              onChange={handleTimeChange}
-              className="h-9 w-full bg-background"
+          <div className="border-t border-border">
+            <TimeScrollPicker
+              hours={value ? value.getHours() : 0}
+              minutes={value ? value.getMinutes() : 0}
+              onChange={(h, m) => {
+                const next = value ? new Date(value) : new Date();
+                next.setHours(h, m, 0, 0);
+                onChange(next);
+              }}
               disabled={disabled}
             />
           </div>
