@@ -189,6 +189,7 @@ export async function saveWorkoutWithMovements(input: SaveWorkoutWithMovementsIn
       competition_id: input.competition_id,
       workout_number: input.workout_number,
       name: input.name || null,
+      description: input.description || null,
       workout_type: input.workout_type,
       time_cap_seconds: input.time_cap_seconds ?? null,
       scoring_type: input.scoring_type,
@@ -207,6 +208,10 @@ export async function saveWorkoutWithMovements(input: SaveWorkoutWithMovementsIn
       weight: m.weight,
       unit: m.unit,
       sequence_order: m.sequence_order,
+      distance: m.distance ?? null,
+      calories: m.calories ?? null,
+      description: m.description ?? null,
+      video_url: m.video_url ?? null,
     }));
     const { error: mErr } = await supabase.from("workout_movements").insert(rows);
     if (mErr) throw mErr;
