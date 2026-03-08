@@ -1,10 +1,10 @@
 import * as React from "react";
-import { format, parse, isValid } from "date-fns";
-import { CalendarIcon, Clock } from "lucide-react";
+import { format, isValid } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
+import { TimeScrollPicker } from "@/components/ui/time-scroll-picker";
 import {
   Popover,
   PopoverContent,
