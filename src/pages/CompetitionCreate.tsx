@@ -47,6 +47,23 @@ export default function CompetitionCreate() {
   // Step 3 fields
   const [workouts, setWorkouts] = useState<LocalWorkout[]>([emptyWorkout()]);
 
+  const handleTemplateSelect = (_template: any, data: TemplateData) => {
+    if (data.competition_type) setType(data.competition_type);
+    if (data.age_category_type) setAgeCategoryType(data.age_category_type);
+    if (data.min_age != null) setMinAge(String(data.min_age));
+    if (data.max_age != null) setMaxAge(String(data.max_age));
+    if (data.workouts && data.workouts.length > 0) {
+      setWorkouts(data.workouts.map((w) => ({
+        name: w.name || "",
+        workout_type: w.workout_type || "amrap",
+        time_cap_seconds: w.time_cap_seconds ? String(w.time_cap_seconds) : "",
+        scoring_type: w.scoring_type || "reps",
+        movements: [{ movement_name: "", reps: "", weight: "", unit: "kg" }],
+      })));
+    }
+    toast.success("Template applied!");
+  };
+
   const validation = competitionSchema.safeParse({ name, venue, type, hostGym });
   const liveFieldErrors: Record<string, string> = {};
   if (!validation.success) {
