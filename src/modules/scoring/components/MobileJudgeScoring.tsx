@@ -71,7 +71,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
     const map: Record<string, string> = {};
     scoreRows.forEach((s) => {
       const st = workoutScoringMap[s.workout_id] || "reps";
-      map[`${s.team_id}-${s.workout_id}`] = getDisplayValue(s, st);
+      map[`${s.team_id}::${s.workout_id}`] = getDisplayValue(s, st);
     });
     setLocalScores(map);
   }, [scoreRows, workoutScoringMap]);
@@ -83,12 +83,12 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
 
   const updateScore = (value: string) => {
     if (!currentTeam || !selectedWorkoutId) return;
-    setLocalScores((prev) => ({ ...prev, [`${currentTeam.id}-${selectedWorkoutId}`]: value }));
+    setLocalScores((prev) => ({ ...prev, [`${currentTeam.id}::${selectedWorkoutId}`]: value }));
   };
 
   const adjustScore = (delta: number) => {
     if (!currentTeam || !selectedWorkoutId) return;
-    const key = `${currentTeam.id}-${selectedWorkoutId}`;
+    const key = `${currentTeam.id}::${selectedWorkoutId}`;
     const current = Number(localScores[key] || 0);
     const newVal = Math.max(0, current + delta);
     setLocalScores((prev) => ({ ...prev, [key]: String(newVal) }));
@@ -98,7 +98,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
     const upserts = Object.entries(localScores)
       .filter(([, val]) => val !== "" && !isNaN(Number(val)))
       .map(([key, val]) => {
-        const [team_id, workout_id] = key.split("-");
+        const [team_id, workout_id] = key.split("::");
         const st = workoutScoringMap[workout_id] || "reps";
         const numVal = Number(val);
         const rawField = getRawFieldKey(st);
@@ -128,7 +128,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
     );
   }
 
-  const currentScore = currentTeam ? (localScores[`${currentTeam.id}-${selectedWorkoutId}`] || "0") : "0";
+  const currentScore = currentTeam ? (localScores[`${currentTeam.id}::${selectedWorkoutId}`] || "0") : "0";
 
   // Quick-adjust buttons depend on scoring type
   const quickAdjusts = currentScoringType === "load" ? [5, 10, 25] :

@@ -43,7 +43,7 @@ export function ScoresPanel({ competitionId, teams, workouts, canScore, judgeId 
       if (data) {
         const map: Record<string, string> = {};
         data.forEach((s) => {
-          map[`${s.team_id}-${s.workout_id}`] = String(s.score);
+          map[`${s.team_id}::${s.workout_id}`] = String(s.score);
         });
         setScores(map);
       }
@@ -52,7 +52,7 @@ export function ScoresPanel({ competitionId, teams, workouts, canScore, judgeId 
   }, [competitionId]);
 
   const updateScore = (teamId: string, workoutId: string, value: string) => {
-    setScores((prev) => ({ ...prev, [`${teamId}-${workoutId}`]: value }));
+    setScores((prev) => ({ ...prev, [`${teamId}::${workoutId}`]: value }));
   };
 
   const saveScores = async () => {
@@ -74,7 +74,7 @@ export function ScoresPanel({ competitionId, teams, workouts, canScore, judgeId 
       const upserts = Object.entries(scores)
         .filter(([, val]) => val !== "" && !isNaN(Number(val)))
         .map(([key, val]) => {
-          const [team_id, workout_id] = key.split("-");
+          const [team_id, workout_id] = key.split("::");
           return { competition_id: competitionId, team_id, workout_id, score: Number(val), judge_id: judgeId || null };
         });
 
@@ -131,7 +131,7 @@ export function ScoresPanel({ competitionId, teams, workouts, canScore, judgeId 
               <tr key={team.id} className="border-b border-border/50">
                 <td className="py-2 px-2 font-semibold text-foreground text-xs whitespace-nowrap">{team.team_name}</td>
                 {workouts.map((w) => {
-                  const key = `${team.id}-${w.id}`;
+                  const key = `${team.id}::${w.id}`;
                   const isLocked = w.is_locked;
                   return (
                     <td key={w.id} className="py-2 px-1 text-center">

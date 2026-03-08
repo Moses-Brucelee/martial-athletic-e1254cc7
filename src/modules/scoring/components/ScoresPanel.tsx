@@ -76,7 +76,7 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
     const map: Record<string, string> = {};
     scoreRows.forEach((s) => {
       const scoringType = workoutScoringMap[s.workout_id] || "reps";
-      map[`${s.team_id}-${s.workout_id}`] = getDisplayValue(s, scoringType);
+      map[`${s.team_id}::${s.workout_id}`] = getDisplayValue(s, scoringType);
     });
     setLocalScores(map);
   }, [scoreRows, workoutScoringMap]);
@@ -93,14 +93,14 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
     : teams.filter((t) => t.division === filterDivision);
 
   const updateScore = (teamId: string, workoutId: string, value: string) => {
-    setLocalScores((prev) => ({ ...prev, [`${teamId}-${workoutId}`]: value }));
+    setLocalScores((prev) => ({ ...prev, [`${teamId}::${workoutId}`]: value }));
   };
 
   const saveScores = async () => {
     const upserts = Object.entries(localScores)
       .filter(([, val]) => val !== "" && !isNaN(Number(val)))
       .map(([key, val]) => {
-        const [team_id, workout_id] = key.split("-");
+        const [team_id, workout_id] = key.split("::");
         const scoringType = workoutScoringMap[workout_id] || "reps";
         const numVal = Number(val);
         const rawField = getRawFieldKey(scoringType);
@@ -201,7 +201,7 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
                   )}
                 </td>
                 {workouts.map((w) => {
-                  const key = `${team.id}-${w.id}`;
+                  const key = `${team.id}::${w.id}`;
                   const isLocked = w.is_locked;
                   const st = (w.scoring_type as ScoringType) || "reps";
                   return (
