@@ -162,12 +162,6 @@ export default function CompetitionDashboard() {
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
       <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={effectiveCanAdmin} /></TabsContent>
 
-      <TabsContent value="overview">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TeamsPanel competitionId={id!} isOwner={false} />
-          <WorkoutsPanel competitionId={id!} isOwner={false} />
-        </div>
-      </TabsContent>
     </Tabs>
   );
 
