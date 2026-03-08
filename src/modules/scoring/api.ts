@@ -13,6 +13,9 @@ export interface ScoreRow {
   time_seconds: number | null;
   load_value: number | null;
   points_awarded: number | null;
+  validation_status: string | null;
+  normalized_score: number | null;
+  rank: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -26,12 +29,17 @@ export async function fetchScores(competitionId: string): Promise<ScoreRow[]> {
   return (data ?? []) as ScoreRow[];
 }
 
+/** Multi-field score upsert — populates the correct raw column based on scoring_type */
 export interface ScoreUpsert {
   competition_id: string;
   team_id: string;
   workout_id: string;
   score: number;
   judge_id?: string | null;
+  reps_completed?: number | null;
+  time_seconds?: number | null;
+  load_value?: number | null;
+  points_awarded?: number | null;
 }
 
 export async function upsertScores(scores: ScoreUpsert[]): Promise<void> {
@@ -45,6 +53,10 @@ export async function upsertScores(scores: ScoreUpsert[]): Promise<void> {
         workout_id: s.workout_id,
         score: s.score,
         judge_id: s.judge_id ?? null,
+        reps_completed: s.reps_completed ?? null,
+        time_seconds: s.time_seconds ?? null,
+        load_value: s.load_value ?? null,
+        points_awarded: s.points_awarded ?? null,
       })),
       { onConflict: "team_id,workout_id" }
     );
@@ -90,6 +102,28 @@ export async function fetchScoringEvents(competitionId: string) {
     .eq("competition_id", competitionId)
     .order("created_at", { ascending: false })
     .limit(200);
+  if (error) throw error;
+  return data;
+}
+
+/** Fetch cached leaderboard from competition_leaderboards table */
+export async function fetchCachedLeaderboard(competitionId: string) {
+  const { data, error } = await supabase
+    .from("competition_leaderboards")
+    .select("*, competition_teams(team_name, division_id, division), competition_divisions:competition_teams!inner(division_id)")
+    .eq("competition_id", competitionId)
+    .order("overall_rank", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+/** Fetch workout rankings for a competition */
+export async function fetchWorkoutRankings(competitionId: string) {
+  const { data, error } = await supabase
+    .from("workout_rankings")
+    .select("*, competition_teams(team_name)")
+    .eq("competition_id", competitionId)
+    .order("rank", { ascending: true });
   if (error) throw error;
   return data;
 }
