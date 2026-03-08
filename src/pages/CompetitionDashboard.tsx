@@ -154,7 +154,10 @@ export default function CompetitionDashboard() {
       </TabsContent>
 
       <TabsContent value="judges">
-        <JudgesPanelLazy competitionId={id!} canAdmin={effectiveCanAdmin} />
+        <div className="space-y-6">
+          <JudgesPanelLazy competitionId={id!} canAdmin={effectiveCanAdmin} />
+          <JudgeAssignmentPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
+        </div>
       </TabsContent>
 
       <TabsContent value="heats">
