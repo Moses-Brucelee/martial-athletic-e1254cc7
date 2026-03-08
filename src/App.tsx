@@ -29,6 +29,7 @@ import Affiliation from "./pages/Affiliation";
 import GymWebsite from "./pages/GymWebsite";
 import Performances from "./pages/Performances";
 import Browse from "./pages/Browse";
+import CompetitionPublic from "./pages/CompetitionPublic";
 
 const queryClient = new QueryClient();
 
