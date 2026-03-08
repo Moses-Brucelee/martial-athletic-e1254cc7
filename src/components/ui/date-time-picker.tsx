@@ -34,28 +34,16 @@ export function DateTimePicker({
 }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
 
-  const timeStr = value ? format(value, "HH:mm") : "";
-
   const handleDateSelect = (day: Date | undefined) => {
     if (!day) {
       onChange(undefined);
       return;
     }
-    // Preserve existing time when changing date
     if (value) {
       day.setHours(value.getHours(), value.getMinutes());
     }
     onChange(day);
     if (dateOnly) setOpen(false);
-  };
-
-  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const t = e.target.value; // "HH:mm"
-    if (!t) return;
-    const [h, m] = t.split(":").map(Number);
-    const next = value ? new Date(value) : new Date();
-    next.setHours(h, m, 0, 0);
-    onChange(next);
   };
 
   return (
