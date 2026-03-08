@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { ChevronLeft, ChevronRight, AlertCircle, Check } from "lucide-react";
 import { competitionSchema, sanitizeError } from "@/lib/validation";
 import { toast } from "sonner";
@@ -35,9 +36,9 @@ export default function CompetitionCreate() {
   const [venue, setVenue] = useState("");
   const [type, setType] = useState("");
   const [hostGym, setHostGym] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [regDeadline, setRegDeadline] = useState("");
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [regDeadline, setRegDeadline] = useState<Date | undefined>();
   const [ageCategoryType, setAgeCategoryType] = useState("open");
   const [minAge, setMinAge] = useState("");
   const [maxAge, setMaxAge] = useState("");
@@ -74,6 +75,8 @@ export default function CompetitionCreate() {
   }
 
   const isStep1Valid = validation.success && !!startDate && !!endDate && !!regDeadline;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   const handleStep1Next = async () => {
     if (!user) return;
@@ -83,10 +86,10 @@ export default function CompetitionCreate() {
         created_by: user.id,
         name: name.trim(),
         description: description || null,
-        date: startDate || null,
-        start_date: startDate ? new Date(startDate).toISOString() : null,
-        end_date: endDate ? new Date(endDate).toISOString() : null,
-        registration_deadline: regDeadline ? new Date(regDeadline).toISOString() : null,
+        date: startDate ? startDate.toISOString().split("T")[0] : null,
+        start_date: startDate ? startDate.toISOString() : null,
+        end_date: endDate ? endDate.toISOString() : null,
+        registration_deadline: regDeadline ? regDeadline.toISOString() : null,
         venue: venue || null,
         type: type || null,
         host_gym: hostGym || null,
@@ -208,21 +211,36 @@ export default function CompetitionCreate() {
                   placeholder="Brief description of the competition" className="bg-background min-h-[80px]" disabled={isPending} maxLength={500} />
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground font-medium">Start Date *</Label>
-                <Input type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                  className="h-11 bg-background" disabled={isPending} />
+                <Label className="text-foreground font-medium">Start Date & Time *</Label>
+                <DateTimePicker
+                  value={startDate}
+                  onChange={setStartDate}
+                  placeholder="Select start date & time"
+                  disabled={isPending}
+                  minDate={today}
+                />
                 {!startDate && <p className="text-xs text-muted-foreground">Required</p>}
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground font-medium">End Date *</Label>
-                <Input type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                  className="h-11 bg-background" disabled={isPending} />
+                <Label className="text-foreground font-medium">End Date & Time *</Label>
+                <DateTimePicker
+                  value={endDate}
+                  onChange={setEndDate}
+                  placeholder="Select end date & time"
+                  disabled={isPending}
+                  minDate={startDate || today}
+                />
                 {!endDate && <p className="text-xs text-muted-foreground">Required</p>}
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground font-medium">Registration Deadline *</Label>
-                <Input type="datetime-local" value={regDeadline} onChange={(e) => setRegDeadline(e.target.value)}
-                  className="h-11 bg-background" disabled={isPending} />
+                <DateTimePicker
+                  value={regDeadline}
+                  onChange={setRegDeadline}
+                  placeholder="Select registration deadline"
+                  disabled={isPending}
+                  minDate={today}
+                />
                 {!regDeadline && <p className="text-xs text-muted-foreground">Required</p>}
               </div>
               <div className="space-y-2">
