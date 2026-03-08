@@ -156,6 +156,10 @@ export default function CompetitionDashboard() {
         <JudgesPanelLazy competitionId={id!} canAdmin={effectiveCanAdmin} />
       </TabsContent>
 
+      <TabsContent value="heats">
+        <HeatManagementPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
+      </TabsContent>
+
       <TabsContent value="brackets">
         <BracketsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
       </TabsContent>
