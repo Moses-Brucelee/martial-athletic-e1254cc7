@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Play, CheckCircle2, Clock, Users, Flame } from "lucide-react";
+import { Plus, Play, CheckCircle2, Clock, Users, Flame, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { HeatLaneAssigner } from "./HeatLaneAssigner";
+import { AutoHeatGenerator } from "./AutoHeatGenerator";
 
 interface HeatManagementPanelProps {
   competitionId: string;
@@ -16,9 +17,11 @@ interface HeatManagementPanelProps {
 }
 
 const HEAT_STATUSES = [
-  { value: "pending", label: "Pending", icon: Clock, color: "bg-muted text-muted-foreground" },
+  { value: "pending", label: "Scheduled", icon: Clock, color: "bg-muted text-muted-foreground" },
+  { value: "ready", label: "Ready", icon: CheckCircle2, color: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" },
   { value: "active", label: "Active", icon: Play, color: "bg-primary/20 text-primary" },
-  { value: "completed", label: "Done", icon: CheckCircle2, color: "bg-accent/20 text-accent-foreground" },
+  { value: "completed", label: "Complete", icon: CheckCircle2, color: "bg-accent/20 text-accent-foreground" },
+  { value: "locked", label: "Locked", icon: Lock, color: "bg-destructive/20 text-destructive" },
 ];
 
 export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementPanelProps) {
@@ -33,7 +36,6 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const [scheduledStart, setScheduledStart] = useState("");
   const [expandedHeatId, setExpandedHeatId] = useState<string | null>(null);
 
-  // Group heats by workout
   const heatsByWorkout = useMemo(() => {
     const map = new Map<string, typeof heats>();
     for (const h of heats) {
@@ -90,12 +92,15 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
 
   return (
     <div className="space-y-6">
-      {/* Create heat form */}
+      {/* Auto heat generator */}
+      {canAdmin && <AutoHeatGenerator competitionId={competitionId} />}
+
+      {/* Manual create heat form */}
       {canAdmin && (
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <div className="flex items-center gap-2">
             <Flame className="h-5 w-5 text-primary" />
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Create Heat</h3>
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Add Heat Manually</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div className="space-y-1.5">
@@ -134,12 +139,16 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
         <div className="text-center py-12">
           <Clock className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-muted-foreground text-sm">No heats scheduled yet.</p>
+          {canAdmin && teams.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-1">Use Auto-Generate above to create heats from your teams.</p>
+          )}
         </div>
       ) : (
         Array.from(heatsByWorkout.entries()).map(([workoutId, workoutHeats]) => (
           <div key={workoutId} className="space-y-3">
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
               {workoutId === "_unassigned" ? "Unassigned" : workoutMap.get(workoutId) || "Unknown Workout"}
+              <Badge variant="outline" className="ml-2 text-[10px]">{workoutHeats.length} heats</Badge>
             </h3>
             <div className="grid grid-cols-1 gap-3">
               {workoutHeats.map((heat) => {
@@ -152,7 +161,9 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                       className="w-full text-left p-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary font-black text-sm">
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-lg font-black text-sm ${
+                          heat.status === "active" ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+                        }`}>
                           {heat.heat_number}
                         </div>
                         <div>
@@ -170,7 +181,7 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {canAdmin && (
+                        {canAdmin ? (
                           <Select value={heat.status} onValueChange={(v) => handleStatusChange(heat.id, v)}>
                             <SelectTrigger className={`h-7 text-xs font-semibold px-2 border-none ${sc.color}`} onClick={(e) => e.stopPropagation()}>
                               <SelectValue />
@@ -181,14 +192,12 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                               ))}
                             </SelectContent>
                           </Select>
-                        )}
-                        {!canAdmin && (
+                        ) : (
                           <Badge variant="outline" className={sc.color}>{sc.label}</Badge>
                         )}
                       </div>
                     </button>
 
-                    {/* Expanded: Lane assignments */}
                     {isExpanded && (
                       <div className="border-t border-border p-4">
                         <HeatLaneAssigner

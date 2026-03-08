@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
-import { Trophy, ArrowUp, ArrowDown, Minus, Monitor } from "lucide-react";
+import { Trophy, Monitor, Filter } from "lucide-react";
 import { useLeaderboard } from "@/modules/leaderboard/hooks";
-import { useCompetition, useWorkouts } from "@/modules/tournaments/hooks";
+import { useCompetition, useWorkouts, useDivisions } from "@/modules/tournaments/hooks";
 import { useScores } from "@/modules/scoring/hooks";
 import { getAgeCategoryLabel } from "@/utils/calculateAge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface LeaderboardPanelProps {
@@ -16,8 +17,10 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
   const { data: entries = [], isLoading } = useLeaderboard(competitionId);
   const { data: competition } = useCompetition(competitionId);
   const { data: workouts = [] } = useWorkouts(competitionId);
+  const { data: divisions = [] } = useDivisions(competitionId);
   const { data: scoreRows = [] } = useScores(competitionId);
   const [whiteboardMode, setWhiteboardMode] = useState(false);
+  const [selectedDivision, setSelectedDivision] = useState<string>("all");
 
   const medalColors = ["text-yellow-500", "text-gray-400", "text-amber-700"];
 
@@ -25,7 +28,6 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
     ? getAgeCategoryLabel(competition.age_category_type, competition.min_age, competition.max_age)
     : null;
 
-  // Build per-workout rank map for expanded view
   const workoutScoreMap = useMemo(() => {
     const map: Record<string, Record<string, number>> = {};
     scoreRows.forEach((s) => {
@@ -35,7 +37,13 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
     return map;
   }, [scoreRows]);
 
-  const grouped = entries.reduce<Record<string, typeof entries>>((acc, entry) => {
+  // Filter by division
+  const filteredEntries = useMemo(() => {
+    if (selectedDivision === "all") return entries;
+    return entries.filter((e) => e.division_id === selectedDivision || e.division_name === selectedDivision);
+  }, [entries, selectedDivision]);
+
+  const grouped = filteredEntries.reduce<Record<string, typeof entries>>((acc, entry) => {
     const div = entry.division_name || "Overall";
     if (!acc[div]) acc[div] = [];
     acc[div].push(entry);
@@ -78,9 +86,22 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                 {competition?.name || "Leaderboard"}
               </h1>
             </div>
-            <Button variant="outline" onClick={() => setWhiteboardMode(false)}>
-              Exit Whiteboard
-            </Button>
+            <div className="flex items-center gap-3">
+              {divisions.length > 1 && (
+                <Select value={selectedDivision} onValueChange={setSelectedDivision}>
+                  <SelectTrigger className="h-9 w-40 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Divisions</SelectItem>
+                    {divisions.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Button variant="outline" onClick={() => setWhiteboardMode(false)}>
+                Exit Whiteboard
+              </Button>
+            </div>
           </div>
 
           {Object.entries(grouped).map(([divName, divEntries]) => (
@@ -92,19 +113,19 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                 <thead>
                   <tr className="border-b-2 border-primary">
                     <th className="text-left py-3 px-4 text-lg font-black text-foreground uppercase">Rank</th>
-                    <th className="text-left py-3 px-4 text-lg font-black text-foreground uppercase">Team</th>
+                    <th className="text-left py-3 px-4 text-lg font-black text-foreground uppercase">Athlete</th>
                     {workouts.map((w) => (
                       <th key={w.id} className="text-center py-3 px-4 text-lg font-black text-foreground uppercase">
-                        WOD {w.workout_number}
+                        {w.name || `WOD ${w.workout_number}`}
                       </th>
                     ))}
-                    <th className="text-center py-3 px-4 text-lg font-black text-primary uppercase">Total</th>
+                    <th className="text-center py-3 px-4 text-lg font-black text-primary uppercase">Points</th>
                   </tr>
                 </thead>
                 <tbody>
                   {divEntries.map((entry, i) => (
                     <tr key={entry.team_id}
-                      className={`border-b border-border/50 ${i < 3 ? "bg-primary/5" : ""}`}>
+                      className={`border-b border-border/50 transition-colors ${i < 3 ? "bg-primary/5" : ""}`}>
                       <td className={`py-4 px-4 text-2xl font-black ${i < 3 ? medalColors[i] : "text-muted-foreground"}`}>
                         {i + 1}
                       </td>
@@ -130,7 +151,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
 
   return (
     <div className="bg-card border border-border rounded-xl p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Trophy className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-bold text-foreground uppercase">Leaderboard</h3>
@@ -138,11 +159,27 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
             <Badge variant="secondary" className="ml-2 text-xs">{ageCategoryLabel}</Badge>
           )}
         </div>
-        <Button variant="outline" size="sm" onClick={() => setWhiteboardMode(true)}
-          className="flex items-center gap-1">
-          <Monitor className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Whiteboard</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          {divisions.length > 1 && (
+            <Select value={selectedDivision} onValueChange={setSelectedDivision}>
+              <SelectTrigger className="h-8 w-36 text-xs">
+                <Filter className="h-3 w-3 mr-1" />
+                <SelectValue placeholder="Division" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Divisions</SelectItem>
+                {divisions.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Button variant="outline" size="sm" onClick={() => setWhiteboardMode(true)}
+            className="flex items-center gap-1">
+            <Monitor className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Whiteboard</span>
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="standings">
@@ -171,7 +208,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                     <div className="flex-1">
                       <p className="font-bold text-foreground text-sm">{entry.team_name}</p>
                     </div>
-                    <span className="font-bold text-primary text-lg tabular-nums">{entry.total_points}</span>
+                    <span className="font-bold text-primary text-lg tabular-nums">{entry.total_points} pts</span>
                   </div>
                 ))}
               </div>
@@ -185,17 +222,17 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-2 px-2 font-bold text-foreground uppercase text-xs">#</th>
-                  <th className="text-left py-2 px-2 font-bold text-foreground uppercase text-xs">Team</th>
+                  <th className="text-left py-2 px-2 font-bold text-foreground uppercase text-xs">Athlete</th>
                   {workouts.map((w) => (
                     <th key={w.id} className="text-center py-2 px-2 font-bold text-foreground uppercase text-xs">
-                      WOD {w.workout_number}
+                      {w.name || `WOD ${w.workout_number}`}
                     </th>
                   ))}
-                  <th className="text-center py-2 px-2 font-bold text-primary uppercase text-xs">Total</th>
+                  <th className="text-center py-2 px-2 font-bold text-primary uppercase text-xs">Points</th>
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry, i) => (
+                {filteredEntries.map((entry, i) => (
                   <tr key={entry.team_id} className="border-b border-border/50">
                     <td className={`py-2 px-2 font-black text-xs ${i < 3 ? medalColors[i] : "text-muted-foreground"}`}>
                       {i + 1}

@@ -2,14 +2,20 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ChevronUp, ChevronDown, Dumbbell } from "lucide-react";
+import { Plus, Trash2, ChevronUp, ChevronDown, Dumbbell, Video } from "lucide-react";
 
 const WORKOUT_TYPES = [
   { value: "amrap", label: "AMRAP" },
   { value: "for_time", label: "For Time" },
   { value: "max_load", label: "Max Load" },
+  { value: "emom", label: "EMOM" },
+  { value: "interval", label: "Interval" },
+  { value: "chipper", label: "Chipper" },
+  { value: "ladder", label: "Ladder" },
   { value: "rounds", label: "Rounds" },
+  { value: "descending", label: "Descending" },
   { value: "custom", label: "Custom" },
 ];
 
@@ -24,7 +30,12 @@ const SCORING_DEFAULTS: Record<string, string> = {
   amrap: "reps",
   for_time: "time",
   max_load: "load",
+  emom: "reps",
+  interval: "reps",
+  chipper: "time",
+  ladder: "reps",
   rounds: "reps",
+  descending: "reps",
   custom: "points",
 };
 
@@ -33,10 +44,15 @@ export interface LocalMovement {
   reps: string;
   weight: string;
   unit: string;
+  distance: string;
+  calories: string;
+  description: string;
+  video_url: string;
 }
 
 export interface LocalWorkout {
   name: string;
+  description: string;
   workout_type: string;
   time_cap_seconds: string;
   scoring_type: string;
@@ -44,12 +60,13 @@ export interface LocalWorkout {
 }
 
 function emptyMovement(): LocalMovement {
-  return { movement_name: "", reps: "", weight: "", unit: "kg" };
+  return { movement_name: "", reps: "", weight: "", unit: "kg", distance: "", calories: "", description: "", video_url: "" };
 }
 
 export function emptyWorkout(): LocalWorkout {
   return {
     name: "",
+    description: "",
     workout_type: "amrap",
     time_cap_seconds: "",
     scoring_type: "reps",
@@ -64,11 +81,12 @@ interface WorkoutBuilderProps {
 }
 
 export function WorkoutBuilder({ workouts, setWorkouts, disabled }: WorkoutBuilderProps) {
+  const [expandedStandards, setExpandedStandards] = useState<Record<string, boolean>>({});
+
   const updateWorkout = (index: number, field: keyof LocalWorkout, value: string) => {
     setWorkouts((prev) => {
       const updated = [...prev];
       const w = { ...updated[index], [field]: value };
-      // Auto-suggest scoring type when workout type changes
       if (field === "workout_type" && SCORING_DEFAULTS[value]) {
         w.scoring_type = SCORING_DEFAULTS[value];
       }
@@ -123,7 +141,11 @@ export function WorkoutBuilder({ workouts, setWorkouts, disabled }: WorkoutBuild
     });
   };
 
-  const showTimeCap = (type: string) => type === "amrap" || type === "for_time";
+  const showTimeCap = (type: string) => ["amrap", "for_time", "emom", "chipper", "interval", "descending"].includes(type);
+
+  const toggleStandard = (key: string) => {
+    setExpandedStandards((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
     <div className="space-y-6">
@@ -180,39 +202,81 @@ export function WorkoutBuilder({ workouts, setWorkouts, disabled }: WorkoutBuild
             </div>
           </div>
 
+          {/* Workout Description */}
+          <div className="space-y-1.5">
+            <Label className="text-foreground text-xs font-medium">Description</Label>
+            <Textarea
+              value={workout.description}
+              onChange={(e) => updateWorkout(wi, "description", e.target.value)}
+              placeholder="Describe the workout format, rules, and any special instructions..."
+              className="bg-background text-sm min-h-[60px] resize-y"
+              disabled={disabled}
+              maxLength={2000}
+            />
+          </div>
+
           {/* Movements */}
           <div className="space-y-2">
             <Label className="text-foreground text-xs font-bold uppercase">Movements</Label>
-            {workout.movements.map((m, mi) => (
-              <div key={mi} className="flex items-center gap-2 p-2 rounded-lg bg-background border border-border">
-                <span className="text-xs text-muted-foreground w-5 text-center">{mi + 1}</span>
-                <Input value={m.movement_name} onChange={(e) => updateMovement(wi, mi, "movement_name", e.target.value)}
-                  placeholder="Movement" className="h-8 flex-1 text-xs bg-background" disabled={disabled} maxLength={100} />
-                <Input type="number" value={m.reps} onChange={(e) => updateMovement(wi, mi, "reps", e.target.value)}
-                  placeholder="Reps" className="h-8 w-16 text-xs bg-background text-center" disabled={disabled} min={0} />
-                <Input type="number" value={m.weight} onChange={(e) => updateMovement(wi, mi, "weight", e.target.value)}
-                  placeholder="Wt" className="h-8 w-16 text-xs bg-background text-center" disabled={disabled} />
-                <Select value={m.unit} onValueChange={(v) => updateMovement(wi, mi, "unit", v)} disabled={disabled}>
-                  <SelectTrigger className="h-8 w-16 text-xs bg-background"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="kg">kg</SelectItem>
-                    <SelectItem value="lb">lb</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex flex-col gap-0.5">
-                  <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => moveMovement(wi, mi, -1)}
-                    disabled={disabled || mi === 0}><ChevronUp className="h-3 w-3" /></Button>
-                  <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => moveMovement(wi, mi, 1)}
-                    disabled={disabled || mi === workout.movements.length - 1}><ChevronDown className="h-3 w-3" /></Button>
+            {workout.movements.map((m, mi) => {
+              const stdKey = `${wi}-${mi}`;
+              const showStd = expandedStandards[stdKey];
+              return (
+                <div key={mi} className="space-y-1">
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-background border border-border">
+                    <span className="text-xs text-muted-foreground w-5 text-center">{mi + 1}</span>
+                    <Input value={m.movement_name} onChange={(e) => updateMovement(wi, mi, "movement_name", e.target.value)}
+                      placeholder="Movement" className="h-8 flex-1 text-xs bg-background" disabled={disabled} maxLength={100} />
+                    <Input type="number" value={m.reps} onChange={(e) => updateMovement(wi, mi, "reps", e.target.value)}
+                      placeholder="Reps" className="h-8 w-16 text-xs bg-background text-center" disabled={disabled} min={0} />
+                    <Input type="number" value={m.weight} onChange={(e) => updateMovement(wi, mi, "weight", e.target.value)}
+                      placeholder="Wt" className="h-8 w-16 text-xs bg-background text-center" disabled={disabled} />
+                    <Select value={m.unit} onValueChange={(v) => updateMovement(wi, mi, "unit", v)} disabled={disabled}>
+                      <SelectTrigger className="h-8 w-16 text-xs bg-background"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="lb">lb</SelectItem>
+                        <SelectItem value="m">m</SelectItem>
+                        <SelectItem value="cal">cal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex flex-col gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => moveMovement(wi, mi, -1)}
+                        disabled={disabled || mi === 0}><ChevronUp className="h-3 w-3" /></Button>
+                      <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => moveMovement(wi, mi, 1)}
+                        disabled={disabled || mi === workout.movements.length - 1}><ChevronDown className="h-3 w-3" /></Button>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary"
+                      onClick={() => toggleStandard(stdKey)} title="Movement standards">
+                      <Video className="h-3 w-3" />
+                    </Button>
+                    {workout.movements.length > 1 && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeMovement(wi, mi)} disabled={disabled}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  {/* Extra fields row */}
+                  <div className="flex items-center gap-2 pl-7">
+                    <Input type="number" value={m.distance} onChange={(e) => updateMovement(wi, mi, "distance", e.target.value)}
+                      placeholder="Dist" className="h-7 w-16 text-xs bg-background text-center" disabled={disabled} />
+                    <Input type="number" value={m.calories} onChange={(e) => updateMovement(wi, mi, "calories", e.target.value)}
+                      placeholder="Cal" className="h-7 w-16 text-xs bg-background text-center" disabled={disabled} />
+                  </div>
+                  {/* Movement standards (expandable) */}
+                  {showStd && (
+                    <div className="pl-7 space-y-1.5 p-2 rounded-lg bg-muted/30 border border-border">
+                      <Label className="text-[10px] text-muted-foreground uppercase font-bold">Movement Standard</Label>
+                      <Input value={m.description} onChange={(e) => updateMovement(wi, mi, "description", e.target.value)}
+                        placeholder="Standard description…" className="h-7 text-xs bg-background" disabled={disabled} maxLength={500} />
+                      <Input value={m.video_url} onChange={(e) => updateMovement(wi, mi, "video_url", e.target.value)}
+                        placeholder="Video URL (e.g. YouTube)" className="h-7 text-xs bg-background" disabled={disabled} maxLength={500} />
+                    </div>
+                  )}
                 </div>
-                {workout.movements.length > 1 && (
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                    onClick={() => removeMovement(wi, mi)} disabled={disabled}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                )}
-              </div>
-            ))}
+              );
+            })}
             <Button variant="outline" size="sm" onClick={() => addMovement(wi)} disabled={disabled}
               className="w-full border-dashed text-xs">
               <Plus className="h-3 w-3 mr-1" /> Add Movement

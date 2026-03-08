@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, Lock, Save, Clock, Dumbbell, Repeat, Award } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { ChevronLeft, ChevronRight, Lock, Save, Clock, Dumbbell, Repeat, Award, XCircle, CheckCircle2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
@@ -53,6 +54,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
   const [localScores, setLocalScores] = useState<Record<string, string>>({});
   const [currentTeamIndex, setCurrentTeamIndex] = useState(0);
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string>("");
+  const [dnfTeams, setDnfTeams] = useState<Set<string>>(new Set());
 
   const workoutScoringMap = useMemo(() => {
     const map: Record<string, ScoringType> = {};
@@ -94,6 +96,24 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
     setLocalScores((prev) => ({ ...prev, [key]: String(newVal) }));
   };
 
+  const handleDNF = () => {
+    if (!currentTeam || !selectedWorkoutId) return;
+    setDnfTeams((prev) => new Set(prev).add(`${currentTeam.id}::${selectedWorkoutId}`));
+    // Set score to 0 for DNF
+    setLocalScores((prev) => ({ ...prev, [`${currentTeam.id}::${selectedWorkoutId}`]: "0" }));
+    toast.info(`${currentTeam.team_name} marked as DNF`);
+  };
+
+  const handleFinish = () => {
+    if (!currentTeam || !selectedWorkoutId) return;
+    // For time-based: auto-capture a reasonable score; otherwise just confirm
+    toast.success(`${currentTeam.team_name} finished!`);
+    // Move to next team
+    if (currentTeamIndex < teams.length - 1) {
+      setCurrentTeamIndex(currentTeamIndex + 1);
+    }
+  };
+
   const saveAllScores = async () => {
     const upserts = Object.entries(localScores)
       .filter(([, val]) => val !== "" && !isNaN(Number(val)))
@@ -129,8 +149,8 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
   }
 
   const currentScore = currentTeam ? (localScores[`${currentTeam.id}::${selectedWorkoutId}`] || "0") : "0";
+  const isDnf = currentTeam ? dnfTeams.has(`${currentTeam.id}::${selectedWorkoutId}`) : false;
 
-  // Quick-adjust buttons depend on scoring type
   const quickAdjusts = currentScoringType === "load" ? [5, 10, 25] :
                         currentScoringType === "time" ? [5, 15, 30] :
                         [1, 5, 10];
@@ -153,7 +173,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
               }`}
             >
               <Icon className="h-3 w-3" />
-              WOD {w.workout_number}
+              {w.name || `WOD ${w.workout_number}`}
               {w.is_locked && <Lock className="h-3 w-3" />}
             </button>
           );
@@ -161,9 +181,9 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
       </div>
 
       {/* Team card */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4">
         <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-lg">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <Button variant="ghost" size="icon" className="h-12 w-12"
               onClick={() => setCurrentTeamIndex(Math.max(0, currentTeamIndex - 1))}
               disabled={currentTeamIndex === 0}>
@@ -171,7 +191,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
             </Button>
             <div className="text-center flex-1">
               <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                Team {currentTeamIndex + 1} of {teams.length}
+                {currentTeamIndex + 1} / {teams.length}
               </p>
               <h3 className="text-xl font-black text-foreground mt-1">{currentTeam?.team_name}</h3>
               {currentTeam?.division && (
@@ -192,16 +212,29 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
           </div>
 
           {selectedWorkout?.is_locked ? (
-            <div className="text-center py-8">
+            <div className="text-center py-6">
               <Lock className="h-8 w-8 text-destructive mx-auto mb-2" />
-              <p className="text-sm text-destructive font-bold">This workout is locked</p>
+              <p className="text-sm text-destructive font-bold">Workout locked</p>
               <p className="text-3xl font-black text-foreground mt-2">
                 {currentScoringType === "time" ? `${currentScore}s` :
                  currentScoringType === "load" ? `${currentScore}kg` : currentScore}
               </p>
             </div>
+          ) : isDnf ? (
+            <div className="text-center py-6">
+              <XCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+              <p className="text-lg font-black text-destructive">DNF</p>
+              <Button variant="outline" size="sm" className="mt-2 text-xs"
+                onClick={() => {
+                  const newSet = new Set(dnfTeams);
+                  newSet.delete(`${currentTeam.id}::${selectedWorkoutId}`);
+                  setDnfTeams(newSet);
+                }}>
+                Undo DNF
+              </Button>
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Button variant="outline" size="icon" className="h-14 w-14 text-xl font-bold shrink-0"
                   onClick={() => adjustScore(-1)}>−</Button>
@@ -219,12 +252,36 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
                 <Button variant="outline" size="icon" className="h-14 w-14 text-xl font-bold shrink-0"
                   onClick={() => adjustScore(1)}>+</Button>
               </div>
+
+              {/* Quick adjusts */}
               <div className="flex gap-2 justify-center">
                 {quickAdjusts.map((n) => (
-                  <Button key={n} variant="secondary" size="sm" className="text-xs" onClick={() => adjustScore(n)}>
-                    +{n}
+                  <Button key={n} variant="secondary" size="sm" className="text-xs font-bold min-w-[48px] min-h-[48px]"
+                    onClick={() => adjustScore(n)}>
+                    <Plus className="h-3 w-3 mr-0.5" />{n}
                   </Button>
                 ))}
+              </div>
+
+              {/* Quick action buttons */}
+              <div className="grid grid-cols-3 gap-2 pt-2">
+                <Button variant="outline" className="h-12 text-xs font-bold border-accent text-accent hover:bg-accent/10"
+                  onClick={handleFinish}>
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Finish
+                </Button>
+                <Button variant="outline" className="h-12 text-xs font-bold border-destructive text-destructive hover:bg-destructive/10"
+                  onClick={handleDNF}>
+                  <XCircle className="h-4 w-4 mr-1" />
+                  DNF
+                </Button>
+                <Button variant="secondary" className="h-12 text-xs font-bold"
+                  onClick={() => {
+                    if (currentTeamIndex < teams.length - 1) setCurrentTeamIndex(currentTeamIndex + 1);
+                  }}
+                  disabled={currentTeamIndex === teams.length - 1}>
+                  Next →
+                </Button>
               </div>
             </div>
           )}
