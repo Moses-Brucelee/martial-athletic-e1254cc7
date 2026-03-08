@@ -101,18 +101,7 @@ export default function MembersPage() {
   if (!gym) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border bg-card">
-          <div className="flex items-center gap-3">
-            <img src={logoCompact} alt="Logo" className="w-10 h-10 object-contain" />
-            <span className="text-lg font-bold text-foreground tracking-tight uppercase">Members</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </div>
-        </header>
+        <AppHeader title="Members" />
         <main className="flex-1 flex items-center justify-center px-4">
           <Card className="w-full max-w-md">
             <CardContent className="p-6 space-y-4">
