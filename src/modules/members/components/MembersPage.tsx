@@ -89,9 +89,7 @@ export default function MembersPage() {
   if (gymsLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border bg-card">
-          <Skeleton className="h-10 w-48" />
-        </header>
+        <AppHeader title="Members" />
         <main className="max-w-2xl mx-auto px-4 py-12 space-y-4">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
         </main>
