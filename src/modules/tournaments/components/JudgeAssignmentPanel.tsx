@@ -119,7 +119,7 @@ export function JudgeAssignmentPanel({ competitionId, canAdmin }: JudgeAssignmen
               <Select value={selectedWorkout} onValueChange={(v) => { setSelectedWorkout(v); setSelectedHeat(""); }}>
                 <SelectTrigger className="h-9 bg-background text-sm"><SelectValue placeholder="All workouts" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Workouts</SelectItem>
+                  <SelectItem value="__all__">All Workouts</SelectItem>
                   {workouts.map((w) => (
                     <SelectItem key={w.id} value={w.id}>{w.name || `WOD #${w.workout_number}`}</SelectItem>
                   ))}
