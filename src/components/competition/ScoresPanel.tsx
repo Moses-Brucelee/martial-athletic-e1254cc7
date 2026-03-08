@@ -52,7 +52,7 @@ export function ScoresPanel({ competitionId, teams, workouts, canScore, judgeId 
   }, [competitionId]);
 
   const updateScore = (teamId: string, workoutId: string, value: string) => {
-    setScores((prev) => ({ ...prev, [`${teamId}-${workoutId}`]: value }));
+    setScores((prev) => ({ ...prev, [`${teamId}::${workoutId}`]: value }));
   };
 
   const saveScores = async () => {
