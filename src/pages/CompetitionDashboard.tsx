@@ -114,6 +114,7 @@ export default function CompetitionDashboard() {
       <TabsList className="w-full overflow-x-auto flex mb-6">
         <TabsTrigger value="command" className="flex-1">Command</TabsTrigger>
         <TabsTrigger value="setup" className="flex-1">Setup</TabsTrigger>
+        <TabsTrigger value="registrations" className="flex-1">Registrations</TabsTrigger>
         <TabsTrigger value="judges" className="flex-1">Judges</TabsTrigger>
         <TabsTrigger value="heats" className="flex-1">Heats</TabsTrigger>
         <TabsTrigger value="brackets" className="flex-1">Brackets</TabsTrigger>
