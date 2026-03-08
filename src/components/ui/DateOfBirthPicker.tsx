@@ -7,6 +7,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
+import { CalendarIcon } from "lucide-react";
 
 interface DateOfBirthPickerProps {
   value: string | undefined; // ISO "YYYY-MM-DD" or undefined
@@ -27,6 +30,7 @@ function daysInMonth(month: number, year: number): number {
 export function DateOfBirthPicker({ value, onChange, disabled, error }: DateOfBirthPickerProps) {
   const today = new Date();
   const currentYear = today.getFullYear();
+  const isMobile = useIsMobile();
 
   // Parse initial value into local state
   const initial = useMemo(() => {
@@ -68,10 +72,7 @@ export function DateOfBirthPicker({ value, onChange, disabled, error }: DateOfBi
   }, [maxDays]);
 
   const tryEmit = (y: string, m: string, d: string) => {
-    if (!y || !m || !d) {
-      // Don't clear — just wait for all three
-      return;
-    }
+    if (!y || !m || !d) return;
     const yi = parseInt(y, 10);
     const mi = parseInt(m, 10);
     let di = parseInt(d, 10);
@@ -85,19 +86,38 @@ export function DateOfBirthPicker({ value, onChange, disabled, error }: DateOfBi
     onChange(iso);
   };
 
-  const handleYear = (v: string) => {
-    setYear(v);
-    tryEmit(v, month, day);
-  };
-  const handleMonth = (v: string) => {
-    setMonth(v);
-    tryEmit(year, v, day);
-  };
-  const handleDay = (v: string) => {
-    setDay(v);
-    tryEmit(year, month, v);
-  };
+  const handleYear = (v: string) => { setYear(v); tryEmit(v, month, day); };
+  const handleMonth = (v: string) => { setMonth(v); tryEmit(year, v, day); };
+  const handleDay = (v: string) => { setDay(v); tryEmit(year, month, v); };
 
+  // Mobile: native date input triggers iOS/Android wheel picker
+  if (isMobile) {
+    const todayISO = `${currentYear}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    return (
+      <div className="space-y-2">
+        <Label className="text-foreground font-medium">Date of Birth</Label>
+        <div className="relative">
+          <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+          <input
+            type="date"
+            value={value || ""}
+            onChange={(e) => onChange(e.target.value || undefined)}
+            disabled={disabled}
+            max={todayISO}
+            className={cn(
+              "flex h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 py-2 text-sm ring-offset-background",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              "disabled:cursor-not-allowed disabled:opacity-50",
+              !value && "text-muted-foreground"
+            )}
+          />
+        </div>
+        {error && <p className="text-xs text-destructive">{error}</p>}
+      </div>
+    );
+  }
+
+  // Desktop: triple-select dropdowns
   return (
     <div className="space-y-2">
       <Label className="text-foreground font-medium">Date of Birth</Label>
