@@ -271,6 +271,36 @@ const sections = [
       </ul>
     ),
   },
+  {
+    id: "athlete-profiles",
+    icon: Users,
+    title: "Athlete Profiles & Claiming",
+    content: (
+      <div className="space-y-3 text-muted-foreground">
+        <p>Athletes can <strong className="text-foreground">claim and manage</strong> their competition profiles to track history across events.</p>
+        <ul className="space-y-2 list-disc list-inside">
+          <li><strong className="text-foreground">Profile claiming</strong> — If an organizer registered you, claim your athlete record by matching your email or searching by name from the Performances page.</li>
+          <li><strong className="text-foreground">Edit your profile</strong> — Once linked, update your name, email, phone, gender, and date of birth from the Performances page.</li>
+          <li><strong className="text-foreground">Merging duplicates</strong> — Organizers can merge duplicate athlete records. The merge handles conflicts when both records have registrations for the same competition (choose to skip or reassign).</li>
+        </ul>
+      </div>
+    ),
+  },
+  {
+    id: "performances",
+    icon: BarChart3,
+    title: "Performances & Competition History",
+    content: (
+      <div className="space-y-3 text-muted-foreground">
+        <p>The <strong className="text-foreground">Performances</strong> page is your personal dashboard for tracking results across all competitions.</p>
+        <ul className="space-y-2 list-disc list-inside">
+          <li><strong className="text-foreground">Competition history</strong> — See every competition you've participated in, with your division, final rank, and total score.</li>
+          <li><strong className="text-foreground">Detail drilldown</strong> — Click any competition to see a per-workout breakdown including your score, rank, and points earned for each event.</li>
+          <li><strong className="text-foreground">Leaderboard preview</strong> — The detail view includes a mini leaderboard so you can see how you compared to other competitors.</li>
+        </ul>
+      </div>
+    ),
+  },
 ];
 export default function Guide() {
   const navigate = useNavigate();
