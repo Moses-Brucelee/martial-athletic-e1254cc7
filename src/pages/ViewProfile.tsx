@@ -16,6 +16,7 @@ import { Camera, AlertCircle, CheckCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { profileSchema, validateImageFile, sanitizeError } from "@/lib/validation";
 import { calculateAge } from "@/utils/calculateAge";
+import { AthleteClaimBanner } from "@/modules/athletes/components/AthleteClaimBanner";
 
 export default function ViewProfile() {
   const navigate = useNavigate();
