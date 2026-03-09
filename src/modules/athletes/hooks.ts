@@ -117,3 +117,74 @@ export function useCreateAthlete() {
     },
   });
 }
+
+// ── Profile Claiming ──────────────────────────────────────
+
+export function useUnlinkedAthletes(email: string | undefined) {
+  return useQuery({
+    queryKey: ["unlinked-athletes", email],
+    queryFn: () => api.findUnlinkedAthletes(email!),
+    enabled: !!email,
+  });
+}
+
+export function useLinkedAthletes(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["linked-athletes", userId],
+    queryFn: () => api.getLinkedAthletes(userId!),
+    enabled: !!userId,
+  });
+}
+
+export function useClaimAthlete() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ athleteId, userId }: { athleteId: string; userId: string }) =>
+      api.claimAthleteProfile(athleteId, userId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["unlinked-athletes"] });
+      qc.invalidateQueries({ queryKey: ["linked-athletes"] });
+      qc.invalidateQueries({ queryKey: ["competition-history"] });
+    },
+  });
+}
+
+// ── Competition History ───────────────────────────────────
+
+export function useCompetitionHistory(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["competition-history", userId],
+    queryFn: () => api.fetchCompetitionHistory(userId!),
+    enabled: !!userId,
+  });
+}
+
+export function useAthleteScores(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["athlete-scores", userId],
+    queryFn: () => api.fetchAthleteScores(userId!),
+    enabled: !!userId,
+  });
+}
+
+// ── Admin: Merge ──────────────────────────────────────────
+
+export function useSearchAthletesForMerge(query: string) {
+  return useQuery({
+    queryKey: ["athletes-search", query],
+    queryFn: () => api.searchAthletesForMerge(query),
+    enabled: query.length >= 2,
+  });
+}
+
+export function useMergeAthletes() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ primaryId, secondaryId }: { primaryId: string; secondaryId: string }) =>
+      api.mergeAthletes(primaryId, secondaryId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["athletes"] });
+      qc.invalidateQueries({ queryKey: ["athletes-search"] });
+    },
+  });
+}

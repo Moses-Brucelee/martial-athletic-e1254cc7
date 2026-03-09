@@ -16,6 +16,7 @@ import { Camera, AlertCircle, CheckCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { profileSchema, validateImageFile, sanitizeError } from "@/lib/validation";
 import { calculateAge } from "@/utils/calculateAge";
+import { AthleteClaimBanner } from "@/modules/athletes/components/AthleteClaimBanner";
 
 export default function ViewProfile() {
   const navigate = useNavigate();
@@ -142,7 +143,10 @@ export default function ViewProfile() {
       <CompetitionHeader title="Profile" subscriptionTier={profile?.subscription_tier} avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
 
       <main className="flex-1 flex items-start justify-center px-4 py-8">
-        <div className="w-full max-w-3xl">
+        <div className="w-full max-w-3xl space-y-4">
+          {/* Athlete claim banner */}
+          {user?.email && <AthleteClaimBanner userEmail={user.email} />}
+
           <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg">
             {error && (
               <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-destructive/10 border border-destructive/20">
