@@ -2,21 +2,53 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Merge, AlertTriangle, CheckCircle2, User } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Merge, AlertTriangle, User, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useSearchAthletesForMerge, useMergeAthletes } from "@/modules/athletes/hooks";
+import { supabase } from "@/integrations/supabase/client";
 import type { Athlete } from "@/domain/competition";
 
 export function AthleteMergeManager() {
   const [query, setQuery] = useState("");
   const [primaryId, setPrimaryId] = useState<string | null>(null);
   const [secondaryId, setSecondaryId] = useState<string | null>(null);
+  const [conflicts, setConflicts] = useState<string[]>([]);
+  const [conflictStrategy, setConflictStrategy] = useState<"skip" | "reassign">("skip");
+  const [checkingConflicts, setCheckingConflicts] = useState(false);
   const { data: results = [], isLoading } = useSearchAthletesForMerge(query);
   const mergeMutation = useMergeAthletes();
 
   const primary = results.find((a) => a.id === primaryId);
   const secondary = results.find((a) => a.id === secondaryId);
+
+  const checkConflicts = async (pId: string, sId: string) => {
+    setCheckingConflicts(true);
+    try {
+      // Find competitions where both athletes have registrations
+      const { data: primaryRegs } = await supabase
+        .from("athlete_registrations")
+        .select("competition_id")
+        .eq("athlete_id", pId);
+      const { data: secondaryRegs } = await supabase
+        .from("athlete_registrations")
+        .select("competition_id")
+        .eq("athlete_id", sId);
+
+      const pCompIds = new Set((primaryRegs ?? []).map((r) => r.competition_id));
+      const overlapping = (secondaryRegs ?? [])
+        .filter((r) => pCompIds.has(r.competition_id))
+        .map((r) => r.competition_id);
+
+      setConflicts([...new Set(overlapping)]);
+    } catch {
+      setConflicts([]);
+    } finally {
+      setCheckingConflicts(false);
+    }
+  };
 
   const handleMerge = async () => {
     if (!primaryId || !secondaryId) return;
@@ -24,11 +56,25 @@ export function AthleteMergeManager() {
       toast.error("Cannot merge an athlete with itself");
       return;
     }
+
     try {
+      if (conflicts.length > 0 && conflictStrategy === "skip") {
+        // Delete conflicting secondary registrations first, then merge
+        for (const compId of conflicts) {
+          await supabase
+            .from("athlete_registrations")
+            .delete()
+            .eq("athlete_id", secondaryId)
+            .eq("competition_id", compId);
+        }
+      }
+      // conflictStrategy === "reassign" means just transfer all (the default merge behavior)
+
       await mergeMutation.mutateAsync({ primaryId, secondaryId });
       toast.success("Athletes merged successfully");
       setPrimaryId(null);
       setSecondaryId(null);
+      setConflicts([]);
     } catch {
       toast.error("Failed to merge athletes");
     }
@@ -39,12 +85,14 @@ export function AthleteMergeManager() {
       setPrimaryId(athlete.id);
     } else if (!secondaryId && athlete.id !== primaryId) {
       setSecondaryId(athlete.id);
+      checkConflicts(primaryId, athlete.id);
     }
   };
 
   const resetSelection = () => {
     setPrimaryId(null);
     setSecondaryId(null);
+    setConflicts([]);
   };
 
   return (
@@ -163,6 +211,43 @@ export function AthleteMergeManager() {
             </div>
           </div>
 
+          {/* Conflict warning */}
+          {checkingConflicts ? (
+            <div className="p-3 rounded-lg bg-muted/30 border border-border mb-4">
+              <p className="text-xs text-muted-foreground">Checking for conflicts...</p>
+            </div>
+          ) : conflicts.length > 0 ? (
+            <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 mb-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-yellow-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-bold text-foreground">
+                    {conflicts.length} competition conflict{conflicts.length !== 1 ? "s" : ""} detected
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Both athletes have registrations in the same competition{conflicts.length !== 1 ? "s" : ""}. Choose how to handle:
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Conflict strategy</Label>
+                <Select value={conflictStrategy} onValueChange={(v) => setConflictStrategy(v as "skip" | "reassign")}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="skip">
+                      Skip — delete secondary's conflicting registrations
+                    </SelectItem>
+                    <SelectItem value="reassign">
+                      Reassign — transfer all (may create duplicates)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
               <p className="text-xs font-bold text-green-600 uppercase mb-1">Keep (Primary)</p>
@@ -180,7 +265,7 @@ export function AthleteMergeManager() {
           <div className="flex gap-2">
             <Button
               onClick={handleMerge}
-              disabled={mergeMutation.isPending}
+              disabled={mergeMutation.isPending || checkingConflicts}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-semibold"
             >
               {mergeMutation.isPending ? "Merging…" : "Confirm Merge"}
