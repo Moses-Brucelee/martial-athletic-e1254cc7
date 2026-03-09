@@ -167,6 +167,19 @@ export function useAthleteScores(userId: string | undefined) {
   });
 }
 
+// ── Athlete Competition Scores ─────────────────────────────
+
+export function useAthleteCompetitionScores(userId: string | undefined, competitionId: string | undefined) {
+  return useQuery({
+    queryKey: ["athlete-competition-scores", userId, competitionId],
+    queryFn: async () => {
+      const { fetchAthleteCompetitionScores } = await import("./api-scores");
+      return fetchAthleteCompetitionScores(userId!, competitionId!);
+    },
+    enabled: !!userId && !!competitionId,
+  });
+}
+
 // ── Admin: Merge ──────────────────────────────────────────
 
 export function useSearchAthletesForMerge(query: string) {

@@ -65,6 +65,7 @@ const App = () => (
               <Route path="/performances" element={<ProtectedRoute><Performances /></ProtectedRoute>} />
               <Route path="/browse" element={<Browse />} />
               <Route path="/event/:id" element={<CompetitionPublic />} />
+              <Route path="/event/:id/results" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
