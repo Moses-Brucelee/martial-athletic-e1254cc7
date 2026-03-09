@@ -180,6 +180,25 @@ export function useAthleteCompetitionScores(userId: string | undefined, competit
   });
 }
 
+// ── Athlete Editing ───────────────────────────────────────
+
+export function useUpdateAthlete() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ athleteId, updates }: {
+      athleteId: string;
+      updates: { name?: string; email?: string | null; phone?: string | null; gender?: string | null; date_of_birth?: string | null };
+    }) => {
+      const { updateAthlete } = await import("./api-edit");
+      return updateAthlete(athleteId, updates);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["linked-athletes"] });
+      qc.invalidateQueries({ queryKey: ["athletes"] });
+    },
+  });
+}
+
 // ── Admin: Merge ──────────────────────────────────────────
 
 export function useSearchAthletesForMerge(query: string) {
