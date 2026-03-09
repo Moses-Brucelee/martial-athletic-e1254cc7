@@ -107,8 +107,15 @@ const sections = [
         <p>Once your competition is <strong className="text-foreground">published</strong>, athletes can register to participate via the public competition page.</p>
         <ul className="space-y-2 list-disc list-inside">
           <li><strong className="text-foreground">Public registration</strong> — Share the competition link. Athletes fill in their details and submit a registration request.</li>
-          <li><strong className="text-foreground">Reviewing registrations</strong> — Go to the <em>Registrations</em> tab on the dashboard. You'll see all pending, confirmed, and rejected registrations with summary counts.</li>
-          <li><strong className="text-foreground">Accept or reject</strong> — Review each registration and accept or reject it. You can also reset a decision if needed.</li>
+          <li><strong className="text-foreground">Reviewing registrations</strong> — Go to the <em>Registrations</em> tab on the dashboard. Summary cards show Total Registered, Approved, Waitlisted, and Capacity Remaining at a glance.</li>
+          <li><strong className="text-foreground">Statuses</strong> — Each registration can be <em>pending</em>, <em>approved</em>, <em>waitlisted</em>, <em>rejected</em>, <em>withdrawn</em>, or <em>removed</em>. Use the action buttons to transition between statuses.</li>
+          <li><strong className="text-foreground">Capacity limits</strong> — Set <em>max_athletes</em> on the competition or individual divisions. When the approved count reaches the limit, new registrations are automatically waitlisted.</li>
+          <li><strong className="text-foreground">Auto-promotion</strong> — When an approved athlete is withdrawn, rejected, or removed, the first waitlisted athlete (ordered by registration date) is automatically promoted to approved.</li>
+          <li><strong className="text-foreground">Bulk actions</strong> — Select multiple registrations and approve, reject, waitlist, or delete them in one action. You can also export registrations as CSV.</li>
+          <li><strong className="text-foreground">CSV import</strong> — Upload a CSV file to bulk-register athletes. Preview the data, map columns, review validation errors, and confirm. Download a CSV template to get the correct format.</li>
+          <li><strong className="text-foreground">Add athlete form</strong> — Use the mobile-optimized form to manually add athletes with name, email, phone, gender, date of birth, division, and team.</li>
+          <li><strong className="text-foreground">Deletion</strong> — Organizers can fully remove registration records using the delete/remove action.</li>
+          <li><strong className="text-foreground">Payment status</strong> — Payment status badges (paid, pending, waived) are displayed on each registration card and table row.</li>
           <li><strong className="text-foreground">Roster</strong> — The <em>Roster</em> tab shows individual athletes within each team. Owners can also manually add athletes to any team.</li>
           <li><strong className="text-foreground">Teams vs Roster</strong> — <em>Teams</em> are the competing unit that gets scored. The <em>Roster</em> lists the individual people on each team. Scores are entered per team, not per individual.</li>
         </ul>
@@ -262,6 +269,36 @@ const sections = [
         <li><strong className="text-foreground">Real-time updates</strong> — The leaderboard updates as scores are entered, giving spectators and participants live standings.</li>
         <li><strong className="text-foreground">Public access</strong> — The leaderboard is visible to all viewers on the competition page, even without an account.</li>
       </ul>
+    ),
+  },
+  {
+    id: "athlete-profiles",
+    icon: Users,
+    title: "Athlete Profiles & Claiming",
+    content: (
+      <div className="space-y-3 text-muted-foreground">
+        <p>Athletes can <strong className="text-foreground">claim and manage</strong> their competition profiles to track history across events.</p>
+        <ul className="space-y-2 list-disc list-inside">
+          <li><strong className="text-foreground">Profile claiming</strong> — If an organizer registered you, claim your athlete record by matching your email or searching by name from the Performances page.</li>
+          <li><strong className="text-foreground">Edit your profile</strong> — Once linked, update your name, email, phone, gender, and date of birth from the Performances page.</li>
+          <li><strong className="text-foreground">Merging duplicates</strong> — Organizers can merge duplicate athlete records. The merge handles conflicts when both records have registrations for the same competition (choose to skip or reassign).</li>
+        </ul>
+      </div>
+    ),
+  },
+  {
+    id: "performances",
+    icon: BarChart3,
+    title: "Performances & Competition History",
+    content: (
+      <div className="space-y-3 text-muted-foreground">
+        <p>The <strong className="text-foreground">Performances</strong> page is your personal dashboard for tracking results across all competitions.</p>
+        <ul className="space-y-2 list-disc list-inside">
+          <li><strong className="text-foreground">Competition history</strong> — See every competition you've participated in, with your division, final rank, and total score.</li>
+          <li><strong className="text-foreground">Detail drilldown</strong> — Click any competition to see a per-workout breakdown including your score, rank, and points earned for each event.</li>
+          <li><strong className="text-foreground">Leaderboard preview</strong> — The detail view includes a mini leaderboard so you can see how you compared to other competitors.</li>
+        </ul>
+      </div>
     ),
   },
 ];
