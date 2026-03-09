@@ -1,17 +1,24 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
-import { useCompetitionHistory, useLinkedAthletes } from "@/modules/athletes/hooks";
+import { useCompetitionHistory, useLinkedAthletes, useUpdateAthlete } from "@/modules/athletes/hooks";
 import { AthleteClaimBanner } from "@/modules/athletes/components/AthleteClaimBanner";
 import { AppHeader } from "@/components/AppHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   BarChart3, Trophy, Calendar, MapPin, ChevronRight,
-  User, Medal, TrendingUp
+  User, Medal, TrendingUp, Pencil
 } from "lucide-react";
 import { STATUS_LABELS, STATUS_COLORS } from "@/modules/athletes/types";
+import { toast } from "sonner";
+import type { Athlete } from "@/domain/competition";
 
 export default function Performances() {
   const navigate = useNavigate();
@@ -19,8 +26,46 @@ export default function Performances() {
   const { profile } = useProfile();
   const { data: history = [], isLoading: histLoading } = useCompetitionHistory(user?.id);
   const { data: linkedAthletes = [] } = useLinkedAthletes(user?.id);
+  const updateAthlete = useUpdateAthlete();
 
   const userEmail = user?.email;
+
+  // Edit athlete state
+  const [editingAthlete, setEditingAthlete] = useState<Athlete | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editGender, setEditGender] = useState("");
+  const [editDob, setEditDob] = useState("");
+
+  const openEdit = (a: Athlete) => {
+    setEditingAthlete(a);
+    setEditName(a.name);
+    setEditEmail(a.email ?? "");
+    setEditPhone(a.phone ?? "");
+    setEditGender(a.gender ?? "");
+    setEditDob(a.date_of_birth ?? "");
+  };
+
+  const handleSaveAthlete = async () => {
+    if (!editingAthlete || !editName.trim()) return;
+    try {
+      await updateAthlete.mutateAsync({
+        athleteId: editingAthlete.id,
+        updates: {
+          name: editName.trim(),
+          email: editEmail || null,
+          phone: editPhone || null,
+          gender: editGender || null,
+          date_of_birth: editDob || null,
+        },
+      });
+      toast.success("Athlete profile updated");
+      setEditingAthlete(null);
+    } catch {
+      toast.error("Failed to update profile");
+    }
+  };
 
   // Stats
   const totalComps = history.length;
@@ -165,17 +210,84 @@ export default function Performances() {
             <div className="space-y-2">
               {linkedAthletes.map((a) => (
                 <div key={a.id} className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground">{a.name}</p>
-                    {a.email && <p className="text-xs text-muted-foreground">{a.email}</p>}
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {a.email && <span className="text-xs text-muted-foreground">{a.email}</span>}
+                      {a.gender && <span className="text-xs text-muted-foreground capitalize">{a.gender}</span>}
+                      {a.phone && <span className="text-xs text-muted-foreground">{a.phone}</span>}
+                    </div>
                   </div>
-                  <Badge variant="secondary" className="text-xs">Linked</Badge>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => openEdit(a)}
+                    >
+                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                    <Badge variant="secondary" className="text-xs">Linked</Badge>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
       </main>
+
+      {/* Edit Athlete Sheet */}
+      <Sheet open={!!editingAthlete} onOpenChange={(open) => !open && setEditingAthlete(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="text-left">Edit Athlete Profile</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <Label className="text-xs font-medium">Name *</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="mt-1" maxLength={100} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-medium">Email</Label>
+                <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="mt-1" maxLength={255} />
+              </div>
+              <div>
+                <Label className="text-xs font-medium">Phone</Label>
+                <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="mt-1" maxLength={20} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-medium">Gender</Label>
+                <Select value={editGender || "__none__"} onValueChange={(v) => setEditGender(v === "__none__" ? "" : v)}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Not set</SelectItem>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs font-medium">Date of Birth</Label>
+                <Input type="date" value={editDob} onChange={(e) => setEditDob(e.target.value)} className="mt-1" />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button
+                onClick={handleSaveAthlete}
+                disabled={!editName.trim() || updateAthlete.isPending}
+                className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground"
+              >
+                {updateAthlete.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button variant="ghost" onClick={() => setEditingAthlete(null)}>Cancel</Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
