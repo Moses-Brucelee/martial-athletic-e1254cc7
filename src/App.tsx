@@ -30,6 +30,7 @@ import GymWebsite from "./pages/GymWebsite";
 import Performances from "./pages/Performances";
 import Browse from "./pages/Browse";
 import CompetitionPublic from "./pages/CompetitionPublic";
+import CompetitionDetail from "./pages/CompetitionDetail";
 
 const queryClient = new QueryClient();
 
