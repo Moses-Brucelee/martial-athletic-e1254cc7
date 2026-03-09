@@ -48,6 +48,117 @@ export async function findAthleteByEmail(email: string): Promise<Athlete | null>
   return data as unknown as Athlete | null;
 }
 
+/** Find unlinked athletes matching by email (no user_id set) */
+export async function findUnlinkedAthletes(email: string): Promise<Athlete[]> {
+  const { data, error } = await supabase
+    .from("athletes")
+    .select("*")
+    .eq("email", email)
+    .is("user_id", null)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as unknown as Athlete[];
+}
+
+/** Find unlinked athletes by name (fuzzy) */
+export async function findUnlinkedAthletesByName(name: string): Promise<Athlete[]> {
+  const { data, error } = await supabase
+    .from("athletes")
+    .select("*")
+    .is("user_id", null)
+    .ilike("name", `%${name}%`)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  if (error) throw error;
+  return (data ?? []) as unknown as Athlete[];
+}
+
+/** Claim an athlete profile — link to current user */
+export async function claimAthleteProfile(athleteId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from("athletes")
+    .update({ user_id: userId })
+    .eq("id", athleteId)
+    .is("user_id", null); // safety: only claim unclaimed
+  if (error) throw error;
+}
+
+/** Get athlete profiles linked to a user */
+export async function getLinkedAthletes(userId: string): Promise<Athlete[]> {
+  const { data, error } = await supabase
+    .from("athletes")
+    .select("*")
+    .eq("user_id", userId)
+    .order("name");
+  if (error) throw error;
+  return (data ?? []) as unknown as Athlete[];
+}
+
+/** Get competition history for an athlete (by user_id from registrations) */
+export async function fetchCompetitionHistory(userId: string) {
+  // Get registrations where user_id matches OR athlete_id is linked
+  const { data: regs, error: regErr } = await supabase
+    .from("athlete_registrations")
+    .select("*, competitions!athlete_registrations_competition_id_fkey(id, name, start_date, end_date, venue, poster_url, status)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (regErr) throw regErr;
+  return (regs ?? []) as unknown as (AthleteRegistration & {
+    competitions: { id: string; name: string; start_date: string | null; end_date: string | null; venue: string | null; poster_url: string | null; status: string } | null;
+  })[];
+}
+
+/** Get scores for a user across all competitions */
+export async function fetchAthleteScores(userId: string) {
+  // First get team IDs the user is associated with
+  const { data: participants, error: pErr } = await supabase
+    .from("competition_participants")
+    .select("team_id, competition_id")
+    .eq("user_id", userId);
+  if (pErr) throw pErr;
+
+  if (!participants || participants.length === 0) return [];
+
+  const teamIds = [...new Set(participants.map((p) => p.team_id))];
+
+  const { data: scores, error: sErr } = await supabase
+    .from("competition_scores")
+    .select("*, competition_workouts!competition_scores_workout_id_fkey(name, workout_number, scoring_type, workout_type)")
+    .in("team_id", teamIds)
+    .order("created_at", { ascending: false });
+  if (sErr) throw sErr;
+  return scores ?? [];
+}
+
+/** Search athletes for merge (admin) */
+export async function searchAthletesForMerge(query: string): Promise<Athlete[]> {
+  const { data, error } = await supabase
+    .from("athletes")
+    .select("*")
+    .or(`name.ilike.%${query}%,email.ilike.%${query}%`)
+    .order("name")
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []) as unknown as Athlete[];
+}
+
+/** Merge two athlete records: keep primary, transfer registrations from secondary, delete secondary */
+export async function mergeAthletes(primaryId: string, secondaryId: string): Promise<void> {
+  // Update all registrations from secondary to primary
+  const { error: regErr } = await supabase
+    .from("athlete_registrations")
+    .update({ athlete_id: primaryId })
+    .eq("athlete_id", secondaryId);
+  if (regErr) throw regErr;
+
+  // Delete secondary
+  const { error: delErr } = await supabase
+    .from("athletes")
+    .delete()
+    .eq("id", secondaryId);
+  if (delErr) throw delErr;
+}
+
 // ── Registrations (extended) ──────────────────────────────
 
 export async function fetchRegistrations(competitionId: string): Promise<AthleteRegistration[]> {
