@@ -103,7 +103,31 @@ export interface AthleteRegistration {
   athlete_name: string;
   team_id: string | null;
   status: string;
+  athlete_id: string | null;
+  division_id: string | null;
+  registered_by_user_id: string | null;
+  registration_type: string;
+  payment_status: string;
+  notes: string | null;
+  email: string | null;
+  phone: string | null;
+  gender: string | null;
+  date_of_birth: string | null;
   created_at: string;
+  updated_at: string;
+}
+
+export interface Athlete {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  gender: string | null;
+  date_of_birth: string | null;
+  user_id: string | null;
+  created_by_user_id: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // ── New Phase 1 Entities ──────────────────────────────────
