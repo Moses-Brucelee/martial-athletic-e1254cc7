@@ -116,7 +116,7 @@ export default function Performances() {
                 return (
                   <button
                     key={entry.id}
-                    onClick={() => navigate(`/event/${comp.id}`)}
+                    onClick={() => navigate(`/event/${comp.id}/results`)}
                     className="w-full flex items-center gap-3 p-3 rounded-lg bg-background border border-border hover:border-primary/30 transition-colors text-left"
                   >
                     {comp.poster_url ? (

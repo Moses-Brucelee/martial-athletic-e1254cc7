@@ -496,6 +496,7 @@ export type Database = {
           competition_id: string
           created_at: string
           id: string
+          max_athletes: number | null
           name: string
           sort_order: number
         }
@@ -503,6 +504,7 @@ export type Database = {
           competition_id: string
           created_at?: string
           id?: string
+          max_athletes?: number | null
           name: string
           sort_order?: number
         }
@@ -510,6 +512,7 @@ export type Database = {
           competition_id?: string
           created_at?: string
           id?: string
+          max_athletes?: number | null
           name?: string
           sort_order?: number
         }
@@ -1041,6 +1044,7 @@ export type Database = {
           host_gym: string | null
           id: string
           max_age: number | null
+          max_athletes: number | null
           min_age: number | null
           name: string
           poster_url: string | null
@@ -1064,6 +1068,7 @@ export type Database = {
           host_gym?: string | null
           id?: string
           max_age?: number | null
+          max_athletes?: number | null
           min_age?: number | null
           name: string
           poster_url?: string | null
@@ -1087,6 +1092,7 @@ export type Database = {
           host_gym?: string | null
           id?: string
           max_age?: number | null
+          max_athletes?: number | null
           min_age?: number | null
           name?: string
           poster_url?: string | null

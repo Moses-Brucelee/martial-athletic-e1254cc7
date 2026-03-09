@@ -30,6 +30,7 @@ import GymWebsite from "./pages/GymWebsite";
 import Performances from "./pages/Performances";
 import Browse from "./pages/Browse";
 import CompetitionPublic from "./pages/CompetitionPublic";
+import CompetitionDetail from "./pages/CompetitionDetail";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ const App = () => (
               <Route path="/performances" element={<ProtectedRoute><Performances /></ProtectedRoute>} />
               <Route path="/browse" element={<Browse />} />
               <Route path="/event/:id" element={<CompetitionPublic />} />
+              <Route path="/event/:id/results" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
