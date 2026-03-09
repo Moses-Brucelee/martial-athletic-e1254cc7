@@ -16,38 +16,85 @@ export type Database = {
     Tables: {
       athlete_registrations: {
         Row: {
+          athlete_id: string | null
           athlete_name: string
           competition_id: string
           created_at: string
+          date_of_birth: string | null
+          division_id: string | null
+          email: string | null
+          gender: string | null
           id: string
+          notes: string | null
+          payment_status: string
+          phone: string | null
+          registered_by_user_id: string | null
+          registration_type: string
           status: string
           team_id: string | null
+          updated_at: string
           user_id: string | null
         }
         Insert: {
+          athlete_id?: string | null
           athlete_name: string
           competition_id: string
           created_at?: string
+          date_of_birth?: string | null
+          division_id?: string | null
+          email?: string | null
+          gender?: string | null
           id?: string
+          notes?: string | null
+          payment_status?: string
+          phone?: string | null
+          registered_by_user_id?: string | null
+          registration_type?: string
           status?: string
           team_id?: string | null
+          updated_at?: string
           user_id?: string | null
         }
         Update: {
+          athlete_id?: string | null
           athlete_name?: string
           competition_id?: string
           created_at?: string
+          date_of_birth?: string | null
+          division_id?: string | null
+          email?: string | null
+          gender?: string | null
           id?: string
+          notes?: string | null
+          payment_status?: string
+          phone?: string | null
+          registered_by_user_id?: string | null
+          registration_type?: string
           status?: string
           team_id?: string | null
+          updated_at?: string
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "athlete_registrations_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athletes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "athlete_registrations_competition_id_fkey"
             columns: ["competition_id"]
             isOneToOne: false
             referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_registrations_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "competition_divisions"
             referencedColumns: ["id"]
           },
           {
@@ -58,6 +105,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      athletes: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          date_of_birth: string | null
+          email: string | null
+          gender: string | null
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          gender?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          gender?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       billing_customers: {
         Row: {

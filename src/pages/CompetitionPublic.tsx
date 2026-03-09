@@ -3,29 +3,21 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useCompetition, useTeams, useDivisions, useWorkouts } from "@/modules/tournaments/hooks";
+import { useRegistrations, useCreateRegistration } from "@/modules/athletes/hooks";
+import { checkDuplicateRegistration } from "@/modules/athletes/api";
 import { deriveStatus, getStatusLabel, getStatusColor } from "@/modules/tournaments/stateMachine";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, MapPin, Clock, Users, Dumbbell, AlertCircle, CheckCircle2, Trophy } from "lucide-react";
+import { Calendar, MapPin, Clock, Users, Dumbbell, AlertCircle, CheckCircle2, Trophy, ChevronRight, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { differenceInYears } from "date-fns";
-
-// Fetch registrations for a competition
-async function fetchRegistrations(competitionId: string) {
-  const { data, error } = await supabase
-    .from("athlete_registrations")
-    .select("*")
-    .eq("competition_id", competitionId)
-    .order("created_at");
-  if (error) throw error;
-  return data ?? [];
-}
+import { athleteNameSchema, emailSchema } from "@/lib/validation";
+import { STATUS_LABELS, STATUS_COLORS } from "@/modules/athletes/types";
 
 export default function CompetitionPublic() {
   const { id } = useParams<{ id: string }>();
@@ -36,16 +28,20 @@ export default function CompetitionPublic() {
   const { data: teams = [] } = useTeams(id);
   const { data: divisions = [] } = useDivisions(id);
   const { data: workouts = [] } = useWorkouts(id);
-  const qc = useQueryClient();
+  const { data: registrations = [] } = useRegistrations(id);
+  const createReg = useCreateRegistration();
 
-  const { data: registrations = [] } = useQuery({
-    queryKey: ["registrations", id],
-    queryFn: () => fetchRegistrations(id!),
-    enabled: !!id,
-  });
-
+  // Registration wizard state
+  const [regStep, setRegStep] = useState(0);
+  const [regType, setRegType] = useState<"self" | "other">("self");
   const [athleteName, setAthleteName] = useState("");
+  const [athleteEmail, setAthleteEmail] = useState("");
+  const [athletePhone, setAthletePhone] = useState("");
+  const [athleteGender, setAthleteGender] = useState("");
+  const [athleteDob, setAthleteDob] = useState("");
+  const [selectedDivisionId, setSelectedDivisionId] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState("");
+  const [showRegWizard, setShowRegWizard] = useState(false);
 
   const derivedStatus = competition ? deriveStatus(competition) : "draft";
   const canRegister = derivedStatus === "published" || derivedStatus === "live";
@@ -54,61 +50,91 @@ export default function CompetitionPublic() {
     : false;
   const registrationOpen = canRegister && !isDeadlinePassed;
 
-  // Check if current user already registered
   const alreadyRegistered = user
-    ? registrations.some((r) => r.user_id === user.id)
+    ? registrations.some((r) => r.user_id === user.id && r.status !== "withdrawn" && r.status !== "rejected")
     : false;
 
-  // Age eligibility check
   const checkAgeEligibility = (): string | null => {
     if (!competition || competition.age_category_type === "open" || !competition.age_category_type) return null;
-    if (!profile?.date_of_birth) return "Your profile is missing a date of birth. Please update your profile first.";
+    const dob = regType === "self" ? profile?.date_of_birth : athleteDob;
+    if (!dob) return regType === "self" ? "Your profile is missing a date of birth." : null;
 
     const startDate = competition.start_date ? new Date(competition.start_date) : new Date();
-    const age = differenceInYears(startDate, new Date(profile.date_of_birth));
+    const age = differenceInYears(startDate, new Date(dob));
 
     if (competition.age_category_type === "under_x" && competition.max_age != null) {
-      if (age >= competition.max_age) return `You must be under ${competition.max_age} to register. Your age at competition: ${age}.`;
+      if (age >= competition.max_age) return `Must be under ${competition.max_age}. Age at competition: ${age}.`;
     }
     if (competition.age_category_type === "age_range") {
-      if (competition.min_age != null && age < competition.min_age)
-        return `You must be at least ${competition.min_age} to register. Your age at competition: ${age}.`;
-      if (competition.max_age != null && age > competition.max_age)
-        return `You must be ${competition.max_age} or under to register. Your age at competition: ${age}.`;
+      if (competition.min_age != null && age < competition.min_age) return `Must be at least ${competition.min_age}. Age: ${age}.`;
+      if (competition.max_age != null && age > competition.max_age) return `Must be ${competition.max_age} or under. Age: ${age}.`;
     }
     return null;
   };
 
-  const registerMutation = useMutation({
-    mutationFn: async () => {
-      if (!user || !id) throw new Error("You must be logged in");
-      const name = athleteName.trim() || profile?.display_name || "Unknown";
+  const resolvedName = regType === "self"
+    ? (profile?.display_name || profile?.full_name || "Athlete")
+    : athleteName.trim();
 
-      const { error } = await supabase.from("athlete_registrations").insert({
-        competition_id: id,
-        user_id: user.id,
-        athlete_name: name,
-        team_id: selectedTeamId || null,
-        status: "pending",
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["registrations", id] });
-      toast.success("Registration submitted!");
-      setAthleteName("");
-      setSelectedTeamId("");
-    },
-    onError: (err) => toast.error((err as Error).message),
-  });
+  const handleSubmit = async () => {
+    if (!user || !id) return;
 
-  const handleRegister = () => {
+    // Validate
+    const nameResult = athleteNameSchema.safeParse(resolvedName);
+    if (!nameResult.success) {
+      toast.error(nameResult.error.issues[0].message);
+      return;
+    }
+
+    if (regType === "other" && athleteEmail) {
+      const emailResult = emailSchema.safeParse(athleteEmail);
+      if (!emailResult.success) {
+        toast.error(emailResult.error.issues[0].message);
+        return;
+      }
+    }
+
     const ageError = checkAgeEligibility();
     if (ageError) {
       toast.error(ageError);
       return;
     }
-    registerMutation.mutate();
+
+    // Duplicate check
+    if (regType === "self") {
+      const isDup = await checkDuplicateRegistration(id, user.id);
+      if (isDup) {
+        toast.error("You are already registered for this competition.");
+        return;
+      }
+    }
+
+    try {
+      await createReg.mutateAsync({
+        competition_id: id,
+        athlete_name: resolvedName,
+        user_id: regType === "self" ? user.id : null,
+        division_id: selectedDivisionId || null,
+        team_id: selectedTeamId || null,
+        registered_by_user_id: user.id,
+        registration_type: regType,
+        email: regType === "self" ? null : (athleteEmail || null),
+        phone: regType === "self" ? null : (athletePhone || null),
+        gender: regType === "self" ? null : (athleteGender || null),
+        date_of_birth: regType === "self" ? null : (athleteDob || null),
+        status: "pending",
+      });
+      toast.success("Registration submitted!");
+      setShowRegWizard(false);
+      setRegStep(0);
+      setAthleteEmail("");
+      setAthleteName("");
+      setAthletePhone("");
+      setSelectedDivisionId("");
+      setSelectedTeamId("");
+    } catch (err) {
+      toast.error("Registration failed. Please try again.");
+    }
   };
 
   if (isLoading) {
@@ -135,8 +161,149 @@ export default function CompetitionPublic() {
   }
 
   const displayDate = competition.start_date || competition.date;
-  const confirmedCount = registrations.filter((r) => r.status === "confirmed").length;
-  const pendingCount = registrations.filter((r) => r.status === "pending").length;
+  const confirmedCount = registrations.filter((r) => r.status === "approved" || r.status === "confirmed").length;
+  const totalCount = registrations.filter((r) => r.status !== "rejected" && r.status !== "removed" && r.status !== "withdrawn").length;
+
+  // Wizard steps
+  const renderWizardStep = () => {
+    switch (regStep) {
+      case 0:
+        return (
+          <div className="space-y-4">
+            <h3 className="text-base font-bold text-foreground">Register as:</h3>
+            <RadioGroup value={regType} onValueChange={(v) => setRegType(v as "self" | "other")} className="space-y-3">
+              <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${regType === "self" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
+                <RadioGroupItem value="self" />
+                <div>
+                  <p className="font-semibold text-foreground">Myself</p>
+                  <p className="text-xs text-muted-foreground">Register using your profile info</p>
+                </div>
+              </label>
+              <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${regType === "other" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
+                <RadioGroupItem value="other" />
+                <div>
+                  <p className="font-semibold text-foreground">Someone Else</p>
+                  <p className="text-xs text-muted-foreground">Register another athlete</p>
+                </div>
+              </label>
+            </RadioGroup>
+            {regType === "other" && (
+              <div className="space-y-3 pt-2">
+                <div>
+                  <Label className="text-sm font-medium">Athlete Name *</Label>
+                  <Input value={athleteName} onChange={(e) => setAthleteName(e.target.value)} placeholder="Full name" className="mt-1" maxLength={100} />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Email</Label>
+                  <Input value={athleteEmail} onChange={(e) => setAthleteEmail(e.target.value)} placeholder="athlete@email.com" type="email" className="mt-1" maxLength={255} />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Phone</Label>
+                  <Input value={athletePhone} onChange={(e) => setAthletePhone(e.target.value)} placeholder="+1 234 567 890" className="mt-1" maxLength={20} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm font-medium">Gender</Label>
+                    <Select value={athleteGender} onValueChange={setAthleteGender}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Date of Birth</Label>
+                    <Input type="date" value={athleteDob} onChange={(e) => setAthleteDob(e.target.value)} className="mt-1" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      case 1:
+        return (
+          <div className="space-y-4">
+            <h3 className="text-base font-bold text-foreground">Select Division</h3>
+            {divisions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No divisions available. You can proceed without one.</p>
+            ) : (
+              <RadioGroup value={selectedDivisionId} onValueChange={setSelectedDivisionId} className="space-y-2">
+                {divisions.map((d) => (
+                  <label key={d.id} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedDivisionId === d.id ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
+                    <RadioGroupItem value={d.id} />
+                    <span className="font-medium text-foreground">{d.name}</span>
+                  </label>
+                ))}
+              </RadioGroup>
+            )}
+            {teams.length > 0 && (
+              <div>
+                <Label className="text-sm font-medium">Team (optional)</Label>
+                <Select value={selectedTeamId || "__none__"} onValueChange={(v) => setSelectedTeamId(v === "__none__" ? "" : v)}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Individual" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Individual</SelectItem>
+                    {teams.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+        );
+      case 2:
+        return (
+          <div className="space-y-4">
+            <h3 className="text-base font-bold text-foreground">Confirm Registration</h3>
+            <div className="rounded-xl border border-border bg-background p-4 space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Athlete</span>
+                <span className="font-medium text-foreground">{resolvedName}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Registration Type</span>
+                <span className="font-medium text-foreground">{regType === "self" ? "Self" : "On behalf"}</span>
+              </div>
+              {selectedDivisionId && divisions.length > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Division</span>
+                  <span className="font-medium text-foreground">{divisions.find((d) => d.id === selectedDivisionId)?.name}</span>
+                </div>
+              )}
+              {selectedTeamId && teams.length > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Team</span>
+                  <span className="font-medium text-foreground">{teams.find((t) => t.id === selectedTeamId)?.team_name}</span>
+                </div>
+              )}
+              {regType === "other" && athleteEmail && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Email</span>
+                  <span className="font-medium text-foreground">{athleteEmail}</span>
+                </div>
+              )}
+              {competition.age_category_type && competition.age_category_type !== "open" && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Age Requirement</span>
+                  <span className="font-medium text-foreground">
+                    {competition.age_category_type === "under_x" ? `Under ${competition.max_age}` : `${competition.min_age ?? "?"}–${competition.max_age ?? "?"}`}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const canProceedStep0 = regType === "self" || athleteName.trim().length >= 2;
+  const canProceedStep1 = true; // division is optional
+  const totalSteps = 3;
 
   return (
     <div className="min-h-screen bg-background">
@@ -178,16 +345,10 @@ export default function CompetitionPublic() {
                 </span>
               )}
               {competition.venue && (
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4" />
-                  {competition.venue}
-                </span>
+                <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{competition.venue}</span>
               )}
               {competition.host_gym && (
-                <span className="flex items-center gap-1.5">
-                  <Users className="h-4 w-4" />
-                  {competition.host_gym}
-                </span>
+                <span className="flex items-center gap-1.5"><Users className="h-4 w-4" />{competition.host_gym}</span>
               )}
             </div>
 
@@ -212,7 +373,7 @@ export default function CompetitionPublic() {
             <p className="text-xs text-muted-foreground uppercase font-bold">Divisions</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4 text-center">
-            <p className="text-2xl font-black text-foreground">{confirmedCount + pendingCount}</p>
+            <p className="text-2xl font-black text-foreground">{totalCount}</p>
             <p className="text-xs text-muted-foreground uppercase font-bold">Athletes</p>
           </div>
         </div>
@@ -250,26 +411,28 @@ export default function CompetitionPublic() {
           </div>
         )}
 
-        {/* Owner shortcut to manage registrations */}
+        {/* Owner shortcut */}
         {user && competition.created_by === user.id && (
           <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-foreground">You own this competition</p>
-              <p className="text-xs text-muted-foreground">{pendingCount} pending registration{pendingCount !== 1 ? "s" : ""} to review</p>
+              <p className="text-xs text-muted-foreground">
+                {registrations.filter((r) => r.status === "pending").length} pending registration(s)
+              </p>
             </div>
             <Button onClick={() => navigate(`/competition/${id}`)} className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
-              Manage Registrations
+              Manage
             </Button>
           </div>
         )}
 
-        {/* Registration form */}
+        {/* Registration */}
         <div className="bg-card border border-border rounded-xl p-6">
           <h2 className="text-lg font-bold text-foreground uppercase mb-4">Register</h2>
 
           {!user ? (
             <div className="text-center py-6 space-y-3">
-              <p className="text-muted-foreground text-sm">You need to be logged in to register.</p>
+              <p className="text-muted-foreground text-sm">Sign in to register for this competition.</p>
               <Button onClick={() => navigate("/login")} className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold">
                 Sign In to Register
               </Button>
@@ -278,53 +441,74 @@ export default function CompetitionPublic() {
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border">
               <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
               <p className="text-sm text-muted-foreground">
-                {isDeadlinePassed ? "Registration deadline has passed." : "Registration is not open for this competition."}
+                {isDeadlinePassed ? "Registration deadline has passed." : "Registration is not open."}
               </p>
             </div>
-          ) : alreadyRegistered ? (
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10 border border-accent/20">
-              <CheckCircle2 className="h-4 w-4 text-accent mt-0.5 shrink-0" />
-              <p className="text-sm text-foreground">You are already registered for this competition.</p>
+          ) : alreadyRegistered && !showRegWizard ? (
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10 border border-accent/20">
+                <CheckCircle2 className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+                <p className="text-sm text-foreground">You are registered for this competition.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => { setRegType("other"); setShowRegWizard(true); setRegStep(0); }}>
+                Register another athlete
+              </Button>
             </div>
+          ) : !showRegWizard ? (
+            <Button onClick={() => setShowRegWizard(true)} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold h-12 text-base">
+              Register Now
+            </Button>
           ) : (
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-foreground">Your Name</Label>
-                <Input
-                  value={athleteName}
-                  onChange={(e) => setAthleteName(e.target.value)}
-                  placeholder={profile?.display_name || "Enter your name"}
-                  className="h-10 bg-background"
-                  maxLength={100}
-                />
+              {/* Step indicator */}
+              <div className="flex items-center gap-2 mb-2">
+                {Array.from({ length: totalSteps }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                      i < regStep ? "bg-primary text-primary-foreground" :
+                      i === regStep ? "bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2 ring-offset-card" :
+                      "bg-muted text-muted-foreground"
+                    }`}>
+                      {i < regStep ? "✓" : i + 1}
+                    </div>
+                    {i < totalSteps - 1 && (
+                      <div className={`h-0.5 w-8 ${i < regStep ? "bg-primary" : "bg-border"}`} />
+                    )}
+                  </div>
+                ))}
               </div>
-              {teams.length > 0 && (
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-foreground">Team (optional)</Label>
-                  <Select value={selectedTeamId || "__none__"} onValueChange={(v) => setSelectedTeamId(v === "__none__" ? "" : v)}>
-                    <SelectTrigger className="h-10 bg-background"><SelectValue placeholder="Individual / No team" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Individual</SelectItem>
-                      {teams.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              {competition.age_category_type && competition.age_category_type !== "open" && (
-                <p className="text-xs text-muted-foreground">
-                  Age requirement: {competition.age_category_type === "under_x" ? `Under ${competition.max_age}` :
-                    `${competition.min_age ?? "?"}–${competition.max_age ?? "?"}`}
-                </p>
-              )}
-              <Button
-                onClick={handleRegister}
-                disabled={registerMutation.isPending}
-                className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold h-11"
-              >
-                {registerMutation.isPending ? "Registering…" : "Register Now"}
-              </Button>
+
+              {renderWizardStep()}
+
+              {/* Navigation */}
+              <div className="flex gap-3 pt-2">
+                {regStep > 0 ? (
+                  <Button variant="outline" onClick={() => setRegStep((s) => s - 1)} className="flex-1 h-11">
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Back
+                  </Button>
+                ) : (
+                  <Button variant="outline" onClick={() => setShowRegWizard(false)} className="flex-1 h-11">
+                    Cancel
+                  </Button>
+                )}
+                {regStep < totalSteps - 1 ? (
+                  <Button
+                    onClick={() => setRegStep((s) => s + 1)}
+                    disabled={regStep === 0 && !canProceedStep0}
+                    className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                  >
+                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={createReg.isPending}
+                    className="flex-1 h-11 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
+                  >
+                    {createReg.isPending ? "Submitting…" : "Submit Registration"}
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -333,14 +517,23 @@ export default function CompetitionPublic() {
         {registrations.length > 0 && (
           <div className="bg-card border border-border rounded-xl p-6">
             <h2 className="text-lg font-bold text-foreground uppercase mb-3">
-              Registered Athletes ({registrations.length})
+              Registered Athletes ({totalCount})
             </h2>
             <div className="space-y-1.5">
-              {registrations.map((r) => (
+              {registrations
+                .filter((r) => r.status !== "removed" && r.status !== "withdrawn")
+                .map((r) => (
                 <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border">
-                  <span className="text-sm font-medium text-foreground">{r.athlete_name}</span>
-                  <Badge variant="outline" className={`text-xs ${r.status === "confirmed" ? "text-accent-foreground bg-accent/10" : "text-muted-foreground"}`}>
-                    {r.status}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-medium text-foreground truncate">{r.athlete_name}</span>
+                    {r.division_id && divisions.length > 0 && (
+                      <Badge variant="outline" className="text-xs shrink-0">
+                        {divisions.find((d) => d.id === r.division_id)?.name}
+                      </Badge>
+                    )}
+                  </div>
+                  <Badge variant="outline" className={`text-xs shrink-0 ${STATUS_COLORS[r.status] ?? ""}`}>
+                    {STATUS_LABELS[r.status] ?? r.status}
                   </Badge>
                 </div>
               ))}
