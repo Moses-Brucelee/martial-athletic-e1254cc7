@@ -29,7 +29,7 @@ import { HeatManagementPanel } from "@/modules/tournaments/components/HeatManage
 import { JudgeAssignmentPanel } from "@/modules/tournaments/components/JudgeAssignmentPanel";
 import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 import { V1_FULL_ACCESS } from "@/lib/featureFlags";
-import { PosterUpload } from "@/components/competition/PosterUpload";
+import { CompetitionEditPanel } from "@/modules/tournaments/components/CompetitionEditPanel";
 import { SaveAsTemplate } from "@/modules/tournaments/components/SaveAsTemplate";
 
 export default function CompetitionDashboard() {
