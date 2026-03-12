@@ -138,8 +138,12 @@ export default function CompetitionDashboard() {
       </TabsContent>
 
       <TabsContent value="setup">
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {competition && (
+            <div className="lg:col-span-2">
+              <CompetitionEditPanel competition={competition} canEdit={effectiveCanAdmin} />
+            </div>
+          )}
           <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
           <TeamsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
           <WorkoutsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
@@ -149,20 +153,12 @@ export default function CompetitionDashboard() {
           </div>
           {competition && (
             <div className="bg-card border border-border rounded-xl p-6">
-              <h3 className="text-lg font-bold text-foreground uppercase mb-4">Age Category</h3>
-              <div className="space-y-2 text-sm">
-                <p className="text-foreground">
-                  <span className="text-muted-foreground">Type: </span>
-                  {competition.age_category_type === "under_x" ? "Under X" :
-                   competition.age_category_type === "age_range" ? "Age Range" : "Open"}
-                </p>
-                {competition.min_age != null && (
-                  <p className="text-foreground"><span className="text-muted-foreground">Min Age: </span>{competition.min_age}</p>
-                )}
-                {competition.max_age != null && (
-                  <p className="text-foreground"><span className="text-muted-foreground">Max Age: </span>{competition.max_age}</p>
-                )}
-              </div>
+              <h3 className="text-lg font-bold text-foreground uppercase mb-4">Poster</h3>
+              <PosterUpload
+                competitionId={id!}
+                currentPosterUrl={competition.poster_url}
+                onPosterUpdated={() => refetchComp()}
+              />
             </div>
           )}
         </div>
