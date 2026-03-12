@@ -217,7 +217,7 @@ export default function CompetitionCreate() {
           <Button
             variant="outline"
             onClick={handleBack}
-            disabled={isPending || (step === 2 && !!competitionId)}
+            disabled={isPending}
             className="h-11 sm:h-10"
           >
             <ChevronLeft className="h-4 w-4 mr-1" /> Back
