@@ -136,7 +136,7 @@ export default function CompetitionCreate() {
   const handleBack = () => {
     if (step === 0) {
       navigate("/dashboard");
-    } else if (step > 2 || !competitionId) {
+    } else {
       setStep(step - 1);
     }
   };
