@@ -189,7 +189,7 @@ export default function CompetitionCreate() {
               startDate={startDate} setStartDate={setStartDate}
               endDate={endDate} setEndDate={setEndDate}
               regDeadline={regDeadline} setRegDeadline={setRegDeadline}
-              disabled={isPending}
+              disabled={isPending || !!competitionId}
             />
           )}
 
@@ -197,7 +197,7 @@ export default function CompetitionCreate() {
             <StepSportType
               selected={competitionType}
               onSelect={setCompetitionType}
-              disabled={isPending}
+              disabled={isPending || !!competitionId}
             />
           )}
 
