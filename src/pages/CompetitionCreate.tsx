@@ -136,7 +136,7 @@ export default function CompetitionCreate() {
   const handleBack = () => {
     if (step === 0) {
       navigate("/dashboard");
-    } else if (step > 2 || !competitionId) {
+    } else {
       setStep(step - 1);
     }
   };
@@ -189,7 +189,7 @@ export default function CompetitionCreate() {
               startDate={startDate} setStartDate={setStartDate}
               endDate={endDate} setEndDate={setEndDate}
               regDeadline={regDeadline} setRegDeadline={setRegDeadline}
-              disabled={isPending}
+              disabled={isPending || !!competitionId}
             />
           )}
 
@@ -197,7 +197,7 @@ export default function CompetitionCreate() {
             <StepSportType
               selected={competitionType}
               onSelect={setCompetitionType}
-              disabled={isPending}
+              disabled={isPending || !!competitionId}
             />
           )}
 
@@ -217,7 +217,7 @@ export default function CompetitionCreate() {
           <Button
             variant="outline"
             onClick={handleBack}
-            disabled={isPending || (step === 2 && !!competitionId)}
+            disabled={isPending}
             className="h-11 sm:h-10"
           >
             <ChevronLeft className="h-4 w-4 mr-1" /> Back
