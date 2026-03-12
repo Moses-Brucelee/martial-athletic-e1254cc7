@@ -30,6 +30,7 @@ import { JudgeAssignmentPanel } from "@/modules/tournaments/components/JudgeAssi
 import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 import { V1_FULL_ACCESS } from "@/lib/featureFlags";
 import { CompetitionEditPanel } from "@/modules/tournaments/components/CompetitionEditPanel";
+import { PosterUpload } from "@/components/competition/PosterUpload";
 import { SaveAsTemplate } from "@/modules/tournaments/components/SaveAsTemplate";
 
 export default function CompetitionDashboard() {
