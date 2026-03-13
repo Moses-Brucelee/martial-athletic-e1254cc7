@@ -68,6 +68,11 @@ export function DateTimePicker({
         ? format(minDate, "yyyy-MM-dd")
         : format(minDate, "yyyy-MM-dd'T'HH:mm")
       : undefined;
+    const maxValue = maxDate
+      ? dateOnly
+        ? format(maxDate, "yyyy-MM-dd")
+        : format(maxDate, "yyyy-MM-dd'T'HH:mm")
+      : undefined;
 
     return (
       <div className={cn("relative", className)}>
