@@ -141,8 +141,11 @@ export function StepDetails({
               placeholder="Last day to register"
               disabled={disabled}
               minDate={today}
+              maxDate={startDate}
             />
-            <p className="text-xs text-muted-foreground">Athletes won't be able to register after this date</p>
+            <p className="text-xs text-muted-foreground">
+              {startDate ? "Must be before competition start date" : "Athletes won't be able to register after this date"}
+            </p>
           </div>
         </div>
       </div>

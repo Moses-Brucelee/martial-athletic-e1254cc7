@@ -20,6 +20,8 @@ export interface Competition {
   age_category_type: string | null;
   min_age: number | null;
   max_age: number | null;
+  max_teams: number | null;
+  waitlist_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
