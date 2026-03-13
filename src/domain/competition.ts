@@ -151,6 +151,8 @@ export interface CompetitionSettings {
   require_video_verification: boolean;
   auto_publish_leaderboard: boolean;
   settings_json: unknown;
+  ranking_direction: string;
+  setup_mode: string;
   created_at: string;
   updated_at: string;
 }
