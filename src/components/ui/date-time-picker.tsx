@@ -132,7 +132,11 @@ export function DateTimePicker({
           mode="single"
           selected={value}
           onSelect={handleDateSelect}
-          disabled={minDate ? (date) => date < minDate : undefined}
+          disabled={(date) => {
+            if (minDate && date < minDate) return true;
+            if (maxDate && date > maxDate) return true;
+            return false;
+          }}
           initialFocus
           className={cn("p-3 pointer-events-auto")}
         />
