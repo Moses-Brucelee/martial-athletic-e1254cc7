@@ -35,6 +35,7 @@ export function DateTimePicker({
   disabled = false,
   dateOnly = false,
   minDate,
+  maxDate,
   className,
 }: DateTimePickerProps) {
   const isMobile = useIsMobile();
