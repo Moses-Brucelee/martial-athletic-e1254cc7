@@ -4,6 +4,7 @@ export interface Judge {
   id: string;
   competition_id: string;
   user_id: string;
+  display_name?: string;
   created_at: string;
 }
 

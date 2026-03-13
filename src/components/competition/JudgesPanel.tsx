@@ -1,13 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Gavel } from "lucide-react";
+import { Plus, Trash2, Gavel, Search } from "lucide-react";
 import { toast } from "sonner";
-import { addJudge, removeJudge, findUserByEmail } from "@/data/judges";
+import { addJudge, removeJudge, searchRegisteredUsers } from "@/data/judges";
 import type { Judge } from "@/domain/judges";
-import { z } from "zod";
-
-const searchSchema = z.string().trim().min(1, "Please enter a name to search").max(200, "Search term is too long");
 
 interface JudgesPanelProps {
   competitionId: string;
@@ -16,28 +13,72 @@ interface JudgesPanelProps {
   canAdmin: boolean;
 }
 
-export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: JudgesPanelProps) {
-  const [searchEmail, setSearchEmail] = useState("");
-  const [adding, setAdding] = useState(false);
+interface Suggestion {
+  user_id: string;
+  athlete_name: string;
+  display_name: string | null;
+}
 
-  const handleAdd = async () => {
-    const parsed = searchSchema.safeParse(searchEmail);
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
+export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: JudgesPanelProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setSuggestions([]);
+      setShowDropdown(false);
       return;
     }
-    setAdding(true);
-    try {
-      const user = await findUserByEmail(searchEmail.trim());
-      if (!user) {
-        toast.error("User not found");
-        setAdding(false);
-        return;
+
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const results = await searchRegisteredUsers(competitionId, q);
+        // Filter out already-added judges
+        const judgeUserIds = new Set(judges.map((j) => j.user_id));
+        const filtered = results.filter((r) => !judgeUserIds.has(r.user_id));
+        setSuggestions(filtered);
+        setShowDropdown(true);
+      } catch {
+        setSuggestions([]);
       }
-      const judge = await addJudge(competitionId, user.user_id);
+      setSearching(false);
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchQuery, competitionId, judges]);
+
+  const handleSelectSuggestion = async (suggestion: Suggestion) => {
+    setAdding(true);
+    setShowDropdown(false);
+    try {
+      const judge = await addJudge(competitionId, suggestion.user_id);
+      judge.display_name = suggestion.athlete_name || suggestion.display_name || undefined;
       setJudges((prev) => [...prev, judge]);
-      setSearchEmail("");
-      toast.success(`Judge added: ${user.display_name || searchEmail}`);
+      setSearchQuery("");
+      setSuggestions([]);
+      toast.success(`Judge added: ${suggestion.athlete_name}`);
     } catch {
       toast.error("Failed to add judge");
     }
@@ -67,7 +108,9 @@ export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: Judg
       <div className="space-y-2 mb-4">
         {judges.map((j) => (
           <div key={j.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-border bg-background">
-            <span className="font-semibold text-foreground text-sm truncate">{j.user_id}</span>
+            <span className="font-semibold text-foreground text-sm truncate">
+              {j.display_name || j.user_id.slice(0, 8) + "…"}
+            </span>
             {canAdmin && (
               <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleRemove(j.id)}>
                 <Trash2 className="h-3.5 w-3.5" />
@@ -78,11 +121,42 @@ export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: Judg
       </div>
 
       {canAdmin && (
-        <div className="flex gap-2">
-          <Input placeholder="Search by display name" value={searchEmail} onChange={(e) => setSearchEmail(e.target.value)} className="h-9 bg-background text-sm flex-1" />
-          <Button size="sm" onClick={handleAdd} disabled={adding || !searchEmail.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground h-9">
-            <Plus className="h-4 w-4" />
-          </Button>
+        <div className="relative" ref={wrapperRef}>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search registered athletes…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9 bg-background text-sm pl-9"
+              disabled={adding}
+            />
+          </div>
+
+          {showDropdown && suggestions.length > 0 && (
+            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+              {suggestions.map((s) => (
+                <button
+                  key={s.user_id}
+                  type="button"
+                  onClick={() => handleSelectSuggestion(s)}
+                  className="w-full text-left px-3 py-2.5 text-sm text-foreground hover:bg-muted/60 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                >
+                  <span className="font-medium">{s.athlete_name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {showDropdown && suggestions.length === 0 && searchQuery.trim().length >= 2 && !searching && (
+            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg p-3">
+              <p className="text-xs text-muted-foreground">No registered athletes found matching "{searchQuery}"</p>
+            </div>
+          )}
+
+          <p className="text-xs text-muted-foreground mt-2">
+            Type at least 2 characters to search registered athletes
+          </p>
         </div>
       )}
     </div>

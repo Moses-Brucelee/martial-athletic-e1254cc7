@@ -823,9 +823,11 @@ export type Database = {
           competition_id: string
           created_at: string
           id: string
+          ranking_direction: string
           require_video_verification: boolean
           scoring_method: string
           settings_json: Json | null
+          setup_mode: string
           tie_breaker_policy: string
           timezone: string
           updated_at: string
@@ -836,9 +838,11 @@ export type Database = {
           competition_id: string
           created_at?: string
           id?: string
+          ranking_direction?: string
           require_video_verification?: boolean
           scoring_method?: string
           settings_json?: Json | null
+          setup_mode?: string
           tie_breaker_policy?: string
           timezone?: string
           updated_at?: string
@@ -849,9 +853,11 @@ export type Database = {
           competition_id?: string
           created_at?: string
           id?: string
+          ranking_direction?: string
           require_video_verification?: boolean
           scoring_method?: string
           settings_json?: Json | null
+          setup_mode?: string
           tie_breaker_policy?: string
           timezone?: string
           updated_at?: string
@@ -1045,6 +1051,7 @@ export type Database = {
           id: string
           max_age: number | null
           max_athletes: number | null
+          max_teams: number | null
           min_age: number | null
           name: string
           poster_url: string | null
@@ -1055,6 +1062,7 @@ export type Database = {
           type: string | null
           updated_at: string
           venue: string | null
+          waitlist_enabled: boolean
         }
         Insert: {
           age_category_type?: string | null
@@ -1069,6 +1077,7 @@ export type Database = {
           id?: string
           max_age?: number | null
           max_athletes?: number | null
+          max_teams?: number | null
           min_age?: number | null
           name: string
           poster_url?: string | null
@@ -1079,6 +1088,7 @@ export type Database = {
           type?: string | null
           updated_at?: string
           venue?: string | null
+          waitlist_enabled?: boolean
         }
         Update: {
           age_category_type?: string | null
@@ -1093,6 +1103,7 @@ export type Database = {
           id?: string
           max_age?: number | null
           max_athletes?: number | null
+          max_teams?: number | null
           min_age?: number | null
           name?: string
           poster_url?: string | null
@@ -1103,6 +1114,7 @@ export type Database = {
           type?: string | null
           updated_at?: string
           venue?: string | null
+          waitlist_enabled?: boolean
         }
         Relationships: [
           {

@@ -1,63 +1,46 @@
+# Competition Platform — Quick Setup Overhaul
 
+## Implemented
 
-## Your Recommendations — Status Check
+### 1. Database Migration ✅
+- `ranking_direction` (text, default 'desc') + `setup_mode` (text, default 'advanced') on `competition_settings`
+- `max_teams` (integer) + `waitlist_enabled` (boolean, default true) on `competitions`
 
-The `.lovable/plan.md` file is **still the old plan** and hasn't been updated with any of your recent recommendations. Here's a consolidated tracker of everything you've asked for across our conversation:
+### 2. Date Validation ✅
+- Registration deadline `maxDate = startDate` on StepDetails
+- DateTimePicker now supports `maxDate` prop
 
-| # | Your Recommendation | Status |
-|---|---------------------|--------|
-| 1 | Registration deadline can't be after competition start date | **Discussed, not implemented** |
-| 2 | Division state not maintained when navigating wizard steps | **Discussed, not implemented** |
-| 3 | Quick Setup vs Advanced Setup modes for CrossFit | **Discussed, not implemented** |
-| 4 | Quick/Classic: judges enter points directly, no movement scoring | **Discussed, not implemented** |
-| 5 | Status-driven tab visibility (draft→published→live→completed) | **Discussed, not implemented** |
-| 6 | Command tab only visible when competition is live | **Discussed, not implemented** |
-| 7 | Leaderboard ranking direction (highest/lowest wins) | **Discussed, not implemented** |
-| 8 | Registration capacity (max_athletes, max_teams, waitlist) | **Discussed, not implemented** |
-| 9 | Judge auto-populate from registered athletes (type-ahead) | **Discussed, not implemented** |
-| 10 | All people fields auto-suggest from registered athletes | **Discussed, not implemented** |
-| 11 | Unified People tab (registrations, teams, judges, heats in one screen) | **Discussed, not implemented** |
-| 12 | Advanced mode stays untouched — park it, no changes | **Discussed, not implemented** |
+### 3. Quick vs Advanced Setup Mode ✅
+- StepSportType: CrossFit shows Quick/Advanced sub-selector
+- Quick flow: `["Details", "Sport & Mode", "Configure"]`
+- Advanced flow: `["Details", "Sport & Mode", "Divisions", "Workouts"]` (unchanged)
 
-**Nothing has been built yet.** We've been refining the plan across multiple messages. The plan.md needs to be rewritten to reflect the final agreed design, then we implement.
+### 4. StepQuickConfig ✅
+- Single page: divisions (presets + custom), text workouts (name + description, scoring_type='points'), ranking direction, capacity (max_teams, waitlist)
+- On submit: creates divisions, workouts, upserts settings with setup_mode='quick'
 
----
+### 5. Quick Mode Dashboard — Status-Driven Tabs ✅
+- draft: Setup, Workouts
+- published: Setup, Workouts, People
+- live: Command, Scores, Leaderboard, People
+- completed: Leaderboard only
 
-## Proposed: Rewrite plan.md with final consolidated plan, then implement
+### 6. Unified People Tab ✅
+- Single tab combining: Registrations, Teams, Judges, Heats/Lanes
 
-The updated plan.md will cover:
+### 7. Judge Auto-Populate ✅
+- Type-ahead search from `athlete_registrations` (registered users in the competition)
+- Display names instead of UUIDs; prevent duplicate judges
 
-### Database Migration
-- `ranking_direction` + `setup_mode` on `competition_settings`
-- `max_teams` + `waitlist_enabled` on `competitions`
-
-### Creation Wizard Changes
-- Date validation: `regDeadline maxDate = startDate`
-- CrossFit sport → Quick/Advanced sub-selector
-- Quick flow: `["Details", "Sport & Mode", "Configure"]` → single StepQuickConfig page (divisions + text workouts with `scoring_type: 'points'` + ranking direction + capacity)
-- Advanced flow: unchanged (parked)
-
-### Quick Mode Dashboard — Status-Driven Tabs
-- **draft**: Setup, Workouts
-- **published**: Setup, Workouts, People
-- **live**: Command, Scores, Leaderboard, People
-- **completed**: Leaderboard
-
-### Unified People Tab (Quick Mode)
-- Single screen: Registrations, Teams, Judges, Heats/Lanes
-- All people inputs auto-suggest from registered athletes in that competition
-
-### Judge Auto-Populate
-- Type-ahead search from `athlete_registrations` for the competition
-- Show display names, prevent duplicates
-- `fetchJudges` joins `profiles` to show names instead of UUIDs
-
-### Leaderboard
-- Respect `ranking_direction` from `competition_settings`
+### 8. Leaderboard Ranking Direction ✅
+- Respects `ranking_direction` from `competition_settings`
 - `asc` = lowest points on top, `desc` = highest on top
 
-### What Stays Unchanged
-- Advanced mode (entire flow + dashboard) — parked
-- Existing scoring engine, edge functions, DB tables
-- All existing RPC functions
+### 9. Advanced Mode — Parked ✅
+- No changes to advanced mode flow or dashboard
+- Advanced dashboard keeps 9-tab owner layout
 
+## What Stays Unchanged
+- Scoring engine, edge functions, existing DB tables
+- All existing RPC functions (get_competition_leaderboard, etc.)
+- ScoresPanel already handles scoring_type='points' correctly

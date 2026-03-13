@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Trophy, Monitor, Filter } from "lucide-react";
 import { useLeaderboard } from "@/modules/leaderboard/hooks";
 import { useCompetition, useWorkouts, useDivisions } from "@/modules/tournaments/hooks";
+import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
 import { useScores } from "@/modules/scoring/hooks";
 import { getAgeCategoryLabel } from "@/utils/calculateAge";
 import { Badge } from "@/components/ui/badge";
@@ -14,13 +15,22 @@ interface LeaderboardPanelProps {
 }
 
 export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
-  const { data: entries = [], isLoading } = useLeaderboard(competitionId);
+  const { data: rawEntries = [], isLoading } = useLeaderboard(competitionId);
   const { data: competition } = useCompetition(competitionId);
   const { data: workouts = [] } = useWorkouts(competitionId);
   const { data: divisions = [] } = useDivisions(competitionId);
   const { data: scoreRows = [] } = useScores(competitionId);
+  const { data: settings } = useCompetitionSettings(competitionId);
   const [whiteboardMode, setWhiteboardMode] = useState(false);
   const [selectedDivision, setSelectedDivision] = useState<string>("all");
+
+  // Reverse sort if ranking direction is 'asc' (lowest points wins)
+  const entries = useMemo(() => {
+    if (settings?.ranking_direction === "asc") {
+      return [...rawEntries].sort((a, b) => Number(a.total_points) - Number(b.total_points));
+    }
+    return rawEntries;
+  }, [rawEntries, settings?.ranking_direction]);
 
   const medalColors = ["text-yellow-500", "text-gray-400", "text-amber-700"];
 

@@ -21,8 +21,12 @@ interface DateTimePickerProps {
   dateOnly?: boolean;
   /** Min selectable date */
   minDate?: Date;
+  /** Max selectable date */
+  maxDate?: Date;
   className?: string;
 }
+
+export type { DateTimePickerProps };
 
 export function DateTimePicker({
   value,
@@ -31,6 +35,7 @@ export function DateTimePicker({
   disabled = false,
   dateOnly = false,
   minDate,
+  maxDate,
   className,
 }: DateTimePickerProps) {
   const isMobile = useIsMobile();
@@ -63,6 +68,11 @@ export function DateTimePicker({
         ? format(minDate, "yyyy-MM-dd")
         : format(minDate, "yyyy-MM-dd'T'HH:mm")
       : undefined;
+    const maxValue = maxDate
+      ? dateOnly
+        ? format(maxDate, "yyyy-MM-dd")
+        : format(maxDate, "yyyy-MM-dd'T'HH:mm")
+      : undefined;
 
     return (
       <div className={cn("relative", className)}>
@@ -73,6 +83,7 @@ export function DateTimePicker({
           onChange={handleNativeChange}
           disabled={disabled}
           min={minValue}
+          max={maxValue}
           className={cn(
             "flex h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 py-2 text-sm ring-offset-background",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -121,7 +132,11 @@ export function DateTimePicker({
           mode="single"
           selected={value}
           onSelect={handleDateSelect}
-          disabled={minDate ? (date) => date < minDate : undefined}
+          disabled={(date) => {
+            if (minDate && date < minDate) return true;
+            if (maxDate && date > maxDate) return true;
+            return false;
+          }}
           initialFocus
           className={cn("p-3 pointer-events-auto")}
         />

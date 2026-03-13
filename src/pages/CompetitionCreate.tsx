@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useCreateCompetition, useSaveWorkoutWithMovements } from "@/modules/tournaments/hooks";
+import { useUpsertCompetitionSettings } from "@/modules/tournaments/hooks-engine";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { StepIndicator } from "@/modules/tournaments/components/create/StepIndicator";
 import { StepDetails } from "@/modules/tournaments/components/create/StepDetails";
@@ -10,13 +11,13 @@ import { StepSportType } from "@/modules/tournaments/components/create/StepSport
 import { DivisionsPanel } from "@/modules/tournaments/components/DivisionsPanel";
 import { WorkoutBuilderPro } from "@/modules/tournaments/components/workout-builder/WorkoutBuilderPro";
 import { emptyWorkout, type LocalWorkout } from "@/modules/tournaments/components/workout-builder/types";
+import { StepQuickConfig, defaultQuickConfig, type QuickConfigState } from "@/modules/tournaments/components/create/StepQuickConfig";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, AlertCircle, Check } from "lucide-react";
 import { sanitizeError } from "@/lib/validation";
 import { toast } from "sonner";
-
-const STEPS = ["Details", "Sport", "Divisions", "Workouts"];
+import { supabase } from "@/integrations/supabase/client";
 
 export default function CompetitionCreate() {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ export default function CompetitionCreate() {
   const { profile, loading: profileLoading } = useProfile();
   const createMutation = useCreateCompetition();
   const saveWorkoutMutation = useSaveWorkoutWithMovements();
+  const upsertSettingsMutation = useUpsertCompetitionSettings();
 
   const [step, setStep] = useState(0);
   const [competitionId, setCompetitionId] = useState<string | null>(null);
@@ -38,14 +40,26 @@ export default function CompetitionCreate() {
   const [regDeadline, setRegDeadline] = useState<Date | undefined>();
   const [error, setError] = useState("");
 
-  // Step 2 — Sport type
+  // Step 2 — Sport type + setup mode
   const [competitionType, setCompetitionType] = useState("");
+  const [setupMode, setSetupMode] = useState<"quick" | "advanced">("quick");
 
-  // Step 4 — Workouts
+  // Step 3 (Quick) — Config
+  const [quickConfig, setQuickConfig] = useState<QuickConfigState>(defaultQuickConfig);
+
+  // Step 3 (Advanced) — Workouts
   const [workouts, setWorkouts] = useState<LocalWorkout[]>([emptyWorkout()]);
+
+  const isQuickMode = competitionType === "crossfit" && setupMode === "quick";
+  const STEPS = isQuickMode
+    ? ["Details", "Sport & Mode", "Configure"]
+    : ["Details", "Sport & Mode", "Divisions", "Workouts"];
 
   const isStep1Valid = name.trim().length >= 2 && !!startDate && !!endDate && !!regDeadline;
   const isStep2Valid = !!competitionType;
+  const isQuickConfigValid = quickConfig.divisions.length > 0 && quickConfig.workouts.some((w) => w.name.trim());
+
+  // ── Create competition (after step 2) ───────────────────────────────
 
   const handleCreateCompetition = async () => {
     if (!user) return;
@@ -71,6 +85,64 @@ export default function CompetitionCreate() {
     }
   };
 
+  // ── Quick setup: save divisions + text workouts + settings ──────────
+
+  const handleQuickFinish = async () => {
+    if (!competitionId || !user) return;
+    setError("");
+    try {
+      // 1. Save divisions
+      for (let i = 0; i < quickConfig.divisions.length; i++) {
+        const divName = quickConfig.divisions[i];
+        await supabase.from("competition_divisions").insert({
+          competition_id: competitionId,
+          name: divName,
+          sort_order: i,
+        });
+      }
+
+      // 2. Save workouts (scoring_type = 'points', no movements)
+      for (let i = 0; i < quickConfig.workouts.length; i++) {
+        const w = quickConfig.workouts[i];
+        if (!w.name.trim()) continue;
+        await supabase.from("competition_workouts").insert({
+          competition_id: competitionId,
+          workout_number: i + 1,
+          name: w.name.trim(),
+          description: w.description || null,
+          workout_type: "custom",
+          scoring_type: "points",
+          measurement_type: "points",
+        });
+      }
+
+      // 3. Update competition capacity
+      await supabase
+        .from("competitions")
+        .update({
+          max_teams: quickConfig.maxTeams,
+          waitlist_enabled: quickConfig.waitlistEnabled,
+        })
+        .eq("id", competitionId);
+
+      // 4. Upsert competition settings
+      await upsertSettingsMutation.mutateAsync({
+        competitionId,
+        settings: {
+          setup_mode: "quick",
+          ranking_direction: quickConfig.rankingDirection,
+        } as any,
+      });
+
+      toast.success("Competition created!");
+      navigate(`/competition/${competitionId}`);
+    } catch (err) {
+      setError(sanitizeError(err));
+    }
+  };
+
+  // ── Advanced: save workouts with movements ─────────────────────────
+
   const handleSaveWorkouts = async () => {
     if (!competitionId) return;
     setError("");
@@ -88,6 +160,12 @@ export default function CompetitionCreate() {
     }
 
     try {
+      // Save settings as advanced mode
+      await upsertSettingsMutation.mutateAsync({
+        competitionId,
+        settings: { setup_mode: "advanced", ranking_direction: "desc" } as any,
+      });
+
       for (let i = 0; i < workouts.length; i++) {
         const w = workouts[i];
         await saveWorkoutMutation.mutateAsync({
@@ -121,12 +199,14 @@ export default function CompetitionCreate() {
     }
   };
 
-  const isPending = createMutation.isPending || saveWorkoutMutation.isPending;
+  const isPending = createMutation.isPending || saveWorkoutMutation.isPending || upsertSettingsMutation.isPending;
 
   const handleNext = () => {
     if (step === 1) {
       handleCreateCompetition();
-    } else if (step === 3) {
+    } else if (isQuickMode && step === 2) {
+      handleQuickFinish();
+    } else if (!isQuickMode && step === 3) {
       handleSaveWorkouts();
     } else {
       setStep(step + 1);
@@ -145,6 +225,7 @@ export default function CompetitionCreate() {
     if (isPending) return true;
     if (step === 0) return !isStep1Valid;
     if (step === 1) return !isStep2Valid;
+    if (isQuickMode && step === 2) return !isQuickConfigValid;
     return false;
   };
 
@@ -159,13 +240,14 @@ export default function CompetitionCreate() {
     );
   }
 
-  const isWorkoutsStep = step === 3;
+  const isWideStep = !isQuickMode && step === 3;
+  const isFinalStep = isQuickMode ? step === 2 : step === 3;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <CompetitionHeader title="Create Competition" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
 
-      <main className={`flex-1 w-full px-3 sm:px-4 py-6 sm:py-8 ${isWorkoutsStep ? "max-w-7xl mx-auto" : "max-w-2xl mx-auto"}`}>
+      <main className={`flex-1 w-full px-3 sm:px-4 py-6 sm:py-8 ${isWideStep ? "max-w-7xl mx-auto" : "max-w-2xl mx-auto"}`}>
         <StepIndicator steps={STEPS} currentStep={step} />
 
         <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight uppercase mb-6">
@@ -197,15 +279,23 @@ export default function CompetitionCreate() {
             <StepSportType
               selected={competitionType}
               onSelect={setCompetitionType}
+              setupMode={setupMode}
+              onSetupModeChange={setSetupMode}
               disabled={isPending || !!competitionId}
             />
           )}
 
-          {step === 2 && competitionId && (
+          {/* Quick mode: step 2 = configure */}
+          {isQuickMode && step === 2 && (
+            <StepQuickConfig config={quickConfig} setConfig={setQuickConfig} disabled={isPending} />
+          )}
+
+          {/* Advanced mode: step 2 = divisions, step 3 = workouts */}
+          {!isQuickMode && step === 2 && competitionId && (
             <DivisionsPanel competitionId={competitionId} canAdmin={true} />
           )}
 
-          {step === 3 && (
+          {!isQuickMode && step === 3 && (
             <WorkoutBuilderPro workouts={workouts} setWorkouts={setWorkouts} disabled={isPending} />
           )}
         </div>
@@ -213,7 +303,7 @@ export default function CompetitionCreate() {
 
       {/* Sticky bottom nav on mobile */}
       <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:relative sm:border-0 sm:bg-transparent sm:backdrop-blur-none sm:p-0">
-        <div className={`flex justify-between ${isWorkoutsStep ? "max-w-7xl" : "max-w-2xl"} mx-auto sm:px-4 sm:pb-8`}>
+        <div className={`flex justify-between ${isWideStep ? "max-w-7xl" : "max-w-2xl"} mx-auto sm:px-4 sm:pb-8`}>
           <Button
             variant="outline"
             onClick={handleBack}
@@ -230,7 +320,7 @@ export default function CompetitionCreate() {
           >
             {isPending ? (
               <div className="w-5 h-5 border-2 border-accent-foreground border-t-transparent rounded-full animate-spin" />
-            ) : step === 3 ? (
+            ) : isFinalStep ? (
               <>Create Competition <Check className="h-4 w-4 ml-1" /></>
             ) : (
               <>Next <ChevronRight className="h-4 w-4 ml-1" /></>

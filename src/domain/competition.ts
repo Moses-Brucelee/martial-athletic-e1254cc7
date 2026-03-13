@@ -20,6 +20,8 @@ export interface Competition {
   age_category_type: string | null;
   min_age: number | null;
   max_age: number | null;
+  max_teams: number | null;
+  waitlist_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -151,6 +153,8 @@ export interface CompetitionSettings {
   require_video_verification: boolean;
   auto_publish_leaderboard: boolean;
   settings_json: unknown;
+  ranking_direction: string;
+  setup_mode: string;
   created_at: string;
   updated_at: string;
 }
