@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Trophy, Monitor, Filter } from "lucide-react";
 import { useLeaderboard } from "@/modules/leaderboard/hooks";
 import { useCompetition, useWorkouts, useDivisions } from "@/modules/tournaments/hooks";
+import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
 import { useScores } from "@/modules/scoring/hooks";
 import { getAgeCategoryLabel } from "@/utils/calculateAge";
 import { Badge } from "@/components/ui/badge";
