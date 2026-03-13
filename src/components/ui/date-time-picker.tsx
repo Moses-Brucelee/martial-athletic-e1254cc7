@@ -83,6 +83,7 @@ export function DateTimePicker({
           onChange={handleNativeChange}
           disabled={disabled}
           min={minValue}
+          max={maxValue}
           className={cn(
             "flex h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 py-2 text-sm ring-offset-background",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
