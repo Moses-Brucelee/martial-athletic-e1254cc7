@@ -21,8 +21,12 @@ interface DateTimePickerProps {
   dateOnly?: boolean;
   /** Min selectable date */
   minDate?: Date;
+  /** Max selectable date */
+  maxDate?: Date;
   className?: string;
 }
+
+export type { DateTimePickerProps };
 
 export function DateTimePicker({
   value,
