@@ -4,12 +4,14 @@ import { useProfile } from "@/hooks/useProfile";
 import { useCompetitionRole } from "@/hooks/useCompetitionRole";
 import { useSuperUserAccess } from "@/hooks/useSuperUserAccess";
 import { useCompetition } from "@/modules/tournaments/hooks";
+import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Lock } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { deriveStatus, isMutable, getStatusLabel } from "@/modules/tournaments/stateMachine";
+import { useState } from "react";
 
 // Module components
 import { TeamsPanel } from "@/modules/tournaments/components/TeamsPanel";
@@ -33,6 +35,63 @@ import { CompetitionEditPanel } from "@/modules/tournaments/components/Competiti
 import { PosterUpload } from "@/components/competition/PosterUpload";
 import { SaveAsTemplate } from "@/modules/tournaments/components/SaveAsTemplate";
 
+// Lazy wrapper for JudgesPanel
+import { JudgesPanel as OriginalJudgesPanel } from "@/components/competition/JudgesPanel";
+import { useJudges } from "@/modules/admin/hooks";
+
+function JudgesPanelLazy({ competitionId, canAdmin }: { competitionId: string; canAdmin: boolean }) {
+  const { data: judges = [] } = useJudges(competitionId);
+  const [localJudges, setLocalJudges] = useState(judges);
+
+  if (JSON.stringify(localJudges) !== JSON.stringify(judges) && judges.length > 0) {
+    setLocalJudges(judges);
+  }
+
+  return (
+    <OriginalJudgesPanel
+      competitionId={competitionId}
+      judges={localJudges}
+      setJudges={setLocalJudges}
+      canAdmin={canAdmin}
+    />
+  );
+}
+
+// ── Quick Mode Status-Driven Tabs ─────────────────────────────────────
+
+function getQuickModeTabs(status: CompetitionStatus): { value: string; label: string }[] {
+  switch (status) {
+    case "draft":
+      return [
+        { value: "setup", label: "Setup" },
+        { value: "workouts", label: "Workouts" },
+      ];
+    case "published":
+      return [
+        { value: "setup", label: "Setup" },
+        { value: "workouts", label: "Workouts" },
+        { value: "people", label: "People" },
+      ];
+    case "live":
+      return [
+        { value: "command", label: "Command" },
+        { value: "scores", label: "Scores" },
+        { value: "leaderboard", label: "Leaderboard" },
+        { value: "people", label: "People" },
+      ];
+    case "completed":
+    case "expired":
+      return [
+        { value: "leaderboard", label: "Leaderboard" },
+      ];
+    default:
+      return [
+        { value: "setup", label: "Setup" },
+        { value: "workouts", label: "Workouts" },
+      ];
+  }
+}
+
 export default function CompetitionDashboard() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -40,6 +99,7 @@ export default function CompetitionDashboard() {
   const { isOwner, isJudge, loading: roleLoading } = useCompetitionRole(id);
   const { isSuperUser } = useSuperUserAccess();
   const { data: competition, isLoading: compLoading, error: compError, refetch: refetchComp } = useCompetition(id);
+  const { data: settings, isLoading: settingsLoading } = useCompetitionSettings(id);
   const isMobile = useIsMobile();
 
   const canAdmin = V1_FULL_ACCESS ? (isOwner || isSuperUser) : (isOwner || isSuperUser);
@@ -53,7 +113,9 @@ export default function CompetitionDashboard() {
   const effectiveCanAdmin = canAdmin && competitionMutable;
   const effectiveCanScore = canScore && competitionMutable;
 
-  if (profileLoading || compLoading || roleLoading) {
+  const isQuickMode = settings?.setup_mode === "quick";
+
+  if (profileLoading || compLoading || roleLoading || settingsLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Skeleton className="h-14 w-full" />
@@ -75,8 +137,18 @@ export default function CompetitionDashboard() {
     )
   );
 
-  // Read-only view for completed/expired
-  if (isReadOnly) {
+  // ── People Tab (unified: registrations, teams, judges, heats) ───────
+  const PeopleTab = () => (
+    <div className="space-y-6">
+      <RegistrationManager competitionId={id!} canAdmin={effectiveCanAdmin} />
+      <TeamsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
+      <JudgesPanelLazy competitionId={id!} canAdmin={effectiveCanAdmin} />
+      <HeatManagementPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
+    </div>
+  );
+
+  // Read-only view for completed/expired (non-owner)
+  if (isReadOnly && !canAdmin) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <CompetitionHeader title="Tournament" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
@@ -110,6 +182,68 @@ export default function CompetitionDashboard() {
     );
   }
 
+  // ── Quick Mode — Status-Driven Tabs ─────────────────────────────────
+
+  const renderQuickModeTabs = () => {
+    const tabs = getQuickModeTabs(derivedStatus);
+    const defaultTab = tabs[0]?.value ?? "setup";
+
+    return (
+      <Tabs defaultValue={defaultTab} className="w-full">
+        <div className="relative mb-6">
+          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
+            <TabsList className={`inline-flex w-auto min-w-full md:w-full md:grid md:grid-cols-${tabs.length} gap-1`}>
+              {tabs.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value} className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+        </div>
+
+        <TabsContent value="command">
+          <CommandCenter competitionId={id!} />
+        </TabsContent>
+
+        <TabsContent value="setup">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {competition && (
+              <div className="lg:col-span-2">
+                <CompetitionEditPanel competition={competition} canEdit={effectiveCanAdmin} />
+              </div>
+            )}
+            <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
+            <WorkoutsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
+            {competition && (
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h3 className="text-lg font-bold text-foreground uppercase mb-4">Poster</h3>
+                <PosterUpload
+                  competitionId={id!}
+                  currentPosterUrl={competition.poster_url}
+                  onPosterUpdated={() => refetchComp()}
+                />
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="workouts">
+          <WorkoutsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
+        </TabsContent>
+
+        <TabsContent value="people">
+          <PeopleTab />
+        </TabsContent>
+
+        <TabsContent value="scores"><ScoreTab /></TabsContent>
+        <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
+      </Tabs>
+    );
+  };
+
+  // ── Advanced Mode — Full 9-Tab Owner Layout ─────────────────────────
+
   const renderOwnerTabs = () => (
     <Tabs defaultValue="command" className="w-full">
       <div className="relative mb-6">
@@ -126,7 +260,6 @@ export default function CompetitionDashboard() {
             <TabsTrigger value="roster" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Roster</TabsTrigger>
           </TabsList>
         </div>
-        {/* Fade indicators for scroll hint */}
         <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none md:hidden" />
       </div>
 
@@ -222,6 +355,13 @@ export default function CompetitionDashboard() {
     </Tabs>
   );
 
+  const renderTabs = () => {
+    if (effectiveCanAdmin && isQuickMode) return renderQuickModeTabs();
+    if (effectiveCanAdmin) return renderOwnerTabs();
+    if (isJudge) return renderJudgeTabs();
+    return renderViewerTabs();
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <CompetitionHeader title="Tournament" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
@@ -231,7 +371,7 @@ export default function CompetitionDashboard() {
         {competition && (
           <>
             <p className="text-muted-foreground mb-2">{competition.name}</p>
-            {effectiveCanAdmin && (
+            {effectiveCanAdmin && !isQuickMode && (
               <div className="mb-4">
                 <SaveAsTemplate competition={competition} competitionId={id!} />
               </div>
@@ -248,31 +388,8 @@ export default function CompetitionDashboard() {
           </div>
         )}
 
-        {effectiveCanAdmin ? renderOwnerTabs() : isJudge ? renderJudgeTabs() : renderViewerTabs()}
+        {renderTabs()}
       </main>
     </div>
-  );
-}
-
-// Lazy wrapper for JudgesPanel
-import { JudgesPanel as OriginalJudgesPanel } from "@/components/competition/JudgesPanel";
-import { useJudges } from "@/modules/admin/hooks";
-import { useState } from "react";
-
-function JudgesPanelLazy({ competitionId, canAdmin }: { competitionId: string; canAdmin: boolean }) {
-  const { data: judges = [] } = useJudges(competitionId);
-  const [localJudges, setLocalJudges] = useState(judges);
-
-  if (JSON.stringify(localJudges) !== JSON.stringify(judges) && judges.length > 0) {
-    setLocalJudges(judges);
-  }
-
-  return (
-    <OriginalJudgesPanel
-      competitionId={competitionId}
-      judges={localJudges}
-      setJudges={setLocalJudges}
-      canAdmin={canAdmin}
-    />
   );
 }
