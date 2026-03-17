@@ -62,6 +62,9 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
   const [newPhone, setNewPhone] = useState("");
   const [newGender, setNewGender] = useState("");
   const [newDob, setNewDob] = useState("");
+  const [showCreateTeam, setShowCreateTeam] = useState(false);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [newTeamDivisionId, setNewTeamDivisionId] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Build team→heat+lane lookup
