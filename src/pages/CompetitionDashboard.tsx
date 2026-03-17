@@ -233,7 +233,7 @@ export default function CompetitionDashboard() {
         </TabsContent>
 
         <TabsContent value="workouts">
-          <WorkoutsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
+          <QuickWorkoutsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
         </TabsContent>
 
         <TabsContent value="people">
