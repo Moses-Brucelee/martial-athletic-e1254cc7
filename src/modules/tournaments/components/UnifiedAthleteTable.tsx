@@ -591,14 +591,25 @@ function DesktopRow({
       )}
 
       {/* Team */}
-      {canAdmin && teams.length > 0 ? (
-        <Select value={reg.team_id || "__none__"} onValueChange={(v) => onTeamChange(v === "__none__" ? "" : v)}>
-          <SelectTrigger className="h-7 text-[11px] border-dashed"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__none__">—</SelectItem>
-            {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+      {canAdmin ? (
+        teams.length > 0 ? (
+          <div className="flex items-center gap-0.5">
+            <Select value={reg.team_id || "__none__"} onValueChange={(v) => onTeamChange(v === "__none__" ? "" : v)}>
+              <SelectTrigger className="h-7 text-[11px] border-dashed flex-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">—</SelectItem>
+                {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={onCreateTeam} title="Create team">
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
+        ) : (
+          <Button variant="outline" size="sm" className="h-7 text-[11px] border-dashed w-full" onClick={onCreateTeam}>
+            <Plus className="h-3 w-3 mr-1" /> New Team
+          </Button>
+        )
       ) : (
         <span className="text-xs text-muted-foreground truncate">{teams.find((t) => t.id === reg.team_id)?.team_name ?? "—"}</span>
       )}
