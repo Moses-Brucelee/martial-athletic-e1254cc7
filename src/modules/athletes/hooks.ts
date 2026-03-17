@@ -92,6 +92,19 @@ export function useUpdateRegistrationDivision() {
   });
 }
 
+export function useUpdateRegistrationTeam() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, teamId, competitionId }: { id: string; teamId: string | null; competitionId: string }) =>
+      api.updateRegistrationTeam(id, teamId),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["registrations", variables.competitionId] });
+      qc.invalidateQueries({ queryKey: ["teams", variables.competitionId] });
+      qc.invalidateQueries({ queryKey: ["heat-assignments"] });
+    },
+  });
+}
+
 export function useBulkUpdateStatus() {
   const qc = useQueryClient();
   return useMutation({

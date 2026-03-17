@@ -233,6 +233,17 @@ export async function updateRegistrationDivision(
   if (error) throw error;
 }
 
+export async function updateRegistrationTeam(
+  id: string,
+  teamId: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from("athlete_registrations")
+    .update({ team_id: teamId })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function bulkUpdateStatus(
   ids: string[],
   status: string

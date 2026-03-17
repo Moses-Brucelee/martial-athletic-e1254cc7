@@ -2,15 +2,13 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Link2, Copy, Check, Users, UserPlus, Gavel, Flame, ClipboardList } from "lucide-react";
+import { Link2, Copy, Check, Users, Gavel, Flame } from "lucide-react";
 import { toast } from "sonner";
-import { RegistrationManager } from "@/modules/athletes/components/RegistrationManager";
-import { TeamsPanel } from "@/modules/tournaments/components/TeamsPanel";
+import { UnifiedAthleteTable } from "@/modules/tournaments/components/UnifiedAthleteTable";
 import { HeatManagementPanel } from "@/modules/tournaments/components/HeatManagementPanel";
 import { JudgesPanel as OriginalJudgesPanel } from "@/components/competition/JudgesPanel";
 import { useJudges } from "@/modules/admin/hooks";
 import { useRegistrations } from "@/modules/athletes/hooks";
-import { useTeams } from "@/modules/tournaments/hooks";
 import { useHeats } from "@/modules/tournaments/hooks-engine";
 import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 
@@ -66,56 +64,25 @@ function JudgesPanelWrapper({ competitionId, canAdmin }: { competitionId: string
 
 export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabProps) {
   const { data: registrations = [] } = useRegistrations(competitionId);
-  const { data: teams = [] } = useTeams(competitionId);
   const { data: heats = [] } = useHeats(competitionId);
 
   const approvedCount = registrations.filter(
     (r) => r.status === "approved" || r.status === "confirmed"
   ).length;
-  const pendingCount = registrations.filter((r) => r.status === "pending").length;
 
   const showShareLink = derivedStatus === "published" || derivedStatus === "live";
 
   return (
     <div className="space-y-4">
-      {/* Share link */}
       {showShareLink && <ShareableLink competitionId={competitionId} />}
 
-      {/* Quick stats bar */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="outline" className="gap-1.5 py-1 px-2.5 text-xs">
-          <ClipboardList className="h-3 w-3" />
-          {registrations.length} Registrations
-        </Badge>
-        {pendingCount > 0 && (
-          <Badge variant="outline" className="gap-1.5 py-1 px-2.5 text-xs text-yellow-600 bg-yellow-500/10 border-yellow-500/20">
-            {pendingCount} Pending
-          </Badge>
-        )}
-        <Badge variant="outline" className="gap-1.5 py-1 px-2.5 text-xs text-green-600 bg-green-500/10 border-green-500/20">
-          <UserPlus className="h-3 w-3" />
-          {approvedCount} Approved
-        </Badge>
-        <Badge variant="outline" className="gap-1.5 py-1 px-2.5 text-xs">
-          <Users className="h-3 w-3" />
-          {teams.length} Teams
-        </Badge>
-        <Badge variant="outline" className="gap-1.5 py-1 px-2.5 text-xs">
-          <Flame className="h-3 w-3" />
-          {heats.length} Heats
-        </Badge>
-      </div>
-
-      {/* Inner tabs */}
-      <Tabs defaultValue="registrations" className="w-full">
-        <TabsList className="w-full grid grid-cols-4 h-10">
-          <TabsTrigger value="registrations" className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <ClipboardList className="h-3.5 w-3.5 hidden sm:block" />
-            Athletes
-          </TabsTrigger>
-          <TabsTrigger value="teams" className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+      {/* Inner tabs — Athletes (unified), Judges, Heats */}
+      <Tabs defaultValue="athletes" className="w-full">
+        <TabsList className="w-full grid grid-cols-3 h-10">
+          <TabsTrigger value="athletes" className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Users className="h-3.5 w-3.5 hidden sm:block" />
-            Teams
+            Athletes
+            <Badge variant="outline" className="ml-1 h-5 px-1.5 text-[10px] bg-background">{approvedCount}</Badge>
           </TabsTrigger>
           <TabsTrigger value="judges" className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Gavel className="h-3.5 w-3.5 hidden sm:block" />
@@ -124,15 +91,12 @@ export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabP
           <TabsTrigger value="heats" className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Flame className="h-3.5 w-3.5 hidden sm:block" />
             Heats
+            <Badge variant="outline" className="ml-1 h-5 px-1.5 text-[10px] bg-background">{heats.length}</Badge>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="registrations" className="mt-4">
-          <RegistrationManager competitionId={competitionId} canAdmin={canAdmin} />
-        </TabsContent>
-
-        <TabsContent value="teams" className="mt-4">
-          <TeamsPanel competitionId={competitionId} isOwner={canAdmin} />
+        <TabsContent value="athletes" className="mt-4">
+          <UnifiedAthleteTable competitionId={competitionId} canAdmin={canAdmin} />
         </TabsContent>
 
         <TabsContent value="judges" className="mt-4">
