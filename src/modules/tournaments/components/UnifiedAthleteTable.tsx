@@ -313,7 +313,55 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
         </div>
       )}
 
-      {/* Inline add form (desktop) */}
+      {/* Create Team Dialog */}
+      <Dialog open={showCreateTeam} onOpenChange={setShowCreateTeam}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Create Team</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <Label className="text-xs font-medium text-foreground">Team Name *</Label>
+              <Input
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+                placeholder="e.g. Team Alpha"
+                className="mt-1"
+                maxLength={100}
+                onKeyDown={(e) => e.key === "Enter" && handleCreateTeam()}
+              />
+            </div>
+            {divisions.length > 0 && (
+              <div>
+                <Label className="text-xs font-medium text-foreground">Division</Label>
+                <Select value={newTeamDivisionId || "__none__"} onValueChange={(v) => setNewTeamDivisionId(v === "__none__" ? "" : v)}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No Division</SelectItem>
+                    {divisions.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {teams.length > 0 && (
+              <div className="bg-muted/30 border border-border rounded-lg p-3">
+                <p className="text-xs font-semibold text-foreground mb-2">Existing Teams ({teams.length})</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {teams.map((t) => (
+                    <Badge key={t.id} variant="secondary" className="text-[11px]">{t.team_name}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2 pt-1">
+              <Button onClick={handleCreateTeam} disabled={!newTeamName.trim() || addTeamMutation.isPending} className="flex-1 bg-accent text-accent-foreground">
+                <Plus className="h-4 w-4 mr-1" /> Create Team
+              </Button>
+              <Button variant="ghost" onClick={() => setShowCreateTeam(false)}>Cancel</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       {showAddForm && canAdmin && !isMobile && (
         <div className="bg-card border border-border rounded-xl p-4">
           <h3 className="text-sm font-bold text-foreground uppercase mb-3">Add Athlete</h3>
