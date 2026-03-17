@@ -146,18 +146,7 @@ export default function CompetitionDashboard() {
     );
   };
 
-  // ── People Tab (unified: registrations, teams, judges, heats) ───────
-  const PeopleTab = () => (
-    <div className="space-y-6">
-      {(derivedStatus === "published" || derivedStatus === "live") && (
-        <ShareableLink competitionId={id!} />
-      )}
-      <RegistrationManager competitionId={id!} canAdmin={effectiveCanAdmin} />
-      <TeamsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
-      <JudgesPanelLazy competitionId={id!} canAdmin={effectiveCanAdmin} />
-      <HeatManagementPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
-    </div>
-  );
+
 
   // Read-only view for completed/expired (non-owner)
   if (isReadOnly && !canAdmin) {
