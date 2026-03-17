@@ -121,6 +121,24 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
     } catch { toast.error("Bulk update failed"); }
   };
 
+  const handleCreateTeam = async () => {
+    const name = newTeamName.trim();
+    if (!name) { toast.error("Team name required"); return; }
+    const dup = teams.find((t) => t.team_name.toLowerCase() === name.toLowerCase());
+    if (dup) { toast.error("Team already exists"); return; }
+    const div = divisions.find((d) => d.id === newTeamDivisionId);
+    try {
+      await addTeamMutation.mutateAsync({
+        competition_id: competitionId,
+        team_name: name,
+        division: div?.name || null,
+        division_id: newTeamDivisionId || null,
+      });
+      toast.success("Team created!");
+      setNewTeamName(""); setNewTeamDivisionId(""); setShowCreateTeam(false);
+    } catch { toast.error("Failed to create team"); }
+  };
+
   const handleAddAthlete = async () => {
     const parsed = athleteNameSchema.safeParse(newName);
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
