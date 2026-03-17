@@ -8,7 +8,7 @@ import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Lock, Link2, Copy, Check } from "lucide-react";
+import { AlertCircle, Lock } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { deriveStatus, isMutable, getStatusLabel } from "@/modules/tournaments/stateMachine";
 import { useState } from "react";
@@ -28,6 +28,7 @@ import { LeaderboardPanel } from "@/modules/leaderboard/components/LeaderboardPa
 import { ParticipantsPanel } from "@/modules/athletes/components/ParticipantsPanel";
 import { RegistrationManager } from "@/modules/athletes/components/RegistrationManager";
 import { BracketsPanel } from "@/modules/tournaments/components/BracketsPanel";
+import { PeopleTab } from "@/modules/tournaments/components/PeopleTab";
 import { CompetitionStatusBar } from "@/modules/tournaments/components/CompetitionStatusBar";
 import { CompetitionStatusActions } from "@/modules/tournaments/components/CompetitionStatusActions";
 import { CommandCenter } from "@/modules/tournaments/components/CommandCenter";
@@ -39,7 +40,7 @@ import { CompetitionEditPanel } from "@/modules/tournaments/components/Competiti
 import { PosterUpload } from "@/components/competition/PosterUpload";
 import { SaveAsTemplate } from "@/modules/tournaments/components/SaveAsTemplate";
 
-// Lazy wrapper for JudgesPanel
+// Lazy wrapper for JudgesPanel (used in Advanced mode only)
 import { JudgesPanel as OriginalJudgesPanel } from "@/components/competition/JudgesPanel";
 import { useJudges } from "@/modules/admin/hooks";
 function JudgesPanelLazy({ competitionId, canAdmin }: { competitionId: string; canAdmin: boolean }) {
@@ -57,37 +58,6 @@ function JudgesPanelLazy({ competitionId, canAdmin }: { competitionId: string; c
       setJudges={setLocalJudges}
       canAdmin={canAdmin}
     />
-  );
-}
-
-// ── Shareable Link Component ──────────────────────────────────────────
-
-function ShareableLink({ competitionId }: { competitionId: string }) {
-  const [copied, setCopied] = useState(false);
-  const link = `${window.location.origin}/event/${competitionId}`;
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(link);
-    setCopied(true);
-    toast.success("Registration link copied!");
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 mb-6">
-      <div className="flex items-center gap-2 mb-2">
-        <Link2 className="h-4 w-4 text-accent" />
-        <h4 className="text-sm font-bold text-foreground">Share Registration Link</h4>
-      </div>
-      <div className="flex items-center gap-2">
-        <code className="flex-1 text-xs bg-background border border-border rounded-lg px-3 py-2 text-muted-foreground truncate">
-          {link}
-        </code>
-        <Button variant="outline" size="sm" onClick={handleCopy} className="shrink-0">
-          {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
-        </Button>
-      </div>
-    </div>
   );
 }
 
@@ -176,18 +146,7 @@ export default function CompetitionDashboard() {
     );
   };
 
-  // ── People Tab (unified: registrations, teams, judges, heats) ───────
-  const PeopleTab = () => (
-    <div className="space-y-6">
-      {(derivedStatus === "published" || derivedStatus === "live") && (
-        <ShareableLink competitionId={id!} />
-      )}
-      <RegistrationManager competitionId={id!} canAdmin={effectiveCanAdmin} />
-      <TeamsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
-      <JudgesPanelLazy competitionId={id!} canAdmin={effectiveCanAdmin} />
-      <HeatManagementPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
-    </div>
-  );
+
 
   // Read-only view for completed/expired (non-owner)
   if (isReadOnly && !canAdmin) {
@@ -276,7 +235,7 @@ export default function CompetitionDashboard() {
         </TabsContent>
 
         <TabsContent value="people">
-          <PeopleTab />
+          <PeopleTab competitionId={id!} canAdmin={effectiveCanAdmin} derivedStatus={derivedStatus} />
         </TabsContent>
 
         <TabsContent value="scores"><ScoreTab /></TabsContent>

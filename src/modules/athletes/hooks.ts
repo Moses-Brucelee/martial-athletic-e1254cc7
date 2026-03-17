@@ -73,6 +73,8 @@ export function useUpdateRegistrationStatus() {
       api.updateRegistrationStatus(id, status),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["registrations", variables.competitionId] });
+      qc.invalidateQueries({ queryKey: ["teams", variables.competitionId] });
+      qc.invalidateQueries({ queryKey: ["heats", variables.competitionId] });
     },
   });
 }
@@ -84,6 +86,8 @@ export function useUpdateRegistrationDivision() {
       api.updateRegistrationDivision(id, divisionId),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["registrations", variables.competitionId] });
+      qc.invalidateQueries({ queryKey: ["teams", variables.competitionId] });
+      qc.invalidateQueries({ queryKey: ["divisions", variables.competitionId] });
     },
   });
 }
