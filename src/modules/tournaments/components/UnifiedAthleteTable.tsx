@@ -42,6 +42,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
   const { data: teams = [] } = useTeams(competitionId);
   const { data: heats = [] } = useHeats(competitionId);
   const { data: allAssignments = [] } = useAllHeatAssignments(competitionId);
+  const addTeamMutation = useAddTeam();
   const createReg = useCreateRegistration();
   const updateStatus = useUpdateRegistrationStatus();
   const updateDivision = useUpdateRegistrationDivision();
