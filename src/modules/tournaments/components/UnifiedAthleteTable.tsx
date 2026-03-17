@@ -7,18 +7,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   CheckCircle2, XCircle, Clock, Users, UserPlus, Trash2, Search,
-  Upload, Download, FileDown, ChevronDown, MoreVertical, AlertTriangle, Flame,
+  Upload, Download, FileDown, ChevronDown, MoreVertical, AlertTriangle, Flame, Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   useRegistrations, useCreateRegistration, useUpdateRegistrationStatus,
   useUpdateRegistrationDivision, useUpdateRegistrationTeam, useBulkUpdateStatus,
 } from "@/modules/athletes/hooks";
-import { useCompetition, useDivisions, useTeams } from "@/modules/tournaments/hooks";
+import { useCompetition, useDivisions, useTeams, useAddTeam } from "@/modules/tournaments/hooks";
 import { useHeats, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { STATUS_LABELS, STATUS_COLORS, REGISTRATION_STATUSES } from "@/modules/athletes/types";
 import type { AthleteRegistration } from "@/domain/competition";
@@ -39,6 +42,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
   const { data: teams = [] } = useTeams(competitionId);
   const { data: heats = [] } = useHeats(competitionId);
   const { data: allAssignments = [] } = useAllHeatAssignments(competitionId);
+  const addTeamMutation = useAddTeam();
   const createReg = useCreateRegistration();
   const updateStatus = useUpdateRegistrationStatus();
   const updateDivision = useUpdateRegistrationDivision();
@@ -58,6 +62,9 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
   const [newPhone, setNewPhone] = useState("");
   const [newGender, setNewGender] = useState("");
   const [newDob, setNewDob] = useState("");
+  const [showCreateTeam, setShowCreateTeam] = useState(false);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [newTeamDivisionId, setNewTeamDivisionId] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Build team→heat+lane lookup
@@ -112,6 +119,24 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
       toast.success(`${selectedIds.size} updated to ${STATUS_LABELS[status]}`);
       setSelectedIds(new Set());
     } catch { toast.error("Bulk update failed"); }
+  };
+
+  const handleCreateTeam = async () => {
+    const name = newTeamName.trim();
+    if (!name) { toast.error("Team name required"); return; }
+    const dup = teams.find((t) => t.team_name.toLowerCase() === name.toLowerCase());
+    if (dup) { toast.error("Team already exists"); return; }
+    const div = divisions.find((d) => d.id === newTeamDivisionId);
+    try {
+      await addTeamMutation.mutateAsync({
+        competition_id: competitionId,
+        team_name: name,
+        division: div?.name || null,
+        division_id: newTeamDivisionId || null,
+      });
+      toast.success("Team created!");
+      setNewTeamName(""); setNewTeamDivisionId(""); setShowCreateTeam(false);
+    } catch { toast.error("Failed to create team"); }
   };
 
   const handleAddAthlete = async () => {
@@ -265,6 +290,9 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
             <Upload className="h-4 w-4 mr-1" /> Import
           </Button>
           <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleCsvImport} />
+          <Button size="sm" variant="outline" onClick={() => setShowCreateTeam(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Create Team
+          </Button>
           <Button size="sm" variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4 mr-1" /> Export
           </Button>
@@ -285,7 +313,55 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
         </div>
       )}
 
-      {/* Inline add form (desktop) */}
+      {/* Create Team Dialog */}
+      <Dialog open={showCreateTeam} onOpenChange={setShowCreateTeam}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Create Team</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <Label className="text-xs font-medium text-foreground">Team Name *</Label>
+              <Input
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+                placeholder="e.g. Team Alpha"
+                className="mt-1"
+                maxLength={100}
+                onKeyDown={(e) => e.key === "Enter" && handleCreateTeam()}
+              />
+            </div>
+            {divisions.length > 0 && (
+              <div>
+                <Label className="text-xs font-medium text-foreground">Division</Label>
+                <Select value={newTeamDivisionId || "__none__"} onValueChange={(v) => setNewTeamDivisionId(v === "__none__" ? "" : v)}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No Division</SelectItem>
+                    {divisions.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {teams.length > 0 && (
+              <div className="bg-muted/30 border border-border rounded-lg p-3">
+                <p className="text-xs font-semibold text-foreground mb-2">Existing Teams ({teams.length})</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {teams.map((t) => (
+                    <Badge key={t.id} variant="secondary" className="text-[11px]">{t.team_name}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2 pt-1">
+              <Button onClick={handleCreateTeam} disabled={!newTeamName.trim() || addTeamMutation.isPending} className="flex-1 bg-accent text-accent-foreground">
+                <Plus className="h-4 w-4 mr-1" /> Create Team
+              </Button>
+              <Button variant="ghost" onClick={() => setShowCreateTeam(false)}>Cancel</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       {showAddForm && canAdmin && !isMobile && (
         <div className="bg-card border border-border rounded-xl p-4">
           <h3 className="text-sm font-bold text-foreground uppercase mb-3">Add Athlete</h3>
@@ -344,6 +420,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
               onStatusChange={(s) => handleStatusChange(r.id, s, r)}
               onDivisionChange={(divId) => updateDivision.mutate({ id: r.id, divisionId: divId, competitionId }, { onSuccess: () => toast.success("Division updated"), onError: () => toast.error("Failed") })}
               onTeamChange={(tId) => updateTeam.mutate({ id: r.id, teamId: tId, competitionId }, { onSuccess: () => toast.success("Team updated"), onError: () => toast.error("Failed") })}
+              onCreateTeam={() => setShowCreateTeam(true)}
             />
           ))}
         </div>
@@ -372,6 +449,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
                 onStatusChange={(s) => handleStatusChange(r.id, s, r)}
                 onDivisionChange={(divId) => updateDivision.mutate({ id: r.id, divisionId: divId, competitionId }, { onSuccess: () => toast.success("Division updated"), onError: () => toast.error("Failed") })}
                 onTeamChange={(tId) => updateTeam.mutate({ id: r.id, teamId: tId, competitionId }, { onSuccess: () => toast.success("Team updated"), onError: () => toast.error("Failed") })}
+                onCreateTeam={() => setShowCreateTeam(true)}
               />
             ))}
           </div>
@@ -472,7 +550,7 @@ function AddForm({
 // ── Desktop Row ───────────────────────────────────────────
 function DesktopRow({
   reg, divisions, teams, teamHeatMap, canAdmin, isSelected, onToggle,
-  onStatusChange, onDivisionChange, onTeamChange,
+  onStatusChange, onDivisionChange, onTeamChange, onCreateTeam,
 }: {
   reg: AthleteRegistration;
   divisions: { id: string; name: string }[];
@@ -484,6 +562,7 @@ function DesktopRow({
   onStatusChange: (s: string) => void;
   onDivisionChange: (id: string) => void;
   onTeamChange: (id: string) => void;
+  onCreateTeam: () => void;
 }) {
   const heatInfo = reg.team_id ? teamHeatMap[reg.team_id] : undefined;
 
@@ -512,14 +591,25 @@ function DesktopRow({
       )}
 
       {/* Team */}
-      {canAdmin && teams.length > 0 ? (
-        <Select value={reg.team_id || "__none__"} onValueChange={(v) => onTeamChange(v === "__none__" ? "" : v)}>
-          <SelectTrigger className="h-7 text-[11px] border-dashed"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__none__">—</SelectItem>
-            {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+      {canAdmin ? (
+        teams.length > 0 ? (
+          <div className="flex items-center gap-0.5">
+            <Select value={reg.team_id || "__none__"} onValueChange={(v) => onTeamChange(v === "__none__" ? "" : v)}>
+              <SelectTrigger className="h-7 text-[11px] border-dashed flex-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">—</SelectItem>
+                {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={onCreateTeam} title="Create team">
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
+        ) : (
+          <Button variant="outline" size="sm" className="h-7 text-[11px] border-dashed w-full" onClick={onCreateTeam}>
+            <Plus className="h-3 w-3 mr-1" /> New Team
+          </Button>
+        )
       ) : (
         <span className="text-xs text-muted-foreground truncate">{teams.find((t) => t.id === reg.team_id)?.team_name ?? "—"}</span>
       )}
@@ -578,7 +668,7 @@ function DesktopRow({
 // ── Mobile Card ───────────────────────────────────────────
 function MobileCard({
   reg, divisions, teams, heats, teamHeatMap, canAdmin, isSelected, onToggle,
-  onStatusChange, onDivisionChange, onTeamChange,
+  onStatusChange, onDivisionChange, onTeamChange, onCreateTeam,
 }: {
   reg: AthleteRegistration;
   divisions: { id: string; name: string }[];
@@ -591,6 +681,7 @@ function MobileCard({
   onStatusChange: (s: string) => void;
   onDivisionChange: (id: string) => void;
   onTeamChange: (id: string) => void;
+  onCreateTeam: () => void;
 }) {
   const divName = divisions.find((d) => d.id === reg.division_id)?.name;
   const teamName = teams.find((t) => t.id === reg.team_id)?.team_name;
@@ -618,13 +709,18 @@ function MobileCard({
                   {divisions.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select value={reg.team_id || "__none__"} onValueChange={(v) => onTeamChange(v === "__none__" ? "" : v)}>
-                <SelectTrigger className="h-7 text-[11px] border-dashed"><SelectValue placeholder="Team" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">No Team</SelectItem>
-                  {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-1">
+                <Select value={reg.team_id || "__none__"} onValueChange={(v) => onTeamChange(v === "__none__" ? "" : v)}>
+                  <SelectTrigger className="h-7 text-[11px] border-dashed flex-1"><SelectValue placeholder="Team" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No Team</SelectItem>
+                    {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={onCreateTeam} title="Create team">
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
           )}
 
