@@ -290,6 +290,9 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
             <Upload className="h-4 w-4 mr-1" /> Import
           </Button>
           <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleCsvImport} />
+          <Button size="sm" variant="outline" onClick={() => setShowCreateTeam(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Create Team
+          </Button>
           <Button size="sm" variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4 mr-1" /> Export
           </Button>
