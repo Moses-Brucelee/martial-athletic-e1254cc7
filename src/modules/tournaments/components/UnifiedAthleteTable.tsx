@@ -709,13 +709,18 @@ function MobileCard({
                   {divisions.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select value={reg.team_id || "__none__"} onValueChange={(v) => onTeamChange(v === "__none__" ? "" : v)}>
-                <SelectTrigger className="h-7 text-[11px] border-dashed"><SelectValue placeholder="Team" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">No Team</SelectItem>
-                  {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-1">
+                <Select value={reg.team_id || "__none__"} onValueChange={(v) => onTeamChange(v === "__none__" ? "" : v)}>
+                  <SelectTrigger className="h-7 text-[11px] border-dashed flex-1"><SelectValue placeholder="Team" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No Team</SelectItem>
+                    {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={onCreateTeam} title="Create team">
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
           )}
 
