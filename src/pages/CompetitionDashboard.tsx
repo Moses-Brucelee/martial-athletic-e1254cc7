@@ -16,8 +16,10 @@ import { useState } from "react";
 // Module components
 import { TeamsPanel } from "@/modules/tournaments/components/TeamsPanel";
 import { WorkoutsPanel } from "@/modules/tournaments/components/WorkoutsPanel";
+import { QuickWorkoutsPanel } from "@/modules/tournaments/components/QuickWorkoutsPanel";
 import { DivisionsPanel } from "@/modules/tournaments/components/DivisionsPanel";
 import { ScoresPanel } from "@/modules/scoring/components/ScoresPanel";
+import { QuickScoreEntry } from "@/modules/scoring/components/QuickScoreEntry";
 import { MobileJudgeScoring } from "@/modules/scoring/components/MobileJudgeScoring";
 import { ScoreLockControls } from "@/modules/scoring/components/ScoreLockControls";
 import { LeaderboardPanel } from "@/modules/leaderboard/components/LeaderboardPanel";
@@ -38,7 +40,6 @@ import { SaveAsTemplate } from "@/modules/tournaments/components/SaveAsTemplate"
 // Lazy wrapper for JudgesPanel
 import { JudgesPanel as OriginalJudgesPanel } from "@/components/competition/JudgesPanel";
 import { useJudges } from "@/modules/admin/hooks";
-
 function JudgesPanelLazy({ competitionId, canAdmin }: { competitionId: string; canAdmin: boolean }) {
   const { data: judges = [] } = useJudges(competitionId);
   const [localJudges, setLocalJudges] = useState(judges);
