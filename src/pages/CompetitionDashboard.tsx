@@ -235,7 +235,7 @@ export default function CompetitionDashboard() {
         </TabsContent>
 
         <TabsContent value="people">
-          <PeopleTab />
+          <PeopleTab competitionId={id!} canAdmin={effectiveCanAdmin} derivedStatus={derivedStatus} />
         </TabsContent>
 
         <TabsContent value="scores"><ScoreTab /></TabsContent>
