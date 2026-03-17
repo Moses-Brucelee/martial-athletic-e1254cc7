@@ -21,7 +21,7 @@ import {
   useRegistrations, useCreateRegistration, useUpdateRegistrationStatus,
   useUpdateRegistrationDivision, useUpdateRegistrationTeam, useBulkUpdateStatus,
 } from "@/modules/athletes/hooks";
-import { useCompetition, useDivisions, useTeams } from "@/modules/tournaments/hooks";
+import { useCompetition, useDivisions, useTeams, useAddTeam } from "@/modules/tournaments/hooks";
 import { useHeats, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { STATUS_LABELS, STATUS_COLORS, REGISTRATION_STATUSES } from "@/modules/athletes/types";
 import type { AthleteRegistration } from "@/domain/competition";
