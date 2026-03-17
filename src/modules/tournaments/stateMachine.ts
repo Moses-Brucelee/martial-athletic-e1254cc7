@@ -26,6 +26,10 @@ export function deriveStatus(comp: Competition): CompetitionStatus {
 
   if (comp.status === "draft") return "draft";
 
+  // Respect explicit DB status for live and completed — organizer manually advanced
+  if (comp.status === "live") return "live";
+  if (comp.status === "completed") return "completed";
+
   const endDate = comp.end_date ? new Date(comp.end_date) : null;
   const startDate = comp.start_date ? new Date(comp.start_date) : null;
   const regDeadline = comp.registration_deadline ? new Date(comp.registration_deadline) : null;
