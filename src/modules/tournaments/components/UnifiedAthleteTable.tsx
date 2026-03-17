@@ -420,6 +420,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
               onStatusChange={(s) => handleStatusChange(r.id, s, r)}
               onDivisionChange={(divId) => updateDivision.mutate({ id: r.id, divisionId: divId, competitionId }, { onSuccess: () => toast.success("Division updated"), onError: () => toast.error("Failed") })}
               onTeamChange={(tId) => updateTeam.mutate({ id: r.id, teamId: tId, competitionId }, { onSuccess: () => toast.success("Team updated"), onError: () => toast.error("Failed") })}
+              onCreateTeam={() => setShowCreateTeam(true)}
             />
           ))}
         </div>
