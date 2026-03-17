@@ -8,7 +8,7 @@ import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Lock, Link2, Copy, Check } from "lucide-react";
+import { AlertCircle, Lock } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { deriveStatus, isMutable, getStatusLabel } from "@/modules/tournaments/stateMachine";
 import { useState } from "react";
