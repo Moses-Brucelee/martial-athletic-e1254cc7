@@ -60,7 +60,6 @@ function JudgesPanelLazy({ competitionId, canAdmin }: { competitionId: string; c
     />
   );
 }
-}
 
 // ── Quick Mode Status-Driven Tabs ─────────────────────────────────────
 
