@@ -64,65 +64,6 @@ export function StepQuickConfig({ config, setConfig, disabled }: StepQuickConfig
 
   return (
     <div className="space-y-6">
-      {/* ── Divisions ────────────────────────────────────────── */}
-      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <div className="flex items-center gap-2 mb-1">
-          <Users className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Divisions</h3>
-        </div>
-        <p className="text-xs text-muted-foreground">Select preset divisions or add your own.</p>
-
-        <div className="flex flex-wrap gap-2">
-          {DIVISION_PRESETS.map((preset) => {
-            const isSelected = config.divisions.includes(preset.name);
-            return (
-              <button
-                key={preset.name}
-                type="button"
-                disabled={disabled}
-                onClick={() => toggleDivision(preset.name)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                  isSelected
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-muted/40 text-muted-foreground border-border hover:border-primary/40"
-                } ${disabled ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}
-              >
-                {preset.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Custom divisions */}
-        {config.divisions.filter((d) => !DIVISION_PRESETS.some((p) => p.name === d)).map((d) => (
-          <Badge key={d} variant="secondary" className="mr-1">
-            {d}
-            <button
-              type="button"
-              onClick={() => toggleDivision(d)}
-              className="ml-1 text-muted-foreground hover:text-destructive"
-            >
-              ×
-            </button>
-          </Badge>
-        ))}
-
-        <div className="flex gap-2">
-          <Input
-            value={customDivision}
-            onChange={(e) => setCustomDivision(e.target.value)}
-            placeholder="Custom division…"
-            className="h-9 bg-background text-sm flex-1"
-            disabled={disabled}
-            maxLength={50}
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomDivision())}
-          />
-          <Button type="button" size="sm" variant="outline" onClick={addCustomDivision} disabled={disabled || !customDivision.trim()} className="h-9">
-            <Plus className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </div>
-
       {/* ── Leaderboard Ranking ──────────────────────────────── */}
       <div className="bg-card border border-border rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2 mb-1">
@@ -189,6 +130,65 @@ export function StepQuickConfig({ config, setConfig, disabled }: StepQuickConfig
               disabled={disabled}
             />
           </div>
+        </div>
+      </div>
+
+      {/* ── Divisions ────────────────────────────────────────── */}
+      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Users className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Divisions</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">Select preset divisions or add your own.</p>
+
+        <div className="flex flex-wrap gap-2">
+          {DIVISION_PRESETS.map((preset) => {
+            const isSelected = config.divisions.includes(preset.name);
+            return (
+              <button
+                key={preset.name}
+                type="button"
+                disabled={disabled}
+                onClick={() => toggleDivision(preset.name)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/40 text-muted-foreground border-border hover:border-primary/40"
+                } ${disabled ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Custom divisions */}
+        {config.divisions.filter((d) => !DIVISION_PRESETS.some((p) => p.name === d)).map((d) => (
+          <Badge key={d} variant="secondary" className="mr-1">
+            {d}
+            <button
+              type="button"
+              onClick={() => toggleDivision(d)}
+              className="ml-1 text-muted-foreground hover:text-destructive"
+            >
+              ×
+            </button>
+          </Badge>
+        ))}
+
+        <div className="flex gap-2">
+          <Input
+            value={customDivision}
+            onChange={(e) => setCustomDivision(e.target.value)}
+            placeholder="Custom division…"
+            className="h-9 bg-background text-sm flex-1"
+            disabled={disabled}
+            maxLength={50}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomDivision())}
+          />
+          <Button type="button" size="sm" variant="outline" onClick={addCustomDivision} disabled={disabled || !customDivision.trim()} className="h-9">
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
         </div>
       </div>
 
