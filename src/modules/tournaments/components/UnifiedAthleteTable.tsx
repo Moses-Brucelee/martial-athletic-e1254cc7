@@ -550,7 +550,7 @@ function AddForm({
 // ── Desktop Row ───────────────────────────────────────────
 function DesktopRow({
   reg, divisions, teams, teamHeatMap, canAdmin, isSelected, onToggle,
-  onStatusChange, onDivisionChange, onTeamChange,
+  onStatusChange, onDivisionChange, onTeamChange, onCreateTeam,
 }: {
   reg: AthleteRegistration;
   divisions: { id: string; name: string }[];
@@ -562,6 +562,7 @@ function DesktopRow({
   onStatusChange: (s: string) => void;
   onDivisionChange: (id: string) => void;
   onTeamChange: (id: string) => void;
+  onCreateTeam: () => void;
 }) {
   const heatInfo = reg.team_id ? teamHeatMap[reg.team_id] : undefined;
 
