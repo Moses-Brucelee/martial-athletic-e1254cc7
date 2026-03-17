@@ -28,6 +28,7 @@ import { LeaderboardPanel } from "@/modules/leaderboard/components/LeaderboardPa
 import { ParticipantsPanel } from "@/modules/athletes/components/ParticipantsPanel";
 import { RegistrationManager } from "@/modules/athletes/components/RegistrationManager";
 import { BracketsPanel } from "@/modules/tournaments/components/BracketsPanel";
+import { PeopleTab } from "@/modules/tournaments/components/PeopleTab";
 import { CompetitionStatusBar } from "@/modules/tournaments/components/CompetitionStatusBar";
 import { CompetitionStatusActions } from "@/modules/tournaments/components/CompetitionStatusActions";
 import { CommandCenter } from "@/modules/tournaments/components/CommandCenter";
