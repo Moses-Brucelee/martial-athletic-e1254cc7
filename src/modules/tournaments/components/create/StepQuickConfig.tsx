@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Dumbbell, Users, Trophy, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Users, Trophy, ArrowUp, ArrowDown } from "lucide-react";
 
 // ── Division presets ──────────────────────────────────────────────────
 
@@ -20,32 +19,16 @@ const DIVISION_PRESETS = [
 
 // ── Types ─────────────────────────────────────────────────────────────
 
-export interface QuickWorkout {
-  id: string;
-  name: string;
-  description: string;
-}
-
 export interface QuickConfigState {
   divisions: string[];
-  workouts: QuickWorkout[];
   rankingDirection: "desc" | "asc";
   maxTeams: number | null;
   waitlistEnabled: boolean;
 }
 
-function createId() {
-  return Math.random().toString(36).slice(2, 10);
-}
-
-export function emptyQuickWorkout(): QuickWorkout {
-  return { id: createId(), name: "", description: "" };
-}
-
 export function defaultQuickConfig(): QuickConfigState {
   return {
     divisions: [],
-    workouts: [emptyQuickWorkout()],
     rankingDirection: "desc",
     maxTeams: null,
     waitlistEnabled: true,
@@ -77,24 +60,6 @@ export function StepQuickConfig({ config, setConfig, disabled }: StepQuickConfig
     if (!trimmed || config.divisions.includes(trimmed)) return;
     setConfig((prev) => ({ ...prev, divisions: [...prev.divisions, trimmed] }));
     setCustomDivision("");
-  };
-
-  const updateWorkout = (id: string, field: keyof QuickWorkout, value: string) => {
-    setConfig((prev) => ({
-      ...prev,
-      workouts: prev.workouts.map((w) => (w.id === id ? { ...w, [field]: value } : w)),
-    }));
-  };
-
-  const addWorkout = () => {
-    setConfig((prev) => ({ ...prev, workouts: [...prev.workouts, emptyQuickWorkout()] }));
-  };
-
-  const removeWorkout = (id: string) => {
-    setConfig((prev) => ({
-      ...prev,
-      workouts: prev.workouts.length > 1 ? prev.workouts.filter((w) => w.id !== id) : prev.workouts,
-    }));
   };
 
   return (
@@ -155,53 +120,6 @@ export function StepQuickConfig({ config, setConfig, disabled }: StepQuickConfig
           <Button type="button" size="sm" variant="outline" onClick={addCustomDivision} disabled={disabled || !customDivision.trim()} className="h-9">
             <Plus className="h-3.5 w-3.5" />
           </Button>
-        </div>
-      </div>
-
-      {/* ── Workouts ─────────────────────────────────────────── */}
-      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <Dumbbell className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Workouts</h3>
-          </div>
-          <Button type="button" size="sm" variant="outline" onClick={addWorkout} disabled={disabled} className="h-8 text-xs">
-            <Plus className="h-3 w-3 mr-1" /> Add Workout
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Name each workout and describe it. Judges will enter <strong>points directly</strong> per team per workout.
-        </p>
-
-        <div className="space-y-4">
-          {config.workouts.map((w, i) => (
-            <div key={w.id} className="bg-background border border-border rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Workout {i + 1}</span>
-                {config.workouts.length > 1 && (
-                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeWorkout(w.id)} disabled={disabled}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </div>
-              <Input
-                value={w.name}
-                onChange={(e) => updateWorkout(w.id, "name", e.target.value)}
-                placeholder={`e.g. WOD ${i + 1} — Fran`}
-                className="h-9 bg-card text-sm"
-                disabled={disabled}
-                maxLength={100}
-              />
-              <Textarea
-                value={w.description}
-                onChange={(e) => updateWorkout(w.id, "description", e.target.value)}
-                placeholder="Workout description — movements, reps, time cap…"
-                className="bg-card min-h-[60px] text-sm"
-                disabled={disabled}
-                maxLength={500}
-              />
-            </div>
-          ))}
         </div>
       </div>
 
@@ -272,6 +190,13 @@ export function StepQuickConfig({ config, setConfig, disabled }: StepQuickConfig
             />
           </div>
         </div>
+      </div>
+
+      {/* ── Info note ────────────────────────────────────────── */}
+      <div className="bg-accent/5 border border-accent/20 rounded-xl p-4">
+        <p className="text-xs text-muted-foreground">
+          <strong className="text-foreground">💡 Workouts can be added after creation</strong> — you'll set up workouts on the dashboard where you can save drafts, preview, and edit anytime.
+        </p>
       </div>
     </div>
   );

@@ -8,14 +8,16 @@ import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Lock } from "lucide-react";
+import { AlertCircle, Lock, Link2, Copy, Check } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { deriveStatus, isMutable, getStatusLabel } from "@/modules/tournaments/stateMachine";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 // Module components
 import { TeamsPanel } from "@/modules/tournaments/components/TeamsPanel";
-import { WorkoutsPanel } from "@/modules/tournaments/components/WorkoutsPanel";
+import { WorkoutsPanel } from "@/components/competition/WorkoutsPanel";
 import { QuickWorkoutsPanel } from "@/modules/tournaments/components/QuickWorkoutsPanel";
 import { DivisionsPanel } from "@/modules/tournaments/components/DivisionsPanel";
 import { ScoresPanel } from "@/modules/scoring/components/ScoresPanel";
@@ -58,6 +60,37 @@ function JudgesPanelLazy({ competitionId, canAdmin }: { competitionId: string; c
   );
 }
 
+// ── Shareable Link Component ──────────────────────────────────────────
+
+function ShareableLink({ competitionId }: { competitionId: string }) {
+  const [copied, setCopied] = useState(false);
+  const link = `${window.location.origin}/event/${competitionId}`;
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(link);
+    setCopied(true);
+    toast.success("Registration link copied!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 mb-6">
+      <div className="flex items-center gap-2 mb-2">
+        <Link2 className="h-4 w-4 text-accent" />
+        <h4 className="text-sm font-bold text-foreground">Share Registration Link</h4>
+      </div>
+      <div className="flex items-center gap-2">
+        <code className="flex-1 text-xs bg-background border border-border rounded-lg px-3 py-2 text-muted-foreground truncate">
+          {link}
+        </code>
+        <Button variant="outline" size="sm" onClick={handleCopy} className="shrink-0">
+          {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ── Quick Mode Status-Driven Tabs ─────────────────────────────────────
 
 function getQuickModeTabs(status: CompetitionStatus): { value: string; label: string }[] {
@@ -79,11 +112,13 @@ function getQuickModeTabs(status: CompetitionStatus): { value: string; label: st
         { value: "scores", label: "Scores" },
         { value: "leaderboard", label: "Leaderboard" },
         { value: "people", label: "People" },
+        { value: "workouts", label: "Workouts" },
       ];
     case "completed":
     case "expired":
       return [
         { value: "leaderboard", label: "Leaderboard" },
+        { value: "people", label: "People" },
       ];
     default:
       return [
@@ -144,6 +179,9 @@ export default function CompetitionDashboard() {
   // ── People Tab (unified: registrations, teams, judges, heats) ───────
   const PeopleTab = () => (
     <div className="space-y-6">
+      {(derivedStatus === "published" || derivedStatus === "live") && (
+        <ShareableLink competitionId={id!} />
+      )}
       <RegistrationManager competitionId={id!} canAdmin={effectiveCanAdmin} />
       <TeamsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
       <JudgesPanelLazy competitionId={id!} canAdmin={effectiveCanAdmin} />
@@ -177,7 +215,6 @@ export default function CompetitionDashboard() {
             <TabsContent value="overview">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <TeamsPanel competitionId={id!} isOwner={false} />
-                <WorkoutsPanel competitionId={id!} isOwner={false} />
               </div>
             </TabsContent>
           </Tabs>
@@ -218,7 +255,6 @@ export default function CompetitionDashboard() {
               </div>
             )}
             <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
-            <WorkoutsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
             {competition && (
               <div className="bg-card border border-border rounded-xl p-6">
                 <h3 className="text-lg font-bold text-foreground uppercase mb-4">Poster</h3>
@@ -284,7 +320,7 @@ export default function CompetitionDashboard() {
           )}
           <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
           <TeamsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
-          <WorkoutsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
+          <WorkoutsPanel competitionId={id!} workouts={[]} setWorkouts={() => {}} isOwner={effectiveCanAdmin} />
           <div className="bg-card border border-border rounded-xl p-6">
             <h3 className="text-lg font-bold text-foreground uppercase mb-4">Score Locks</h3>
             <ScoreLockControls competitionId={id!} canAdmin={effectiveCanAdmin} isSuperUser={isSuperUser} />
@@ -353,7 +389,6 @@ export default function CompetitionDashboard() {
       <TabsContent value="overview">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TeamsPanel competitionId={id!} isOwner={false} />
-          <WorkoutsPanel competitionId={id!} isOwner={false} />
         </div>
       </TabsContent>
     </Tabs>
@@ -388,7 +423,7 @@ export default function CompetitionDashboard() {
         {compError && (
           <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-destructive/10 border border-destructive/20">
             <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-            <p className="text-sm text-destructive">{(compError as Error).message}</p>
+            <p className="text-sm text-destructive">Failed to load competition data.</p>
           </div>
         )}
 
