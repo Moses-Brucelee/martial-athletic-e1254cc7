@@ -44,7 +44,7 @@ export default function CompetitionCreate() {
   const [competitionType, setCompetitionType] = useState("");
   const [setupMode, setSetupMode] = useState<"quick" | "advanced">("quick");
 
-  // Step 3 (Quick) — Config
+  // Step 3 (Quick) — Config (divisions + ranking + capacity only)
   const [quickConfig, setQuickConfig] = useState<QuickConfigState>(defaultQuickConfig);
 
   // Step 3 (Advanced) — Workouts
@@ -57,7 +57,8 @@ export default function CompetitionCreate() {
 
   const isStep1Valid = name.trim().length >= 2 && !!startDate && !!endDate && !!regDeadline;
   const isStep2Valid = !!competitionType;
-  const isQuickConfigValid = quickConfig.divisions.length > 0 && quickConfig.workouts.some((w) => w.name.trim());
+  // Quick config just needs at least one division
+  const isQuickConfigValid = quickConfig.divisions.length > 0;
 
   // ── Create competition (after step 2) ───────────────────────────────
 
@@ -85,7 +86,7 @@ export default function CompetitionCreate() {
     }
   };
 
-  // ── Quick setup: save divisions + text workouts + settings ──────────
+  // ── Quick setup: save divisions + settings (NO workouts) ───────────
 
   const handleQuickFinish = async () => {
     if (!competitionId || !user) return;
@@ -101,22 +102,7 @@ export default function CompetitionCreate() {
         });
       }
 
-      // 2. Save workouts (scoring_type = 'points', no movements)
-      for (let i = 0; i < quickConfig.workouts.length; i++) {
-        const w = quickConfig.workouts[i];
-        if (!w.name.trim()) continue;
-        await supabase.from("competition_workouts").insert({
-          competition_id: competitionId,
-          workout_number: i + 1,
-          name: w.name.trim(),
-          description: w.description || null,
-          workout_type: "custom",
-          scoring_type: "points",
-          measurement_type: "points",
-        });
-      }
-
-      // 3. Update competition capacity
+      // 2. Update competition capacity
       await supabase
         .from("competitions")
         .update({
@@ -125,7 +111,7 @@ export default function CompetitionCreate() {
         })
         .eq("id", competitionId);
 
-      // 4. Upsert competition settings
+      // 3. Upsert competition settings
       await upsertSettingsMutation.mutateAsync({
         competitionId,
         settings: {
@@ -134,7 +120,7 @@ export default function CompetitionCreate() {
         } as any,
       });
 
-      toast.success("Competition created!");
+      toast.success("Competition created! Add workouts on the dashboard.");
       navigate(`/competition/${competitionId}`);
     } catch (err) {
       setError(sanitizeError(err));
@@ -160,7 +146,6 @@ export default function CompetitionCreate() {
     }
 
     try {
-      // Save settings as advanced mode
       await upsertSettingsMutation.mutateAsync({
         competitionId,
         settings: { setup_mode: "advanced", ranking_direction: "desc" } as any,
@@ -285,7 +270,7 @@ export default function CompetitionCreate() {
             />
           )}
 
-          {/* Quick mode: step 2 = configure */}
+          {/* Quick mode: step 2 = configure (divisions + ranking + capacity) */}
           {isQuickMode && step === 2 && (
             <StepQuickConfig config={quickConfig} setConfig={setQuickConfig} disabled={isPending} />
           )}
