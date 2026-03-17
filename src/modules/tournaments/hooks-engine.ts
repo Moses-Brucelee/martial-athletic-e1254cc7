@@ -124,7 +124,16 @@ export function useAssignTeamToHeat() {
       engineApi.assignTeamToHeat(heatId, teamId, laneNumber),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["heat-assignments", variables.heatId] });
+      qc.invalidateQueries({ queryKey: ["all-heat-assignments"] });
     },
+  });
+}
+
+export function useAllHeatAssignments(competitionId: string | undefined) {
+  return useQuery({
+    queryKey: ["all-heat-assignments", competitionId],
+    queryFn: () => engineApi.fetchAllHeatAssignments(competitionId!),
+    enabled: !!competitionId,
   });
 }
 

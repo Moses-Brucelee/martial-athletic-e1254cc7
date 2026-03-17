@@ -170,6 +170,25 @@ export async function removeHeatAssignment(assignmentId: string): Promise<void> 
   if (error) throw error;
 }
 
+export async function fetchAllHeatAssignments(competitionId: string): Promise<(HeatAssignment & { heat_number?: number })[]> {
+  const { data, error } = await supabase
+    .from("heat_assignments")
+    .select("*, heat_schedule!heat_assignments_heat_id_fkey(heat_number, competition_id)")
+    .order("lane_number");
+  if (error) throw error;
+  // Filter by competition and flatten
+  return ((data ?? []) as any[])
+    .filter((a: any) => a.heat_schedule?.competition_id === competitionId)
+    .map((a: any) => ({
+      id: a.id,
+      heat_id: a.heat_id,
+      team_id: a.team_id,
+      lane_number: a.lane_number,
+      created_at: a.created_at,
+      heat_number: a.heat_schedule?.heat_number,
+    }));
+}
+
 // ── Judge Assignments ─────────────────────────────────────────────────
 
 export async function fetchJudgeAssignments(competitionId: string): Promise<JudgeAssignment[]> {
