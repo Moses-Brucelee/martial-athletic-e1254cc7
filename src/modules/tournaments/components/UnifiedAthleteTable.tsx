@@ -657,7 +657,7 @@ function DesktopRow({
 // ── Mobile Card ───────────────────────────────────────────
 function MobileCard({
   reg, divisions, teams, heats, teamHeatMap, canAdmin, isSelected, onToggle,
-  onStatusChange, onDivisionChange, onTeamChange,
+  onStatusChange, onDivisionChange, onTeamChange, onCreateTeam,
 }: {
   reg: AthleteRegistration;
   divisions: { id: string; name: string }[];
@@ -670,6 +670,7 @@ function MobileCard({
   onStatusChange: (s: string) => void;
   onDivisionChange: (id: string) => void;
   onTeamChange: (id: string) => void;
+  onCreateTeam: () => void;
 }) {
   const divName = divisions.find((d) => d.id === reg.division_id)?.name;
   const teamName = teams.find((t) => t.id === reg.team_id)?.team_name;
