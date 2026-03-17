@@ -130,13 +130,16 @@ export default function CompetitionDashboard() {
 
   const isReadOnly = !competitionMutable;
 
-  const ScoreTab = () => (
-    isMobile && effectiveCanScore ? (
+  const ScoreTab = () => {
+    if (isQuickMode) {
+      return <QuickScoreEntry competitionId={id!} canScore={effectiveCanScore} judgeId={user?.id} />;
+    }
+    return isMobile && effectiveCanScore ? (
       <MobileJudgeScoring competitionId={id!} judgeId={user?.id} />
     ) : (
       <ScoresPanel competitionId={id!} canScore={effectiveCanScore} judgeId={user?.id} />
-    )
-  );
+    );
+  };
 
   // ── People Tab (unified: registrations, teams, judges, heats) ───────
   const PeopleTab = () => (
