@@ -52,6 +52,8 @@ export interface Workout {
   time_cap_seconds: number | null;
   scoring_type: string;
   name: string | null;
+  description: string | null;
+  display_order: number;
   is_locked: boolean;
   round_id: string | null;
   created_at: string;

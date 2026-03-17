@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
-import { Trophy, Monitor, Filter } from "lucide-react";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { Trophy, Monitor, Filter, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Maximize2, Minimize2 } from "lucide-react";
 import { useLeaderboard } from "@/modules/leaderboard/hooks";
-import { useCompetition, useWorkouts, useDivisions } from "@/modules/tournaments/hooks";
+import { useCompetition, useWorkouts, useDivisions, useTeams } from "@/modules/tournaments/hooks";
 import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
 import { useScores } from "@/modules/scoring/hooks";
+import { useHeats } from "@/modules/tournaments/hooks-engine";
 import { getAgeCategoryLabel } from "@/utils/calculateAge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,15 +15,29 @@ interface LeaderboardPanelProps {
   competitionId: string;
 }
 
+type SortField = "rank" | "total" | "team" | "division" | string; // string for workout ids
+type SortDir = "asc" | "desc";
+
 export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
-  const { data: rawEntries = [], isLoading } = useLeaderboard(competitionId);
+  const { data: rawEntries = [], isLoading, refetch } = useLeaderboard(competitionId);
   const { data: competition } = useCompetition(competitionId);
   const { data: workouts = [] } = useWorkouts(competitionId);
   const { data: divisions = [] } = useDivisions(competitionId);
+  const { data: teams = [] } = useTeams(competitionId);
   const { data: scoreRows = [] } = useScores(competitionId);
   const { data: settings } = useCompetitionSettings(competitionId);
+  const { data: heats = [] } = useHeats(competitionId);
   const [whiteboardMode, setWhiteboardMode] = useState(false);
   const [selectedDivision, setSelectedDivision] = useState<string>("all");
+  const [sortField, setSortField] = useState<SortField>("rank");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  // Whiteboard auto-refresh every 5 seconds
+  useEffect(() => {
+    if (!whiteboardMode) return;
+    const interval = setInterval(() => refetch(), 5000);
+    return () => clearInterval(interval);
+  }, [whiteboardMode, refetch]);
 
   // Reverse sort if ranking direction is 'asc' (lowest points wins)
   const entries = useMemo(() => {
@@ -42,7 +57,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
     const map: Record<string, Record<string, number>> = {};
     scoreRows.forEach((s) => {
       if (!map[s.team_id]) map[s.team_id] = {};
-      map[s.team_id][s.workout_id] = s.score;
+      map[s.team_id][s.workout_id] = s.points_awarded ?? s.score;
     });
     return map;
   }, [scoreRows]);
@@ -53,7 +68,51 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
     return entries.filter((e) => e.division_id === selectedDivision || e.division_name === selectedDivision);
   }, [entries, selectedDivision]);
 
-  const grouped = filteredEntries.reduce<Record<string, typeof entries>>((acc, entry) => {
+  // Sort entries
+  const sortedEntries = useMemo(() => {
+    const sorted = [...filteredEntries];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "rank":
+          cmp = 0; // already ranked
+          break;
+        case "total":
+          cmp = Number(a.total_points) - Number(b.total_points);
+          break;
+        case "team":
+          cmp = a.team_name.localeCompare(b.team_name);
+          break;
+        case "division":
+          cmp = (a.division_name || "").localeCompare(b.division_name || "");
+          break;
+        default:
+          // Sort by specific workout score
+          const aScore = workoutScoreMap[a.team_id]?.[sortField] ?? -Infinity;
+          const bScore = workoutScoreMap[b.team_id]?.[sortField] ?? -Infinity;
+          cmp = aScore - bScore;
+          break;
+      }
+      return sortDir === "desc" ? -cmp : cmp;
+    });
+    return sorted;
+  }, [filteredEntries, sortField, sortDir, workoutScoreMap]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir(field === "team" || field === "division" ? "asc" : "desc");
+    }
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 text-primary" /> : <ArrowDown className="h-3 w-3 text-primary" />;
+  };
+
+  const grouped = sortedEntries.reduce<Record<string, typeof entries>>((acc, entry) => {
     const div = entry.division_name || "Overall";
     if (!acc[div]) acc[div] = [];
     acc[div].push(entry);
@@ -84,7 +143,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
     );
   }
 
-  // Whiteboard / TV mode
+  // Whiteboard / TV mode with auto-refresh
   if (whiteboardMode) {
     return (
       <div className="fixed inset-0 z-50 bg-background p-8 overflow-auto">
@@ -97,6 +156,9 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
               </h1>
             </div>
             <div className="flex items-center gap-3">
+              <Badge variant="outline" className="text-xs animate-pulse">
+                <RefreshCw className="h-3 w-3 mr-1" /> Auto-refreshing
+              </Badge>
               {divisions.length > 1 && (
                 <Select value={selectedDivision} onValueChange={setSelectedDivision}>
                   <SelectTrigger className="h-9 w-40 text-sm"><SelectValue /></SelectTrigger>
@@ -109,7 +171,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                 </Select>
               )}
               <Button variant="outline" onClick={() => setWhiteboardMode(false)}>
-                Exit Whiteboard
+                <Minimize2 className="h-4 w-4 mr-1" /> Exit
               </Button>
             </div>
           </div>
@@ -168,6 +230,9 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
           {ageCategoryLabel && ageCategoryLabel !== "Open" && (
             <Badge variant="secondary" className="ml-2 text-xs">{ageCategoryLabel}</Badge>
           )}
+          {settings?.ranking_direction === "asc" && (
+            <Badge variant="outline" className="text-xs"><ArrowUp className="h-3 w-3 mr-0.5" /> Low Wins</Badge>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {divisions.length > 1 && (
@@ -186,7 +251,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
           )}
           <Button variant="outline" size="sm" onClick={() => setWhiteboardMode(true)}
             className="flex items-center gap-1">
-            <Monitor className="h-3.5 w-3.5" />
+            <Maximize2 className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Whiteboard</span>
           </Button>
         </div>
@@ -217,6 +282,9 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                     </span>
                     <div className="flex-1">
                       <p className="font-bold text-foreground text-sm">{entry.team_name}</p>
+                      {entry.division_name && (
+                        <p className="text-[10px] text-muted-foreground">{entry.division_name}</p>
+                      )}
                     </div>
                     <span className="font-bold text-primary text-lg tabular-nums">{entry.total_points} pts</span>
                   </div>
@@ -231,23 +299,41 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-2 px-2 font-bold text-foreground uppercase text-xs">#</th>
-                  <th className="text-left py-2 px-2 font-bold text-foreground uppercase text-xs">Athlete</th>
+                  <th className="text-left py-2 px-2 font-bold text-foreground uppercase text-xs cursor-pointer select-none"
+                    onClick={() => handleSort("rank")}>
+                    <span className="flex items-center gap-1"># <SortIcon field="rank" /></span>
+                  </th>
+                  <th className="text-left py-2 px-2 font-bold text-foreground uppercase text-xs cursor-pointer select-none"
+                    onClick={() => handleSort("team")}>
+                    <span className="flex items-center gap-1">Athlete <SortIcon field="team" /></span>
+                  </th>
                   {workouts.map((w) => (
-                    <th key={w.id} className="text-center py-2 px-2 font-bold text-foreground uppercase text-xs">
-                      {w.name || `WOD ${w.workout_number}`}
+                    <th key={w.id} className="text-center py-2 px-2 font-bold text-foreground uppercase text-xs cursor-pointer select-none"
+                      onClick={() => handleSort(w.id)}>
+                      <span className="flex items-center justify-center gap-1">
+                        {w.name || `WOD ${w.workout_number}`}
+                        <SortIcon field={w.id} />
+                      </span>
                     </th>
                   ))}
-                  <th className="text-center py-2 px-2 font-bold text-primary uppercase text-xs">Points</th>
+                  <th className="text-center py-2 px-2 font-bold text-primary uppercase text-xs cursor-pointer select-none"
+                    onClick={() => handleSort("total")}>
+                    <span className="flex items-center justify-center gap-1">Points <SortIcon field="total" /></span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredEntries.map((entry, i) => (
+                {sortedEntries.map((entry, i) => (
                   <tr key={entry.team_id} className="border-b border-border/50">
                     <td className={`py-2 px-2 font-black text-xs ${i < 3 ? medalColors[i] : "text-muted-foreground"}`}>
                       {i + 1}
                     </td>
-                    <td className="py-2 px-2 font-semibold text-foreground text-xs">{entry.team_name}</td>
+                    <td className="py-2 px-2 font-semibold text-foreground text-xs">
+                      {entry.team_name}
+                      {entry.division_name && (
+                        <span className="block text-[10px] text-muted-foreground font-normal">{entry.division_name}</span>
+                      )}
+                    </td>
                     {workouts.map((w) => (
                       <td key={w.id} className="py-2 px-2 text-center text-xs text-foreground tabular-nums">
                         {workoutScoreMap[entry.team_id]?.[w.id] ?? "—"}
