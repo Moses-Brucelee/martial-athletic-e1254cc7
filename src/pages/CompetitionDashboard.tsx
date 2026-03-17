@@ -252,14 +252,11 @@ export default function CompetitionDashboard() {
             {/* Full-width competition details */}
             {competition && <CompetitionEditPanel competition={competition} canEdit={effectiveCanAdmin} />}
 
-            {/* Divisions + Poster side by side */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-              <div className="lg:col-span-2">
-                <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
-              </div>
+            {/* Poster + Divisions side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
               {competition && (
-                <div className="bg-card border border-border rounded-xl p-5">
-                  <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-3">Poster</h3>
+                <div className="lg:col-span-3 bg-card border border-border rounded-xl p-5">
+                  <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-3">Event Poster</h3>
                   <PosterUpload
                     competitionId={id!}
                     currentPosterUrl={competition.poster_url}
@@ -267,6 +264,9 @@ export default function CompetitionDashboard() {
                   />
                 </div>
               )}
+              <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
+                <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
+              </div>
             </div>
           </div>
         </TabsContent>
