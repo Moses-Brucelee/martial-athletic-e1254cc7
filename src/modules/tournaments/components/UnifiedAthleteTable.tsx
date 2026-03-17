@@ -432,7 +432,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
               <span className="text-xs text-muted-foreground font-medium uppercase">{selectedIds.size > 0 ? `${selectedIds.size} selected` : `${filtered.length} athletes`}</span>
             </div>
           )}
-          <div className="grid grid-cols-[1fr_110px_110px_100px_110px_40px] gap-1 px-4 py-2 text-[11px] text-muted-foreground font-semibold uppercase border-b border-border bg-muted/20">
+          <div className="grid grid-cols-[1fr_130px_130px_110px_100px_40px] gap-3 px-5 py-2.5 text-[11px] text-muted-foreground font-semibold uppercase tracking-wider border-b border-border bg-muted/20">
             <span>Athlete</span>
             <span>Division</span>
             <span>Team</span>
