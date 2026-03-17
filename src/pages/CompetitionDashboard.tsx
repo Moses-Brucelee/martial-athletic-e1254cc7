@@ -248,23 +248,26 @@ export default function CompetitionDashboard() {
         </TabsContent>
 
         <TabsContent value="setup">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {competition && (
+          <div className="space-y-5">
+            {/* Details + Poster side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
               <div className="lg:col-span-2">
-                <CompetitionEditPanel competition={competition} canEdit={effectiveCanAdmin} />
+                {competition && <CompetitionEditPanel competition={competition} canEdit={effectiveCanAdmin} />}
               </div>
-            )}
+              {competition && (
+                <div className="bg-card border border-border rounded-xl p-5">
+                  <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-3">Poster</h3>
+                  <PosterUpload
+                    competitionId={id!}
+                    currentPosterUrl={competition.poster_url}
+                    onPosterUpdated={() => refetchComp()}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Divisions */}
             <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
-            {competition && (
-              <div className="bg-card border border-border rounded-xl p-6">
-                <h3 className="text-lg font-bold text-foreground uppercase mb-4">Poster</h3>
-                <PosterUpload
-                  competitionId={id!}
-                  currentPosterUrl={competition.poster_url}
-                  onPosterUpdated={() => refetchComp()}
-                />
-              </div>
-            )}
           </div>
         </TabsContent>
 
