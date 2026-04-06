@@ -14,6 +14,7 @@ import { format } from "date-fns";
 interface QuickWorkoutsPanelProps {
   competitionId: string;
   isOwner: boolean;
+  scoringMode?: "points" | "auto";
 }
 
 const VISIBILITY_CONFIG: Record<string, { label: string; icon: typeof Eye; color: string }> = {
@@ -22,7 +23,18 @@ const VISIBILITY_CONFIG: Record<string, { label: string; icon: typeof Eye; color
   scheduled: { label: "Scheduled", icon: Calendar, color: "bg-primary/10 text-primary border-primary/20" },
 };
 
-export function QuickWorkoutsPanel({ competitionId, isOwner }: QuickWorkoutsPanelProps) {
+const SCORING_TYPE_OPTIONS = [
+  { value: "points", label: "Points" },
+  { value: "time", label: "For Time" },
+  { value: "reps", label: "AMRAP / Reps" },
+  { value: "load", label: "Max Load" },
+] as const;
+
+function scoringLabel(type: string): string {
+  return SCORING_TYPE_OPTIONS.find((o) => o.value === type)?.label || type;
+}
+
+export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "points" }: QuickWorkoutsPanelProps) {
   const { data: workouts = [], isLoading } = useWorkouts(competitionId);
   const qc = useQueryClient();
   const [showPreview, setShowPreview] = useState(false);
@@ -33,28 +45,33 @@ export function QuickWorkoutsPanel({ competitionId, isOwner }: QuickWorkoutsPane
 
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const [newScoringType, setNewScoringType] = useState("points");
   const [adding, setAdding] = useState(false);
+
+  const isAutoMode = scoringMode === "auto";
 
   const handleAdd = async () => {
     if (!newName.trim()) { toast.error("Workout name is required"); return; }
     setAdding(true);
     try {
       const nextNum = workouts.length > 0 ? Math.max(...workouts.map((w) => w.workout_number)) + 1 : 1;
+      const scoringType = isAutoMode ? newScoringType : "points";
+      const measurementType = scoringType === "time" ? "time" : scoringType === "load" ? "weight" : scoringType === "reps" ? "reps" : "points";
       const { error } = await supabase.from("competition_workouts").insert({
         competition_id: competitionId,
         workout_number: nextNum,
         name: newName.trim(),
         description: newDesc.trim() || null,
         display_order: nextNum,
-        scoring_type: "points",
-        measurement_type: "points",
+        scoring_type: scoringType,
+        measurement_type: measurementType,
         workout_type: "custom",
         visibility: "hidden",
       });
       if (error) throw error;
       qc.invalidateQueries({ queryKey: ["workouts", competitionId] });
       toast.success("Workout added (hidden by default)");
-      setNewName(""); setNewDesc("");
+      setNewName(""); setNewDesc(""); setNewScoringType("points");
     } catch { toast.error("Failed to add workout"); }
     setAdding(false);
   };
@@ -81,6 +98,19 @@ export function QuickWorkoutsPanel({ competitionId, isOwner }: QuickWorkoutsPane
       qc.invalidateQueries({ queryKey: ["workouts", competitionId] });
       toast.success("Workout removed");
     } catch { toast.error("Failed to remove workout"); }
+  };
+
+  const handleScoringTypeChange = async (workoutId: string, scoringType: string) => {
+    try {
+      const measurementType = scoringType === "time" ? "time" : scoringType === "load" ? "weight" : scoringType === "reps" ? "reps" : "points";
+      const { error } = await supabase
+        .from("competition_workouts")
+        .update({ scoring_type: scoringType, measurement_type: measurementType })
+        .eq("id", workoutId);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["workouts", competitionId] });
+      toast.success("Scoring type updated");
+    } catch { toast.error("Failed to update scoring type"); }
   };
 
   const handleVisibilityChange = async (workoutId: string, visibility: string) => {
@@ -168,6 +198,7 @@ export function QuickWorkoutsPanel({ competitionId, isOwner }: QuickWorkoutsPane
                 const visConfig = VISIBILITY_CONFIG[vis] || VISIBILITY_CONFIG.visible;
                 const VisIcon = visConfig.icon;
                 const revealAt = (w as any).scheduled_reveal_at;
+                const wScoringType = (w as any).scoring_type || "points";
 
                 return (
                   <div key={w.id} className={`bg-background border rounded-lg p-4 ${vis === "hidden" ? "border-destructive/20 opacity-75" : "border-border"}`}>
@@ -207,9 +238,25 @@ export function QuickWorkoutsPanel({ competitionId, isOwner }: QuickWorkoutsPane
                           )}
                         </div>
 
-                        {/* Visibility control row */}
+                        {/* Scoring type + visibility row */}
                         {isOwner && (
-                          <div className="flex items-center gap-2 pt-1">
+                          <div className="flex items-center gap-2 pt-1 flex-wrap">
+                            {/* Scoring type badge or selector */}
+                            {isAutoMode ? (
+                              <Select value={wScoringType} onValueChange={(val) => handleScoringTypeChange(w.id, val)}>
+                                <SelectTrigger className="h-6 w-auto min-w-[100px] text-[10px] font-semibold bg-accent/10 border-accent/20 px-2">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {SCORING_TYPE_OPTIONS.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] bg-accent/10 text-accent border-accent/20">Points</Badge>
+                            )}
+
                             <Badge variant="outline" className={`text-[10px] gap-1 ${visConfig.color}`}>
                               <VisIcon className="h-3 w-3" /> {visConfig.label}
                             </Badge>
@@ -254,6 +301,27 @@ export function QuickWorkoutsPanel({ competitionId, isOwner }: QuickWorkoutsPane
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Add New Workout</p>
               <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={`e.g. WOD ${workouts.length + 1} — Fran`} className="h-9 bg-card text-sm" maxLength={100} onKeyDown={(e) => e.key === "Enter" && !adding && handleAdd()} />
               <Textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Workout description — movements, reps, time cap…" className="bg-card min-h-[60px] text-sm" maxLength={500} />
+              {isAutoMode && (
+                <div className="space-y-1">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Scoring Type</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {SCORING_TYPE_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setNewScoringType(opt.value)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                          newScoringType === opt.value
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-card text-muted-foreground border-border hover:border-primary/40"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="flex gap-2 items-center">
                 <Button size="sm" onClick={handleAdd} disabled={adding || !newName.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground">
                   <Plus className="h-3.5 w-3.5 mr-1" /> {adding ? "Adding…" : "Save & Add"}
@@ -297,7 +365,9 @@ export function QuickWorkoutsPanel({ competitionId, isOwner }: QuickWorkoutsPane
                     <span className="text-xs font-bold text-primary uppercase">WOD {w.workout_number}</span>
                     <h4 className="font-bold text-foreground text-sm mt-1">{w.name || `Workout ${w.workout_number}`}</h4>
                     {w.description && <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{w.description}</p>}
-                    <span className="inline-block mt-2 text-[10px] font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded-full uppercase">Points Scoring</span>
+                    <span className="inline-block mt-2 text-[10px] font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded-full uppercase">
+                      {scoringLabel((w as any).scoring_type || "points")}
+                    </span>
                   </div>
                 ))}
               </div>

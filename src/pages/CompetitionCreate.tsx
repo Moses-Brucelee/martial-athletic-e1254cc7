@@ -117,6 +117,7 @@ export default function CompetitionCreate() {
         settings: {
           setup_mode: "quick",
           ranking_direction: quickConfig.rankingDirection,
+          scoring_method: quickConfig.scoringMode === "auto" ? "auto" : "rank_sum",
         } as any,
       });
 
