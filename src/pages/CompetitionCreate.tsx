@@ -11,7 +11,7 @@ import { StepSportType } from "@/modules/tournaments/components/create/StepSport
 import { DivisionsPanel } from "@/modules/tournaments/components/DivisionsPanel";
 import { WorkoutBuilderPro } from "@/modules/tournaments/components/workout-builder/WorkoutBuilderPro";
 import { emptyWorkout, type LocalWorkout } from "@/modules/tournaments/components/workout-builder/types";
-import { StepQuickConfig, defaultQuickConfig, type QuickConfigState } from "@/modules/tournaments/components/create/StepQuickConfig";
+
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, AlertCircle, Check } from "lucide-react";
@@ -38,6 +38,8 @@ export default function CompetitionCreate() {
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [regDeadline, setRegDeadline] = useState<Date | undefined>();
+  const [maxTeams, setMaxTeams] = useState<number | null>(null);
+  const [waitlistEnabled, setWaitlistEnabled] = useState(true);
   const [error, setError] = useState("");
 
   // Step 2 — Sport type + setup mode
@@ -45,20 +47,18 @@ export default function CompetitionCreate() {
   const [setupMode, setSetupMode] = useState<"quick" | "advanced">("quick");
 
   // Step 3 (Quick) — Config (divisions + ranking + capacity only)
-  const [quickConfig, setQuickConfig] = useState<QuickConfigState>(defaultQuickConfig);
+  
 
   // Step 3 (Advanced) — Workouts
   const [workouts, setWorkouts] = useState<LocalWorkout[]>([emptyWorkout()]);
 
   const isQuickMode = competitionType === "crossfit" && setupMode === "quick";
   const STEPS = isQuickMode
-    ? ["Details", "Sport & Mode", "Configure"]
+    ? ["Details", "Sport & Mode"]
     : ["Details", "Sport & Mode", "Divisions", "Workouts"];
 
   const isStep1Valid = name.trim().length >= 2 && !!startDate && !!endDate && !!regDeadline;
   const isStep2Valid = !!competitionType;
-  // Quick config just needs at least one division
-  const isQuickConfigValid = quickConfig.divisions.length > 0;
 
   // ── Create competition (after step 2) ───────────────────────────────
 
@@ -78,51 +78,25 @@ export default function CompetitionCreate() {
         type: competitionType || null,
         competition_type: competitionType || null,
         host_gym: hostGym || null,
+        max_teams: maxTeams,
+        waitlist_enabled: waitlistEnabled,
       });
       setCompetitionId(comp.id);
-      setStep(2);
-    } catch (err) {
-      setError(sanitizeError(err));
-    }
-  };
 
-  // ── Quick setup: save divisions + settings (NO workouts) ───────────
-
-  const handleQuickFinish = async () => {
-    if (!competitionId || !user) return;
-    setError("");
-    try {
-      // 1. Save divisions
-      for (let i = 0; i < quickConfig.divisions.length; i++) {
-        const divName = quickConfig.divisions[i];
-        await supabase.from("competition_divisions").insert({
-          competition_id: competitionId,
-          name: divName,
-          sort_order: i,
+      if (isQuickMode) {
+        // Quick mode: save settings and go straight to dashboard
+        await upsertSettingsMutation.mutateAsync({
+          competitionId: comp.id,
+          settings: {
+            setup_mode: "quick",
+            scoring_method: "auto",
+          } as any,
         });
+        toast.success("Competition created! Add divisions & workouts on the dashboard.");
+        navigate(`/competition/${comp.id}`);
+      } else {
+        setStep(2);
       }
-
-      // 2. Update competition capacity
-      await supabase
-        .from("competitions")
-        .update({
-          max_teams: quickConfig.maxTeams,
-          waitlist_enabled: quickConfig.waitlistEnabled,
-        })
-        .eq("id", competitionId);
-
-      // 3. Upsert competition settings
-      await upsertSettingsMutation.mutateAsync({
-        competitionId,
-        settings: {
-          setup_mode: "quick",
-          ranking_direction: quickConfig.rankingDirection,
-          scoring_method: quickConfig.scoringMode === "auto" ? "auto" : "rank_sum",
-        } as any,
-      });
-
-      toast.success("Competition created! Add workouts on the dashboard.");
-      navigate(`/competition/${competitionId}`);
     } catch (err) {
       setError(sanitizeError(err));
     }
@@ -190,8 +164,6 @@ export default function CompetitionCreate() {
   const handleNext = () => {
     if (step === 1) {
       handleCreateCompetition();
-    } else if (isQuickMode && step === 2) {
-      handleQuickFinish();
     } else if (!isQuickMode && step === 3) {
       handleSaveWorkouts();
     } else {
@@ -211,7 +183,6 @@ export default function CompetitionCreate() {
     if (isPending) return true;
     if (step === 0) return !isStep1Valid;
     if (step === 1) return !isStep2Valid;
-    if (isQuickMode && step === 2) return !isQuickConfigValid;
     return false;
   };
 
@@ -227,7 +198,7 @@ export default function CompetitionCreate() {
   }
 
   const isWideStep = !isQuickMode && step === 3;
-  const isFinalStep = isQuickMode ? step === 2 : step === 3;
+  const isFinalStep = isQuickMode ? step === 1 : step === 3;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -257,6 +228,8 @@ export default function CompetitionCreate() {
               startDate={startDate} setStartDate={setStartDate}
               endDate={endDate} setEndDate={setEndDate}
               regDeadline={regDeadline} setRegDeadline={setRegDeadline}
+              maxTeams={maxTeams} setMaxTeams={setMaxTeams}
+              waitlistEnabled={waitlistEnabled} setWaitlistEnabled={setWaitlistEnabled}
               disabled={isPending || !!competitionId}
             />
           )}
@@ -269,11 +242,6 @@ export default function CompetitionCreate() {
               onSetupModeChange={setSetupMode}
               disabled={isPending || !!competitionId}
             />
-          )}
-
-          {/* Quick mode: step 2 = configure (divisions + ranking + capacity) */}
-          {isQuickMode && step === 2 && (
-            <StepQuickConfig config={quickConfig} setConfig={setQuickConfig} disabled={isPending} />
           )}
 
           {/* Advanced mode: step 2 = divisions, step 3 = workouts */}
