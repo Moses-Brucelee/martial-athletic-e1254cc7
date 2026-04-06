@@ -55,6 +55,8 @@ export interface Workout {
   description: string | null;
   display_order: number;
   is_locked: boolean;
+  visibility: string;
+  scheduled_reveal_at: string | null;
   round_id: string | null;
   created_at: string;
 }
