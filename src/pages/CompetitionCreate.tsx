@@ -12,6 +12,9 @@ import { DivisionsPanel } from "@/modules/tournaments/components/DivisionsPanel"
 import { WorkoutBuilderPro } from "@/modules/tournaments/components/workout-builder/WorkoutBuilderPro";
 import { emptyWorkout, type LocalWorkout } from "@/modules/tournaments/components/workout-builder/types";
 import { StepQuickConfig, defaultQuickConfig, type QuickConfigState } from "@/modules/tournaments/components/create/StepQuickConfig";
+import { StepQuickWorkouts, emptyQuickWorkout, type QuickWorkout } from "@/modules/tournaments/components/create/StepQuickWorkouts";
+import { StepRegistration, defaultRegistrationConfig, type RegistrationConfig } from "@/modules/tournaments/components/create/StepRegistration";
+import { StepReview } from "@/modules/tournaments/components/create/StepReview";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, AlertCircle, Check } from "lucide-react";
@@ -44,23 +47,27 @@ export default function CompetitionCreate() {
   const [competitionType, setCompetitionType] = useState("");
   const [setupMode, setSetupMode] = useState<"quick" | "advanced">("quick");
 
-  // Step 3 (Quick) — Config (divisions + ranking + capacity only)
-  const [quickConfig, setQuickConfig] = useState<QuickConfigState>(defaultQuickConfig);
+  // Quick mode state
+  const [quickConfig, setQuickConfig] = useState<QuickConfigState>(defaultQuickConfig());
+  const [quickWorkouts, setQuickWorkouts] = useState<QuickWorkout[]>([emptyQuickWorkout()]);
+  const [registrationConfig, setRegistrationConfig] = useState<RegistrationConfig>(defaultRegistrationConfig());
 
-  // Step 3 (Advanced) — Workouts
+  // Advanced mode state
   const [workouts, setWorkouts] = useState<LocalWorkout[]>([emptyWorkout()]);
 
   const isQuickMode = competitionType === "crossfit" && setupMode === "quick";
-  const STEPS = isQuickMode
-    ? ["Details", "Sport & Mode", "Configure"]
-    : ["Details", "Sport & Mode", "Divisions", "Workouts"];
+
+  // Quick: Details → Sport → Divisions → Workouts → Registration → Review
+  // Advanced: Details → Sport → Divisions → Workouts
+  const QUICK_STEPS = ["Details", "Sport", "Divisions", "Workouts", "Registration", "Review"];
+  const ADVANCED_STEPS = ["Details", "Sport & Mode", "Divisions", "Workouts"];
+  const STEPS = isQuickMode ? QUICK_STEPS : ADVANCED_STEPS;
 
   const isStep1Valid = name.trim().length >= 2 && !!startDate && !!endDate && !!regDeadline;
   const isStep2Valid = !!competitionType;
-  // Quick config just needs at least one division
-  const isQuickConfigValid = quickConfig.divisions.length > 0;
+  const isQuickDivisionsValid = quickConfig.divisions.length > 0;
 
-  // ── Create competition (after step 2) ───────────────────────────────
+  // ── Create competition (after step 2 for both modes) ────────────────
 
   const handleCreateCompetition = async () => {
     if (!user) return;
@@ -86,7 +93,7 @@ export default function CompetitionCreate() {
     }
   };
 
-  // ── Quick setup: save divisions + settings (NO workouts) ───────────
+  // ── Quick mode: final create ───────────────────────────────────────
 
   const handleQuickFinish = async () => {
     if (!competitionId || !user) return;
@@ -106,8 +113,9 @@ export default function CompetitionCreate() {
       await supabase
         .from("competitions")
         .update({
-          max_teams: quickConfig.maxTeams,
-          waitlist_enabled: quickConfig.waitlistEnabled,
+          max_teams: registrationConfig.maxTeams,
+          max_athletes: registrationConfig.maxAthletes,
+          waitlist_enabled: registrationConfig.waitlistEnabled,
         })
         .eq("id", competitionId);
 
@@ -120,7 +128,25 @@ export default function CompetitionCreate() {
         } as any,
       });
 
-      toast.success("Competition created! Add workouts on the dashboard.");
+      // 4. Save quick workouts
+      for (let i = 0; i < quickWorkouts.length; i++) {
+        const w = quickWorkouts[i];
+        const scoringType = w.scoring_type || "points";
+        const measurementType = scoringType === "load" ? "weight" : scoringType === "max_time" ? "time" : scoringType;
+
+        await supabase.from("competition_workouts").insert({
+          competition_id: competitionId,
+          workout_number: i + 1,
+          name: w.name || `Workout ${i + 1}`,
+          description: w.description || null,
+          workout_type: w.workout_type,
+          time_cap_seconds: w.time_cap_minutes ? w.time_cap_minutes * 60 : null,
+          scoring_type: scoringType,
+          measurement_type: measurementType,
+        });
+      }
+
+      toast.success("Competition created!");
       navigate(`/competition/${competitionId}`);
     } catch (err) {
       setError(sanitizeError(err));
@@ -188,10 +214,13 @@ export default function CompetitionCreate() {
 
   const handleNext = () => {
     if (step === 1) {
+      // After sport selection → create competition in DB, then go to step 2
       handleCreateCompetition();
-    } else if (isQuickMode && step === 2) {
+    } else if (isQuickMode && step === 5) {
+      // Quick final step → save everything
       handleQuickFinish();
     } else if (!isQuickMode && step === 3) {
+      // Advanced final step
       handleSaveWorkouts();
     } else {
       setStep(step + 1);
@@ -210,7 +239,8 @@ export default function CompetitionCreate() {
     if (isPending) return true;
     if (step === 0) return !isStep1Valid;
     if (step === 1) return !isStep2Valid;
-    if (isQuickMode && step === 2) return !isQuickConfigValid;
+    if (isQuickMode && step === 2) return !isQuickDivisionsValid;
+    // Workouts step: allow skipping (0 workouts OK for quick mode)
     return false;
   };
 
@@ -226,7 +256,7 @@ export default function CompetitionCreate() {
   }
 
   const isWideStep = !isQuickMode && step === 3;
-  const isFinalStep = isQuickMode ? step === 2 : step === 3;
+  const isFinalStep = isQuickMode ? step === 5 : step === 3;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -270,12 +300,42 @@ export default function CompetitionCreate() {
             />
           )}
 
-          {/* Quick mode: step 2 = configure (divisions + ranking + capacity) */}
+          {/* ── Quick Mode Steps ──────────────────────────────── */}
+
+          {/* Step 2: Divisions (quick toggle) */}
           {isQuickMode && step === 2 && (
             <StepQuickConfig config={quickConfig} setConfig={setQuickConfig} disabled={isPending} />
           )}
 
-          {/* Advanced mode: step 2 = divisions, step 3 = workouts */}
+          {/* Step 3: Quick Workouts */}
+          {isQuickMode && step === 3 && (
+            <StepQuickWorkouts workouts={quickWorkouts} setWorkouts={setQuickWorkouts} disabled={isPending} />
+          )}
+
+          {/* Step 4: Registration */}
+          {isQuickMode && step === 4 && (
+            <StepRegistration config={registrationConfig} setConfig={setRegistrationConfig} disabled={isPending} />
+          )}
+
+          {/* Step 5: Review */}
+          {isQuickMode && step === 5 && (
+            <StepReview
+              name={name}
+              venue={venue}
+              hostGym={hostGym}
+              startDate={startDate}
+              endDate={endDate}
+              regDeadline={regDeadline}
+              competitionType={competitionType}
+              divisions={quickConfig.divisions}
+              workouts={quickWorkouts}
+              rankingDirection={quickConfig.rankingDirection}
+              registration={registrationConfig}
+            />
+          )}
+
+          {/* ── Advanced Mode Steps ──────────────────────────── */}
+
           {!isQuickMode && step === 2 && competitionId && (
             <DivisionsPanel competitionId={competitionId} canAdmin={true} />
           )}
@@ -286,7 +346,7 @@ export default function CompetitionCreate() {
         </div>
       </main>
 
-      {/* Sticky bottom nav on mobile */}
+      {/* Sticky bottom nav */}
       <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border p-3 sm:relative sm:border-0 sm:bg-transparent sm:backdrop-blur-none sm:p-0">
         <div className={`flex justify-between ${isWideStep ? "max-w-7xl" : "max-w-2xl"} mx-auto sm:px-4 sm:pb-8`}>
           <Button
