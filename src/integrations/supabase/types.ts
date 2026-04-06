@@ -985,8 +985,10 @@ export type Database = {
           measurement_type: string
           name: string | null
           round_id: string | null
+          scheduled_reveal_at: string | null
           scoring_type: string
           time_cap_seconds: number | null
+          visibility: string
           workout_number: number
           workout_type: string
         }
@@ -1000,8 +1002,10 @@ export type Database = {
           measurement_type?: string
           name?: string | null
           round_id?: string | null
+          scheduled_reveal_at?: string | null
           scoring_type?: string
           time_cap_seconds?: number | null
+          visibility?: string
           workout_number: number
           workout_type?: string
         }
@@ -1015,8 +1019,10 @@ export type Database = {
           measurement_type?: string
           name?: string | null
           round_id?: string | null
+          scheduled_reveal_at?: string | null
           scoring_type?: string
           time_cap_seconds?: number | null
+          visibility?: string
           workout_number?: number
           workout_type?: string
         }
