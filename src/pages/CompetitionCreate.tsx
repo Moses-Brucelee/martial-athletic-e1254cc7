@@ -11,7 +11,7 @@ import { StepSportType } from "@/modules/tournaments/components/create/StepSport
 import { DivisionsPanel } from "@/modules/tournaments/components/DivisionsPanel";
 import { WorkoutBuilderPro } from "@/modules/tournaments/components/workout-builder/WorkoutBuilderPro";
 import { emptyWorkout, type LocalWorkout } from "@/modules/tournaments/components/workout-builder/types";
-import { StepQuickConfig, defaultQuickConfig, type QuickConfigState } from "@/modules/tournaments/components/create/StepQuickConfig";
+
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, AlertCircle, Check } from "lucide-react";
@@ -47,7 +47,7 @@ export default function CompetitionCreate() {
   const [setupMode, setSetupMode] = useState<"quick" | "advanced">("quick");
 
   // Step 3 (Quick) — Config (divisions + ranking + capacity only)
-  const [quickConfig, setQuickConfig] = useState<QuickConfigState>(defaultQuickConfig);
+  
 
   // Step 3 (Advanced) — Workouts
   const [workouts, setWorkouts] = useState<LocalWorkout[]>([emptyWorkout()]);
