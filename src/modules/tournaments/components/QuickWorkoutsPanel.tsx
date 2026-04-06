@@ -31,7 +31,7 @@ const SCORING_TYPES = [
     activeColor: "bg-blue-500 text-white border-blue-500",
     accent: "border-l-blue-500",
     desc: "Athletes complete workout as fast as possible",
-    fields: ["time_cap"],
+    fields: ["time_cap"] as string[],
   },
   {
     value: "reps",
@@ -42,7 +42,7 @@ const SCORING_TYPES = [
     activeColor: "bg-orange-500 text-white border-orange-500",
     accent: "border-l-orange-500",
     desc: "Max rounds & reps in a fixed time",
-    fields: ["time_cap"],
+    fields: ["time_cap"] as string[],
   },
   {
     value: "load",
@@ -53,7 +53,7 @@ const SCORING_TYPES = [
     activeColor: "bg-red-500 text-white border-red-500",
     accent: "border-l-red-500",
     desc: "Heaviest weight lifted",
-    fields: [],
+    fields: [] as string[],
   },
   {
     value: "max_reps",
@@ -64,7 +64,7 @@ const SCORING_TYPES = [
     activeColor: "bg-emerald-500 text-white border-emerald-500",
     accent: "border-l-emerald-500",
     desc: "Most reps in a set time or unbroken",
-    fields: ["time_cap"],
+    fields: ["time_cap"] as string[],
   },
   {
     value: "points",
@@ -75,7 +75,7 @@ const SCORING_TYPES = [
     activeColor: "bg-primary text-primary-foreground border-primary",
     accent: "border-l-primary",
     desc: "Judge awards points manually",
-    fields: [],
+    fields: [] as string[],
   },
 ] as const;
 
