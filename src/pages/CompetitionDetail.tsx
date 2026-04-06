@@ -10,6 +10,7 @@ import {
   Trophy, Calendar, MapPin, ChevronLeft, Dumbbell,
   Timer, Hash, Weight, Award
 } from "lucide-react";
+import { AdaptivePoster } from "@/components/competition/AdaptivePoster";
 
 export default function CompetitionDetail() {
   const { id } = useParams<{ id: string }>();

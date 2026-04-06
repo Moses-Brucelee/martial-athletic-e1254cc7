@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { differenceInYears } from "date-fns";
 import { athleteNameSchema, emailSchema } from "@/lib/validation";
 import { STATUS_LABELS, STATUS_COLORS } from "@/modules/athletes/types";
+import { AdaptivePoster } from "@/components/competition/AdaptivePoster";
 
 export default function CompetitionPublic() {
   const { id } = useParams<{ id: string }>();
