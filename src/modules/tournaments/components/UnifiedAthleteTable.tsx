@@ -431,6 +431,16 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
           </div>
         </div>
       )}
+
+      {/* Summary stats — footer */}
+      <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-border text-xs text-muted-foreground">
+        <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5 text-primary" /> <strong className="text-foreground">{registrations.length}</strong> Total</span>
+        <span className="flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> <strong className="text-foreground">{approvedCount}</strong> Approved</span>
+        <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5 text-yellow-600" /> <strong className="text-foreground">{statusCounts.pending ?? 0}</strong> Pending</span>
+        {maxAthletes != null && (
+          <span className="flex items-center gap-1 ml-auto"><strong className="text-foreground">{approvedCount}/{maxAthletes}</strong> Capacity</span>
+        )}
+      </div>
     </div>
   );
 }
