@@ -20,6 +20,10 @@ interface StepDetailsProps {
   setEndDate: (v: Date | undefined) => void;
   regDeadline: Date | undefined;
   setRegDeadline: (v: Date | undefined) => void;
+  maxTeams: number | null;
+  setMaxTeams: (v: number | null) => void;
+  waitlistEnabled: boolean;
+  setWaitlistEnabled: (v: boolean) => void;
   disabled?: boolean;
 }
 
