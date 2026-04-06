@@ -78,51 +78,25 @@ export default function CompetitionCreate() {
         type: competitionType || null,
         competition_type: competitionType || null,
         host_gym: hostGym || null,
+        max_teams: maxTeams,
+        waitlist_enabled: waitlistEnabled,
       });
       setCompetitionId(comp.id);
-      setStep(2);
-    } catch (err) {
-      setError(sanitizeError(err));
-    }
-  };
 
-  // ── Quick setup: save divisions + settings (NO workouts) ───────────
-
-  const handleQuickFinish = async () => {
-    if (!competitionId || !user) return;
-    setError("");
-    try {
-      // 1. Save divisions
-      for (let i = 0; i < quickConfig.divisions.length; i++) {
-        const divName = quickConfig.divisions[i];
-        await supabase.from("competition_divisions").insert({
-          competition_id: competitionId,
-          name: divName,
-          sort_order: i,
+      if (isQuickMode) {
+        // Quick mode: save settings and go straight to dashboard
+        await upsertSettingsMutation.mutateAsync({
+          competitionId: comp.id,
+          settings: {
+            setup_mode: "quick",
+            scoring_method: "auto",
+          } as any,
         });
+        toast.success("Competition created! Add divisions & workouts on the dashboard.");
+        navigate(`/competition/${comp.id}`);
+      } else {
+        setStep(2);
       }
-
-      // 2. Update competition capacity
-      await supabase
-        .from("competitions")
-        .update({
-          max_teams: quickConfig.maxTeams,
-          waitlist_enabled: quickConfig.waitlistEnabled,
-        })
-        .eq("id", competitionId);
-
-      // 3. Upsert competition settings
-      await upsertSettingsMutation.mutateAsync({
-        competitionId,
-        settings: {
-          setup_mode: "quick",
-          ranking_direction: quickConfig.rankingDirection,
-          scoring_method: quickConfig.scoringMode === "auto" ? "auto" : "rank_sum",
-        } as any,
-      });
-
-      toast.success("Competition created! Add workouts on the dashboard.");
-      navigate(`/competition/${competitionId}`);
     } catch (err) {
       setError(sanitizeError(err));
     }
