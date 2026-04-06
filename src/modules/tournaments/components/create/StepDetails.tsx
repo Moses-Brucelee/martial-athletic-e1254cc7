@@ -35,6 +35,8 @@ export function StepDetails({
   startDate, setStartDate,
   endDate, setEndDate,
   regDeadline, setRegDeadline,
+  maxTeams, setMaxTeams,
+  waitlistEnabled, setWaitlistEnabled,
   disabled,
 }: StepDetailsProps) {
   const today = new Date();
