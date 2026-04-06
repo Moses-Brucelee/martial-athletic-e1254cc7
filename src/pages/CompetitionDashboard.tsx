@@ -231,7 +231,7 @@ export default function CompetitionDashboard() {
         </TabsContent>
 
         <TabsContent value="workouts">
-          <QuickWorkoutsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
+          <QuickWorkoutsPanel competitionId={id!} isOwner={effectiveCanAdmin} scoringMode={settings?.scoring_method === "auto" ? "auto" : "points"} />
         </TabsContent>
 
         <TabsContent value="people">
