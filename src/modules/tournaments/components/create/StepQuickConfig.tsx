@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Trophy, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Users, Trophy, ArrowUp, ArrowDown, Zap, Settings2 } from "lucide-react";
 
 // ── Division presets ──────────────────────────────────────────────────
 
@@ -24,6 +24,7 @@ export interface QuickConfigState {
   rankingDirection: "desc" | "asc";
   maxTeams: number | null;
   waitlistEnabled: boolean;
+  scoringMode: "points" | "auto";
 }
 
 export function defaultQuickConfig(): QuickConfigState {
@@ -32,6 +33,7 @@ export function defaultQuickConfig(): QuickConfigState {
     rankingDirection: "desc",
     maxTeams: null,
     waitlistEnabled: true,
+    scoringMode: "points",
   };
 }
 
@@ -64,23 +66,25 @@ export function StepQuickConfig({ config, setConfig, disabled }: StepQuickConfig
 
   return (
     <div className="space-y-6">
-      {/* ── Leaderboard Ranking ──────────────────────────────── */}
+      {/* ── Scoring Mode Toggle ──────────────────────────────── */}
       <div className="bg-card border border-border rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2 mb-1">
           <Trophy className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Leaderboard Ranking</h3>
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Scoring Mode</h3>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          {(["desc", "asc"] as const).map((dir) => {
-            const isSelected = config.rankingDirection === dir;
-            const Icon = dir === "desc" ? ArrowDown : ArrowUp;
+          {([
+            { key: "points" as const, icon: Zap, title: "Points", desc: "Judges enter points per workout" },
+            { key: "auto" as const, icon: Settings2, title: "Automatic", desc: "Set scoring type per workout" },
+          ]).map(({ key, icon: Icon, title, desc }) => {
+            const isSelected = config.scoringMode === key;
             return (
               <button
-                key={dir}
+                key={key}
                 type="button"
                 disabled={disabled}
-                onClick={() => setConfig((prev) => ({ ...prev, rankingDirection: dir }))}
+                onClick={() => setConfig((prev) => ({ ...prev, scoringMode: key }))}
                 className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
                   isSelected
                     ? "border-primary bg-primary/5"
@@ -89,17 +93,49 @@ export function StepQuickConfig({ config, setConfig, disabled }: StepQuickConfig
               >
                 <Icon className={`h-5 w-5 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
                 <div className="text-left">
-                  <p className={`text-sm font-bold ${isSelected ? "text-primary" : "text-foreground"}`}>
-                    {dir === "desc" ? "Highest Points Wins" : "Lowest Points Wins"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {dir === "desc" ? "Standard — most points on top" : "Golf-style — fewest points on top"}
-                  </p>
+                  <p className={`text-sm font-bold ${isSelected ? "text-primary" : "text-foreground"}`}>{title}</p>
+                  <p className="text-xs text-muted-foreground">{desc}</p>
                 </div>
               </button>
             );
           })}
         </div>
+
+        {/* Ranking direction — only for points mode */}
+        {config.scoringMode === "points" && (
+          <div className="pt-2 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Ranking Direction</p>
+            <div className="grid grid-cols-2 gap-3">
+              {(["desc", "asc"] as const).map((dir) => {
+                const isSelected = config.rankingDirection === dir;
+                const Icon = dir === "desc" ? ArrowDown : ArrowUp;
+                return (
+                  <button
+                    key={dir}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => setConfig((prev) => ({ ...prev, rankingDirection: dir }))}
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                      isSelected
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-background hover:border-muted-foreground/30"
+                    } ${disabled ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}
+                  >
+                    <Icon className={`h-4 w-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                    <div className="text-left">
+                      <p className={`text-xs font-bold ${isSelected ? "text-primary" : "text-foreground"}`}>
+                        {dir === "desc" ? "Highest Wins" : "Lowest Wins"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {dir === "desc" ? "Most points on top" : "Fewest points on top"}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Capacity ─────────────────────────────────────────── */}
@@ -195,7 +231,8 @@ export function StepQuickConfig({ config, setConfig, disabled }: StepQuickConfig
       {/* ── Info note ────────────────────────────────────────── */}
       <div className="bg-accent/5 border border-accent/20 rounded-xl p-4">
         <p className="text-xs text-muted-foreground">
-          <strong className="text-foreground">💡 Workouts can be added after creation</strong> — you'll set up workouts on the dashboard where you can save drafts, preview, and edit anytime.
+          <strong className="text-foreground">💡 Workouts can be added after creation</strong> — you'll set up workouts on the dashboard
+          {config.scoringMode === "auto" && " where you can choose the scoring type (For Time, AMRAP, Load, etc.) for each workout"}.
         </p>
       </div>
     </div>
