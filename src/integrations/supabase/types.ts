@@ -874,27 +874,36 @@ export type Database = {
       }
       competition_teams: {
         Row: {
+          captain_user_id: string | null
           competition_id: string
           created_at: string
           division: string | null
           division_id: string | null
           id: string
+          invite_code: string | null
+          is_complete: boolean
           team_name: string
         }
         Insert: {
+          captain_user_id?: string | null
           competition_id: string
           created_at?: string
           division?: string | null
           division_id?: string | null
           id?: string
+          invite_code?: string | null
+          is_complete?: boolean
           team_name: string
         }
         Update: {
+          captain_user_id?: string | null
           competition_id?: string
           created_at?: string
           division?: string | null
           division_id?: string | null
           id?: string
+          invite_code?: string | null
+          is_complete?: boolean
           team_name?: string
         }
         Relationships: [
