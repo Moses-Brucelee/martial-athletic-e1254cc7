@@ -1,8 +1,9 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
-import { MapPin, Building2, Calendar, FileText } from "lucide-react";
+import { MapPin, Building2, Calendar, FileText, Users } from "lucide-react";
 
 interface StepDetailsProps {
   name: string;
