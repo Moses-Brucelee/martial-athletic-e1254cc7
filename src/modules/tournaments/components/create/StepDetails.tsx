@@ -156,6 +156,40 @@ export function StepDetails({
           </div>
         </div>
       </div>
+
+      {/* Capacity */}
+      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Users className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Capacity</h3>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-foreground font-medium text-sm">Max Teams / Athletes</Label>
+            <Input
+              type="number"
+              min={1}
+              value={maxTeams ?? ""}
+              onChange={(e) => setMaxTeams(e.target.value ? parseInt(e.target.value) : null)}
+              placeholder="Unlimited"
+              className="h-11 bg-background"
+              disabled={disabled}
+            />
+          </div>
+          <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
+            <div>
+              <p className="text-sm font-medium text-foreground">Waitlist</p>
+              <p className="text-xs text-muted-foreground">Auto-promote when spots open</p>
+            </div>
+            <Switch
+              checked={waitlistEnabled}
+              onCheckedChange={setWaitlistEnabled}
+              disabled={disabled}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

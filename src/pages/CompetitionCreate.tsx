@@ -38,6 +38,8 @@ export default function CompetitionCreate() {
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [regDeadline, setRegDeadline] = useState<Date | undefined>();
+  const [maxTeams, setMaxTeams] = useState<number | null>(null);
+  const [waitlistEnabled, setWaitlistEnabled] = useState(true);
   const [error, setError] = useState("");
 
   // Step 2 — Sport type + setup mode
@@ -52,13 +54,11 @@ export default function CompetitionCreate() {
 
   const isQuickMode = competitionType === "crossfit" && setupMode === "quick";
   const STEPS = isQuickMode
-    ? ["Details", "Sport & Mode", "Configure"]
+    ? ["Details", "Sport & Mode"]
     : ["Details", "Sport & Mode", "Divisions", "Workouts"];
 
   const isStep1Valid = name.trim().length >= 2 && !!startDate && !!endDate && !!regDeadline;
   const isStep2Valid = !!competitionType;
-  // Quick config just needs at least one division
-  const isQuickConfigValid = quickConfig.divisions.length > 0;
 
   // ── Create competition (after step 2) ───────────────────────────────
 
