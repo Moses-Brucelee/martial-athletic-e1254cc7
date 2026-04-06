@@ -874,27 +874,36 @@ export type Database = {
       }
       competition_teams: {
         Row: {
+          captain_user_id: string | null
           competition_id: string
           created_at: string
           division: string | null
           division_id: string | null
           id: string
+          invite_code: string | null
+          is_complete: boolean
           team_name: string
         }
         Insert: {
+          captain_user_id?: string | null
           competition_id: string
           created_at?: string
           division?: string | null
           division_id?: string | null
           id?: string
+          invite_code?: string | null
+          is_complete?: boolean
           team_name: string
         }
         Update: {
+          captain_user_id?: string | null
           competition_id?: string
           created_at?: string
           division?: string | null
           division_id?: string | null
           id?: string
+          invite_code?: string | null
+          is_complete?: boolean
           team_name?: string
         }
         Relationships: [
@@ -985,8 +994,10 @@ export type Database = {
           measurement_type: string
           name: string | null
           round_id: string | null
+          scheduled_reveal_at: string | null
           scoring_type: string
           time_cap_seconds: number | null
+          visibility: string
           workout_number: number
           workout_type: string
         }
@@ -1000,8 +1011,10 @@ export type Database = {
           measurement_type?: string
           name?: string | null
           round_id?: string | null
+          scheduled_reveal_at?: string | null
           scoring_type?: string
           time_cap_seconds?: number | null
+          visibility?: string
           workout_number: number
           workout_type?: string
         }
@@ -1015,8 +1028,10 @@ export type Database = {
           measurement_type?: string
           name?: string | null
           round_id?: string | null
+          scheduled_reveal_at?: string | null
           scoring_type?: string
           time_cap_seconds?: number | null
+          visibility?: string
           workout_number?: number
           workout_type?: string
         }

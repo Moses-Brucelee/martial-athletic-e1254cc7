@@ -40,6 +40,9 @@ export interface Team {
   team_name: string;
   division: string | null;
   division_id: string | null;
+  captain_user_id: string | null;
+  invite_code: string | null;
+  is_complete: boolean;
   created_at: string;
 }
 
@@ -55,6 +58,8 @@ export interface Workout {
   description: string | null;
   display_order: number;
   is_locked: boolean;
+  visibility: string;
+  scheduled_reveal_at: string | null;
   round_id: string | null;
   created_at: string;
 }
