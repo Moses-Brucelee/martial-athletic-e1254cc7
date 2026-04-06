@@ -239,30 +239,6 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <StatCard icon={<Users className="h-4 w-4 text-primary" />} value={registrations.length} label="Total" />
-        <StatCard icon={<CheckCircle2 className="h-4 w-4 text-green-600" />} value={approvedCount} label="Approved" />
-        <StatCard icon={<Clock className="h-4 w-4 text-yellow-600" />} value={statusCounts.pending ?? 0} label="Pending" />
-        <StatCard
-          icon={maxAthletes != null
-            ? <AlertTriangle className={`h-4 w-4 ${capacityRemaining === 0 ? "text-destructive" : "text-muted-foreground"}`} />
-            : <Users className="h-4 w-4 text-blue-600" />}
-          value={maxAthletes != null ? capacityRemaining! : teams.length}
-          label={maxAthletes != null ? "Spots Left" : "Teams"}
-        />
-      </div>
-
-      {maxAthletes != null && (
-        <div className="px-1">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-foreground">Capacity</span>
-            <span className="text-xs text-muted-foreground">{approvedCount}/{maxAthletes}</span>
-          </div>
-          <Progress value={(approvedCount / maxAthletes) * 100} className="h-1.5" />
-        </div>
-      )}
-
       {/* Actions bar */}
       {canAdmin && (
         <div className="flex flex-wrap items-center gap-2">
