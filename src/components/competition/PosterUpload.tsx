@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ImagePlus, Trash2, Loader2, Image } from "lucide-react";
+import { AdaptivePoster } from "@/components/competition/AdaptivePoster";
 import { toast } from "sonner";
 import { validateImageFile } from "@/lib/validation";
 
@@ -62,10 +63,10 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
     <div className="space-y-3">
       {currentPosterUrl ? (
         <div className="relative group rounded-xl overflow-hidden border border-border bg-background">
-          <img
+          <AdaptivePoster
             src={currentPosterUrl}
             alt="Competition poster"
-            className="w-full aspect-[16/9] object-cover"
+            className="rounded-xl"
           />
           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
             <label className="cursor-pointer">

@@ -10,6 +10,7 @@ import {
   Trophy, Calendar, MapPin, ChevronLeft, Dumbbell,
   Timer, Hash, Weight, Award
 } from "lucide-react";
+import { AdaptivePoster } from "@/components/competition/AdaptivePoster";
 
 export default function CompetitionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -95,7 +96,7 @@ export default function CompetitionDetail() {
         {/* Competition header card */}
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
           {competition.poster_url && (
-            <img src={competition.poster_url} alt="" className="w-full h-40 object-cover" />
+            <AdaptivePoster src={competition.poster_url} alt={competition.name} className="h-40" />
           )}
           <div className="p-5">
             <h1 className="text-xl font-black text-foreground tracking-tight">{competition.name}</h1>
