@@ -164,8 +164,6 @@ export default function CompetitionCreate() {
   const handleNext = () => {
     if (step === 1) {
       handleCreateCompetition();
-    } else if (isQuickMode && step === 2) {
-      handleQuickFinish();
     } else if (!isQuickMode && step === 3) {
       handleSaveWorkouts();
     } else {
@@ -185,7 +183,6 @@ export default function CompetitionCreate() {
     if (isPending) return true;
     if (step === 0) return !isStep1Valid;
     if (step === 1) return !isStep2Valid;
-    if (isQuickMode && step === 2) return !isQuickConfigValid;
     return false;
   };
 
@@ -201,7 +198,7 @@ export default function CompetitionCreate() {
   }
 
   const isWideStep = !isQuickMode && step === 3;
-  const isFinalStep = isQuickMode ? step === 2 : step === 3;
+  const isFinalStep = isQuickMode ? step === 1 : step === 3;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -231,6 +228,8 @@ export default function CompetitionCreate() {
               startDate={startDate} setStartDate={setStartDate}
               endDate={endDate} setEndDate={setEndDate}
               regDeadline={regDeadline} setRegDeadline={setRegDeadline}
+              maxTeams={maxTeams} setMaxTeams={setMaxTeams}
+              waitlistEnabled={waitlistEnabled} setWaitlistEnabled={setWaitlistEnabled}
               disabled={isPending || !!competitionId}
             />
           )}
@@ -243,11 +242,6 @@ export default function CompetitionCreate() {
               onSetupModeChange={setSetupMode}
               disabled={isPending || !!competitionId}
             />
-          )}
-
-          {/* Quick mode: step 2 = configure (divisions + ranking + capacity) */}
-          {isQuickMode && step === 2 && (
-            <StepQuickConfig config={quickConfig} setConfig={setQuickConfig} disabled={isPending} />
           )}
 
           {/* Advanced mode: step 2 = divisions, step 3 = workouts */}
