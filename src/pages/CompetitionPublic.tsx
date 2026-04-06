@@ -310,9 +310,9 @@ export default function CompetitionPublic() {
       {/* Hero */}
       <div className="relative">
         {competition.poster_url ? (
-          <div className="h-56 md:h-72 overflow-hidden">
-            <img src={competition.poster_url} alt={competition.name} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          <div className="h-56 md:h-72 overflow-hidden relative">
+            <AdaptivePoster src={competition.poster_url} alt={competition.name} className="h-56 md:h-72" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-20" />
           </div>
         ) : (
           <div className="h-40 bg-gradient-to-br from-primary/20 to-accent/20" />
