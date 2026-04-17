@@ -5,12 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Users, Plus, Search, Copy, Check, UserPlus, Trash2 } from "lucide-react";
+import { Users, Plus, Search, Copy, Check, UserPlus, Trash2, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTeams, useAddTeam, useRemoveTeam, useDivisions } from "@/modules/tournaments/hooks";
 import { useRegistrations } from "@/modules/athletes/hooks";
 import { useAuth } from "@/components/AuthProvider";
 import type { Team } from "@/domain/competition";
+import { ManageTeamMembersDialog } from "./ManageTeamMembersDialog";
 
 interface Props {
   competitionId: string;
@@ -30,6 +31,7 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
   const [teamDivisionId, setTeamDivisionId] = useState("");
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [manageTeam, setManageTeam] = useState<Team | null>(null);
 
   // Members per team
   const teamMembers = useMemo(() => {
