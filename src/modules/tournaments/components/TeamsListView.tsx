@@ -147,6 +147,15 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
                   </div>
                   {canAdmin && (
                     <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-primary"
+                        title="Manage members"
+                        onClick={() => setManageTeam(team)}
+                      >
+                        <Settings2 className="h-3.5 w-3.5" />
+                      </Button>
                       {(team as any).invite_code && (
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyInvite(team)}>
                           {copiedId === team.id ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
@@ -161,9 +170,20 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
 
                 {/* Members list */}
                 <div className="mt-3 space-y-1">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Members ({members.length})
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Members ({members.length})
+                    </p>
+                    {canAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setManageTeam(team)}
+                        className="text-[10px] font-semibold text-primary hover:underline uppercase tracking-wider"
+                      >
+                        + Add / Manage
+                      </button>
+                    )}
+                  </div>
                   {members.length === 0 ? (
                     <p className="text-xs text-muted-foreground italic">No members assigned</p>
                   ) : (
@@ -184,6 +204,14 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
           })}
         </div>
       )}
+
+      {/* Manage members dialog */}
+      <ManageTeamMembersDialog
+        open={!!manageTeam}
+        onOpenChange={(open) => !open && setManageTeam(null)}
+        team={manageTeam}
+        competitionId={competitionId}
+      />
 
       {/* Create Team Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
