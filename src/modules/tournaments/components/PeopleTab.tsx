@@ -41,6 +41,7 @@ export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabP
   const { data: registrations = [] } = useRegistrations(competitionId);
   const { data: teams = [] } = useTeams(competitionId);
   const { data: heats = [] } = useHeats(competitionId);
+  const { data: competition } = useCompetition(competitionId);
 
   const approvedCount = registrations.filter(
     (r) => r.status === "approved" || r.status === "confirmed"
@@ -50,7 +51,24 @@ export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabP
 
   return (
     <div className="space-y-4">
-      {showShareLink && <ShareableLink competitionId={competitionId} />}
+      {showShareLink && (
+        <div className="flex items-center justify-between gap-3 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-foreground mb-0.5">
+              Registration is open
+            </p>
+            <p className="text-[11px] text-muted-foreground truncate">
+              Share the link so athletes can register as individuals or teams.
+            </p>
+          </div>
+          <ShareCompetitionMenu
+            competitionId={competitionId}
+            competitionName={competition?.name}
+            startDate={competition?.start_date}
+            venue={competition?.venue}
+          />
+        </div>
+      )}
 
       {/* Inner tabs — Athletes, Teams, Judges, Heats */}
       <Tabs defaultValue="athletes" className="w-full">
