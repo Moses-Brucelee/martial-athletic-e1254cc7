@@ -8,6 +8,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SuperUserGuard } from "@/components/super/SuperUserGuard";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
+import { FeatureRouteGuard } from "@/components/FeatureRouteGuard";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -59,11 +60,11 @@ const App = () => (
               <Route path="/competition/:id" element={<ProtectedRoute><CompetitionDashboard /></ProtectedRoute>} />
               <Route path="/upgrade" element={<ProtectedRoute><UpgradePackage /></ProtectedRoute>} />
               <Route path="/super-dashboard" element={<ProtectedRoute><SuperUserGuard><SuperDashboard /></SuperUserGuard></ProtectedRoute>} />
-              <Route path="/members" element={<ProtectedRoute><MembersPage /></ProtectedRoute>} />
-              <Route path="/affiliation" element={<ProtectedRoute><Affiliation /></ProtectedRoute>} />
-              <Route path="/gym-website" element={<ProtectedRoute><GymWebsite /></ProtectedRoute>} />
-              <Route path="/performances" element={<ProtectedRoute><Performances /></ProtectedRoute>} />
-              <Route path="/browse" element={<Browse />} />
+              <Route path="/members" element={<ProtectedRoute><FeatureRouteGuard flag="members_management"><MembersPage /></FeatureRouteGuard></ProtectedRoute>} />
+              <Route path="/affiliation" element={<ProtectedRoute><FeatureRouteGuard flag="affiliation_network"><Affiliation /></FeatureRouteGuard></ProtectedRoute>} />
+              <Route path="/gym-website" element={<ProtectedRoute><FeatureRouteGuard flag="gym_website_builder"><GymWebsite /></FeatureRouteGuard></ProtectedRoute>} />
+              <Route path="/performances" element={<ProtectedRoute><FeatureRouteGuard flag="performances_analytics"><Performances /></FeatureRouteGuard></ProtectedRoute>} />
+              <Route path="/browse" element={<FeatureRouteGuard flag="browse_marketplace" redirectTo="/"><Browse /></FeatureRouteGuard>} />
               <Route path="/event/:id" element={<CompetitionPublic />} />
               <Route path="/event/:id/results" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
-import { V1_FULL_ACCESS } from "@/lib/featureFlags";
+import { V1_FULL_ACCESS, MENU_FEATURE_TO_FLAG, type FeatureFlagKey } from "@/lib/featureFlags";
+import { useFeatureFlags } from "@/hooks/useFeatureFlag";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -63,6 +64,7 @@ export default function MainMenu() {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading, error: profileError } = useProfile();
   const { canAccess, loading: subLoading } = useSubscription();
+  const { flags, loading: flagsLoading } = useFeatureFlags();
   const [hasCompetitions, setHasCompetitions] = useState(false);
   const [compLoading, setCompLoading] = useState(true);
 
@@ -103,8 +105,13 @@ export default function MainMenu() {
 
   // Flatten all accessible menu items (no tier grouping)
   const accessibleItems = useMemo(() => {
-    return menuItems.filter((m) => V1_FULL_ACCESS || canAccess(m.feature_key));
-  }, [menuItems, canAccess]);
+    return menuItems.filter((m) => {
+      if (!V1_FULL_ACCESS && !canAccess(m.feature_key)) return false;
+      const flagKey = MENU_FEATURE_TO_FLAG[m.feature_key] as FeatureFlagKey | undefined;
+      if (flagKey && flags[flagKey] === false) return false;
+      return true;
+    });
+  }, [menuItems, canAccess, flags]);
 
   const initials = profile?.display_name
     ? profile.display_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -112,7 +119,7 @@ export default function MainMenu() {
 
   const firstName = profile?.display_name?.split(" ")[0] ?? "Athlete";
 
-  const isLoading = profileLoading || compLoading || subLoading || menuLoading;
+  const isLoading = profileLoading || compLoading || subLoading || menuLoading || flagsLoading;
 
   if (isLoading) {
     return (
