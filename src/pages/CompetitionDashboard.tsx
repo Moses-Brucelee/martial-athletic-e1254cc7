@@ -108,10 +108,8 @@ export default function CompetitionDashboard() {
   const { data: settings, isLoading: settingsLoading } = useCompetitionSettings(id);
   const isMobile = useIsMobile();
 
-  // Strict owner-only admin access. Super users manage via the dedicated Super Dashboard,
-  // not by silently editing other organizers' competitions.
-  const canAdmin = isOwner;
-  const canScore = isOwner || isJudge;
+  const canAdmin = V1_FULL_ACCESS ? (isOwner || isSuperUser) : (isOwner || isSuperUser);
+  const canScore = V1_FULL_ACCESS ? (isOwner || isJudge || isSuperUser) : (isOwner || isJudge || isSuperUser);
 
   // Derive lifecycle status
   const derivedStatus: CompetitionStatus = competition ? deriveStatus(competition) : "draft";
