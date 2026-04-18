@@ -5,6 +5,7 @@ import { AuditLog } from "@/components/super/AuditLog";
 import { ScoreOverride } from "@/components/super/ScoreOverride";
 import { AthleteMergeManager } from "@/modules/athletes/components/AthleteMergeManager";
 import { SuperUserManager } from "@/components/super/SuperUserManager";
+import { FeatureFlagsManager } from "@/components/super/FeatureFlagsManager";
 import { AppHeader } from "@/components/AppHeader";
 
 export default function SuperDashboard() {
