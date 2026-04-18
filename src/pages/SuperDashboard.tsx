@@ -50,6 +50,10 @@ export default function SuperDashboard() {
           <TabsContent value="athletes">
             <AthleteMergeManager />
           </TabsContent>
+
+          <TabsContent value="flags">
+            <FeatureFlagsManager />
+          </TabsContent>
         </Tabs>
       </main>
     </div>
