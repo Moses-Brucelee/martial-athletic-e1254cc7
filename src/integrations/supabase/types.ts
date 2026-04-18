@@ -1164,6 +1164,33 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          audience: string
+          description: string | null
+          enabled: boolean | null
+          key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          audience?: string
+          description?: string | null
+          enabled?: boolean | null
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          audience?: string
+          description?: string | null
+          enabled?: boolean | null
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       gym_default_discounts: {
         Row: {
           applies_to: string
