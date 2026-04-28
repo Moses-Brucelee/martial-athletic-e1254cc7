@@ -141,8 +141,8 @@ export default function ResetPassword() {
             <img src={logoCompact} alt="Martial Athletic" className="w-20 h-20 mx-auto mb-4 object-contain" />
             <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg space-y-4">
               <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
-              <h1 className="text-xl font-bold text-foreground">Invalid or Expired Link</h1>
-              <p className="text-sm text-muted-foreground">This password reset link is no longer valid. Please request a new one.</p>
+              <h1 className="text-xl font-bold text-foreground">Link Already Used or Expired</h1>
+              <p className="text-sm text-muted-foreground">This password reset link has already been used or has expired. Please request a new one to continue.</p>
               <Button onClick={() => navigate("/forgot-password")} className="w-full">Request New Link</Button>
             </div>
           </div>
