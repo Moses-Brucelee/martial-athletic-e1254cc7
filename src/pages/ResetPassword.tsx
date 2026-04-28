@@ -11,7 +11,14 @@ import { z } from "zod";
 
 const resetSchema = z
   .object({
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(72, "Password must be under 72 characters")
+      .regex(/[a-z]/, "Password must include a lowercase letter")
+      .regex(/[A-Z]/, "Password must include an uppercase letter")
+      .regex(/[0-9]/, "Password must include a number")
+      .regex(/[^A-Za-z0-9]/, "Password must include a special character"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -20,6 +27,10 @@ const resetSchema = z
   });
 
 type ResetState = "validating" | "ready" | "invalid" | "success";
+
+// Session-scoped flag — set the moment the recovery link is consumed,
+// so a refresh / back-navigation cannot re-enter the reset form.
+const CONSUMED_KEY = "ma:pwd_reset_consumed";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -32,7 +43,6 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  // Real-time validation
   const validation = resetSchema.safeParse({ password, confirmPassword });
   const fieldErrors: Record<string, string> = {};
   if (!validation.success) {
@@ -44,23 +54,35 @@ export default function ResetPassword() {
   const isFormValid = validation.success;
 
   useEffect(() => {
+    let recoveryDetected = false;
+
+    // If this link was already consumed in this browser session, refuse re-entry.
+    if (sessionStorage.getItem(CONSUMED_KEY) === "1") {
+      supabase.auth.signOut().finally(() => setState("invalid"));
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
+        recoveryDetected = true;
         setState("ready");
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setState("ready");
-      } else {
-        setTimeout(() => {
-          setState((prev) => (prev === "validating" ? "invalid" : prev));
-        }, 2000);
+    // Wait briefly for the recovery event. If it never fires, the link is
+    // missing/expired/already-used — DO NOT accept a pre-existing session as
+    // proof of a valid reset link.
+    const timer = setTimeout(async () => {
+      if (!recoveryDetected) {
+        await supabase.auth.signOut();
+        setState((prev) => (prev === "validating" ? "invalid" : prev));
       }
-    });
+    }, 2500);
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,6 +105,10 @@ export default function ResetPassword() {
       setLoading(false);
       return;
     }
+
+    // Burn the link for this browser session — refresh / back-navigation
+    // will land on the "invalid" state instead of the form.
+    sessionStorage.setItem(CONSUMED_KEY, "1");
 
     await supabase.auth.signOut();
     setState("success");
@@ -115,8 +141,8 @@ export default function ResetPassword() {
             <img src={logoCompact} alt="Martial Athletic" className="w-20 h-20 mx-auto mb-4 object-contain" />
             <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg space-y-4">
               <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
-              <h1 className="text-xl font-bold text-foreground">Invalid or Expired Link</h1>
-              <p className="text-sm text-muted-foreground">This password reset link is no longer valid. Please request a new one.</p>
+              <h1 className="text-xl font-bold text-foreground">Link Already Used or Expired</h1>
+              <p className="text-sm text-muted-foreground">This password reset link has already been used or has expired. Please request a new one to continue.</p>
               <Button onClick={() => navigate("/forgot-password")} className="w-full">Request New Link</Button>
             </div>
           </div>
@@ -193,7 +219,7 @@ export default function ResetPassword() {
                   </button>
                 </div>
                 {touched.password && fieldErrors.password && <p className="text-xs text-destructive">{fieldErrors.password}</p>}
-                {!touched.password && !password && <p className="text-xs text-muted-foreground">Required — minimum 6 characters</p>}
+                {!touched.password && !password && <p className="text-xs text-muted-foreground">Required — must include upper, lower, number & special character</p>}
               </div>
 
               <div className="space-y-2">
