@@ -62,6 +62,8 @@ export default function ViewProfile() {
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Allow re-selecting the same file later
+    e.target.value = "";
     if (!file) return;
     const imgError = validateImageFile(file);
     if (imgError) { setError(imgError); return; }
