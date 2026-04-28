@@ -219,7 +219,7 @@ export default function ResetPassword() {
                   </button>
                 </div>
                 {touched.password && fieldErrors.password && <p className="text-xs text-destructive">{fieldErrors.password}</p>}
-                {!touched.password && !password && <p className="text-xs text-muted-foreground">Required — minimum 6 characters</p>}
+                {!touched.password && !password && <p className="text-xs text-muted-foreground">Required — must include upper, lower, number & special character</p>}
               </div>
 
               <div className="space-y-2">
