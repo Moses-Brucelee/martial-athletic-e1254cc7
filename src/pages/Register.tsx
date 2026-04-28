@@ -10,14 +10,32 @@ import { Eye, EyeOff, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import { z } from "zod";
 
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(72, "Password must be under 72 characters")
+  .regex(/[a-z]/, "Password must include a lowercase letter")
+  .regex(/[A-Z]/, "Password must include an uppercase letter")
+  .regex(/[0-9]/, "Password must include a number")
+  .regex(/[^A-Za-z0-9]/, "Password must include a special character");
+
 const registerSchema = z.object({
   email: z.string().trim().email("Please enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: passwordSchema,
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
 });
+
+// Per-rule checks for live strength indicator
+const passwordRules = [
+  { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
+  { label: "One lowercase letter (a-z)", test: (p: string) => /[a-z]/.test(p) },
+  { label: "One uppercase letter (A-Z)", test: (p: string) => /[A-Z]/.test(p) },
+  { label: "One number (0-9)", test: (p: string) => /[0-9]/.test(p) },
+  { label: "One special character (!@#$…)", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+];
 
 export default function Register() {
   const navigate = useNavigate();
