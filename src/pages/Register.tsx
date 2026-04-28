@@ -10,14 +10,32 @@ import { Eye, EyeOff, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import { z } from "zod";
 
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(72, "Password must be under 72 characters")
+  .regex(/[a-z]/, "Password must include a lowercase letter")
+  .regex(/[A-Z]/, "Password must include an uppercase letter")
+  .regex(/[0-9]/, "Password must include a number")
+  .regex(/[^A-Za-z0-9]/, "Password must include a special character");
+
 const registerSchema = z.object({
   email: z.string().trim().email("Please enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: passwordSchema,
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
 });
+
+// Per-rule checks for live strength indicator
+const passwordRules = [
+  { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
+  { label: "One lowercase letter (a-z)", test: (p: string) => /[a-z]/.test(p) },
+  { label: "One uppercase letter (A-Z)", test: (p: string) => /[A-Z]/.test(p) },
+  { label: "One number (0-9)", test: (p: string) => /[0-9]/.test(p) },
+  { label: "One special character (!@#$…)", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+];
 
 export default function Register() {
   const navigate = useNavigate();
@@ -122,13 +140,25 @@ export default function Register() {
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
                 <div className="relative">
-                  <Input id="password" type={showPassword ? "text" : "password"} placeholder="Min 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} onBlur={() => setTouched((p) => ({ ...p, password: true }))} disabled={loading} className="h-12 bg-background border-border pr-11" autoComplete="new-password" />
+                  <Input id="password" type={showPassword ? "text" : "password"} placeholder="Create a strong password" value={password} onChange={(e) => setPassword(e.target.value)} onBlur={() => setTouched((p) => ({ ...p, password: true }))} disabled={loading} className="h-12 bg-background border-border pr-11" autoComplete="new-password" />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {touched.password && fieldErrors.password && <p className="text-xs text-destructive">{fieldErrors.password}</p>}
-                {!touched.password && !password && <p className="text-xs text-muted-foreground">Required — min 8 characters</p>}
+                {(touched.password || password.length > 0) && (
+                  <ul className="space-y-1 mt-2" aria-live="polite">
+                    {passwordRules.map((rule) => {
+                      const ok = rule.test(password);
+                      return (
+                        <li key={rule.label} className={`text-xs flex items-center gap-2 ${ok ? "text-accent" : "text-muted-foreground"}`}>
+                          <span className={`inline-block w-1.5 h-1.5 rounded-full ${ok ? "bg-accent" : "bg-muted-foreground/40"}`} />
+                          {rule.label}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {!touched.password && !password && <p className="text-xs text-muted-foreground">Required — must meet all criteria below</p>}
               </div>
 
               <div className="space-y-2">
