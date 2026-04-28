@@ -117,17 +117,27 @@ export default function CreateProfile() {
             <div className="flex flex-col md:flex-row gap-8">
               {/* Avatar upload */}
               <div className="flex flex-col items-center gap-3">
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="relative group">
+                <label htmlFor="create-avatar-upload" className="relative group cursor-pointer touch-manipulation">
                   <Avatar className="h-28 w-28 border-2 border-border">
                     <AvatarImage src={avatarPreview || undefined} />
                     <AvatarFallback className="bg-muted text-muted-foreground"><Camera className="h-8 w-8" /></AvatarFallback>
                   </Avatar>
-                  <div className="absolute inset-0 rounded-full bg-foreground/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <div className="absolute inset-0 rounded-full bg-foreground/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
                     <Camera className="h-6 w-6 text-background" />
                   </div>
-                </button>
-                <p className="text-xs text-muted-foreground">Upload Photo</p>
-                <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleAvatarChange} />
+                  <span className="sr-only">Upload profile photo</span>
+                </label>
+                <label htmlFor="create-avatar-upload" className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                  Upload Photo
+                </label>
+                <input
+                  ref={fileInputRef}
+                  id="create-avatar-upload"
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handleAvatarChange}
+                  className="sr-only"
+                />
               </div>
 
               {/* Form fields */}
