@@ -31,9 +31,11 @@ export default function CompetitionPublic() {
   const { data: workouts = [] } = useWorkouts(id);
   const { data: registrations = [] } = useRegistrations(id);
   const createReg = useCreateRegistration();
+  const addTeamMutation = useAddTeam();
 
   // Registration wizard state
   const [regStep, setRegStep] = useState(0);
+  const [regMode, setRegMode] = useState<"individual" | "team">("individual");
   const [regType, setRegType] = useState<"self" | "other">("self");
   const [athleteName, setAthleteName] = useState("");
   const [athleteEmail, setAthleteEmail] = useState("");
@@ -43,6 +45,10 @@ export default function CompetitionPublic() {
   const [selectedDivisionId, setSelectedDivisionId] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [showRegWizard, setShowRegWizard] = useState(false);
+  // Team registration state
+  const [teamName, setTeamName] = useState("");
+  const [teamMembers, setTeamMembers] = useState<{ name: string; email: string }[]>([{ name: "", email: "" }]);
+  const [submitting, setSubmitting] = useState(false);
 
   const derivedStatus = competition ? deriveStatus(competition) : "draft";
   const canRegister = derivedStatus === "published" || derivedStatus === "live";
