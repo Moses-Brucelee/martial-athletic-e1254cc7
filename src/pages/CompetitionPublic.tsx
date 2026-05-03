@@ -571,29 +571,45 @@ export default function CompetitionPublic() {
             </Button>
           ) : (
             <div className="space-y-4">
-              {/* Step indicator */}
-              <div className="flex items-center gap-2 mb-2">
-                {Array.from({ length: totalSteps }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                      i < regStep ? "bg-primary text-primary-foreground" :
-                      i === regStep ? "bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2 ring-offset-card" :
-                      "bg-muted text-muted-foreground"
-                    }`}>
-                      {i < regStep ? "✓" : i + 1}
-                    </div>
-                    {i < totalSteps - 1 && (
-                      <div className={`h-0.5 w-8 ${i < regStep ? "bg-primary" : "bg-border"}`} />
-                    )}
-                  </div>
-                ))}
+              {/* Mode tabs */}
+              <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => { setRegMode("individual"); setRegStep(0); }}
+                  className={`py-2 text-sm font-semibold rounded-md transition-colors ${regMode === "individual" ? "bg-card text-foreground shadow" : "text-muted-foreground"}`}
+                >Individual</button>
+                <button
+                  type="button"
+                  onClick={() => { setRegMode("team"); setRegStep(0); }}
+                  className={`py-2 text-sm font-semibold rounded-md transition-colors ${regMode === "team" ? "bg-card text-foreground shadow" : "text-muted-foreground"}`}
+                >Team</button>
               </div>
+
+              {/* Step indicator (individual only) */}
+              {regMode === "individual" && (
+                <div className="flex items-center gap-2 mb-2">
+                  {Array.from({ length: totalSteps }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                        i < regStep ? "bg-primary text-primary-foreground" :
+                        i === regStep ? "bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2 ring-offset-card" :
+                        "bg-muted text-muted-foreground"
+                      }`}>
+                        {i < regStep ? "✓" : i + 1}
+                      </div>
+                      {i < totalSteps - 1 && (
+                        <div className={`h-0.5 w-8 ${i < regStep ? "bg-primary" : "bg-border"}`} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {renderWizardStep()}
 
               {/* Navigation */}
               <div className="flex gap-3 pt-2">
-                {regStep > 0 ? (
+                {regMode === "individual" && regStep > 0 ? (
                   <Button variant="outline" onClick={() => setRegStep((s) => s - 1)} className="flex-1 h-11">
                     <ChevronLeft className="h-4 w-4 mr-1" /> Back
                   </Button>
@@ -602,7 +618,15 @@ export default function CompetitionPublic() {
                     Cancel
                   </Button>
                 )}
-                {regStep < totalSteps - 1 ? (
+                {regMode === "team" ? (
+                  <Button
+                    onClick={handleSubmitTeam}
+                    disabled={submitting}
+                    className="flex-1 h-11 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
+                  >
+                    {submitting ? "Submitting…" : "Register Team"}
+                  </Button>
+                ) : regStep < totalSteps - 1 ? (
                   <Button
                     onClick={() => setRegStep((s) => s + 1)}
                     disabled={regStep === 0 && !canProceedStep0}
