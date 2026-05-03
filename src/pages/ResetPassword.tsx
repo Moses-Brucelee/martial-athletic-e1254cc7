@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Eye, EyeOff, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import { z } from "zod";
+import { toast } from "sonner";
 
 const resetSchema = z
   .object({
@@ -26,11 +27,17 @@ const resetSchema = z
     path: ["confirmPassword"],
   });
 
-type ResetState = "validating" | "ready" | "invalid" | "success";
+type ResetState = "validating" | "ready" | "expired";
 
-// Session-scoped flag — set the moment the recovery link is consumed,
-// so a refresh / back-navigation cannot re-enter the reset form.
-const CONSUMED_KEY = "ma:pwd_reset_consumed";
+function isExpiredOrInvalidError(err: { message?: string; status?: number; code?: string } | null | undefined): boolean {
+  if (!err) return false;
+  const msg = (err.message || "").toLowerCase();
+  if (msg.includes("token_expired") || msg.includes("invalid_token") || msg.includes("expired") || msg.includes("invalid")) {
+    return true;
+  }
+  if (err.status === 401 || err.status === 410) return true;
+  return false;
+}
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -56,12 +63,6 @@ export default function ResetPassword() {
   useEffect(() => {
     let recoveryDetected = false;
 
-    // If this link was already consumed in this browser session, refuse re-entry.
-    if (sessionStorage.getItem(CONSUMED_KEY) === "1") {
-      supabase.auth.signOut().finally(() => setState("invalid"));
-      return;
-    }
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         recoveryDetected = true;
@@ -69,13 +70,12 @@ export default function ResetPassword() {
       }
     });
 
-    // Wait briefly for the recovery event. If it never fires, the link is
-    // missing/expired/already-used — DO NOT accept a pre-existing session as
-    // proof of a valid reset link.
-    const timer = setTimeout(async () => {
+    // Wait briefly for the recovery event. If it never fires, the user
+    // landed here without a valid email link — bounce to /forgot-password.
+    const timer = setTimeout(() => {
       if (!recoveryDetected) {
-        await supabase.auth.signOut();
-        setState((prev) => (prev === "validating" ? "invalid" : prev));
+        toast.error("Reset links must be opened from your email.");
+        navigate("/forgot-password", { replace: true });
       }
     }, 2500);
 
@@ -83,7 +83,7 @@ export default function ResetPassword() {
       clearTimeout(timer);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,18 +101,19 @@ export default function ResetPassword() {
     });
 
     if (updateError) {
-      setError(updateError.message);
+      if (isExpiredOrInvalidError(updateError as any)) {
+        setState("expired");
+      } else {
+        setError(updateError.message);
+      }
       setLoading(false);
       return;
     }
 
-    // Burn the link for this browser session — refresh / back-navigation
-    // will land on the "invalid" state instead of the form.
-    sessionStorage.setItem(CONSUMED_KEY, "1");
-
     await supabase.auth.signOut();
-    setState("success");
     setLoading(false);
+    toast.success("Password updated. Please sign in with your new password.");
+    navigate("/login", { replace: true });
   };
 
   if (state === "validating") {
@@ -126,7 +127,7 @@ export default function ResetPassword() {
     );
   }
 
-  if (state === "invalid") {
+  if (state === "expired") {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <header className="flex items-center justify-between px-4 sm:px-8 py-4">
@@ -141,31 +142,9 @@ export default function ResetPassword() {
             <img src={logoCompact} alt="Martial Athletic" className="w-20 h-20 mx-auto mb-4 object-contain" />
             <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg space-y-4">
               <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
-              <h1 className="text-xl font-bold text-foreground">Link Already Used or Expired</h1>
-              <p className="text-sm text-muted-foreground">This password reset link has already been used or has expired. Please request a new one to continue.</p>
+              <h1 className="text-xl font-bold text-foreground">Link Expired</h1>
+              <p className="text-sm text-muted-foreground">This reset link has expired or has already been used. Request a new one.</p>
               <Button onClick={() => navigate("/forgot-password")} className="w-full">Request New Link</Button>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (state === "success") {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <header className="flex items-center justify-between px-4 sm:px-8 py-4">
-          <div />
-          <ThemeToggle />
-        </header>
-        <main className="flex-1 flex items-center justify-center px-4">
-          <div className="w-full max-w-md text-center">
-            <img src={logoCompact} alt="Martial Athletic" className="w-20 h-20 mx-auto mb-4 object-contain" />
-            <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg space-y-4">
-              <CheckCircle className="h-10 w-10 text-primary mx-auto" />
-              <h1 className="text-xl font-bold text-foreground">Password Updated</h1>
-              <p className="text-sm text-muted-foreground">Your password has been reset successfully. You can now sign in with your new password.</p>
-              <Button onClick={() => navigate("/login")} className="w-full">Go to Login</Button>
             </div>
           </div>
         </main>
