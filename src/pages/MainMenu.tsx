@@ -22,6 +22,7 @@ import { UpcomingCompetitionsSpotlight } from "@/components/dashboard/UpcomingCo
 import { BrowseMarketplaceSection } from "@/components/dashboard/BrowseMarketplaceSection";
 import { ShopSpotlight } from "@/components/dashboard/ShopSpotlight";
 import { ProgramSpotlight } from "@/components/dashboard/ProgramSpotlight";
+import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   User, Eye, Trophy, Users, Link2, Settings, BarChart3, Palette,
@@ -192,6 +193,8 @@ export default function MainMenu() {
       </header>
 
       <main className="flex-1 px-4 py-8 max-w-lg mx-auto w-full space-y-8">
+        <ProfileCompletionBanner />
+
         {/* Welcome */}
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
