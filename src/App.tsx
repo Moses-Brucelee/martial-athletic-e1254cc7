@@ -10,6 +10,7 @@ import { SuperUserGuard } from "@/components/super/SuperUserGuard";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import { FeatureRouteGuard } from "@/components/FeatureRouteGuard";
 import { RequireTier } from "@/components/RequireTier";
+import { ProfileFieldsPromptProvider } from "@/hooks/useRequireProfileFields";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -44,6 +45,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <ProfileFieldsPromptProvider>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
