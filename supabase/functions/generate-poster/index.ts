@@ -92,6 +92,40 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Daily quota: 10 generations per 24h (super users unlimited)
+    const DAILY_LIMIT = 10;
+    if (!superOk) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count, data: recent } = await admin
+        .from("ai_poster_generations")
+        .select("created_at", { count: "exact" })
+        .eq("user_id", userId)
+        .gte("created_at", since)
+        .order("created_at", { ascending: true })
+        .limit(DAILY_LIMIT);
+      if ((count ?? 0) >= DAILY_LIMIT) {
+        const oldest = recent?.[0]?.created_at;
+        const retryAt = oldest
+          ? new Date(new Date(oldest).getTime() + 24 * 60 * 60 * 1000).toISOString()
+          : new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        const retryAfter = Math.max(1, Math.ceil((new Date(retryAt).getTime() - Date.now()) / 1000));
+        return new Response(
+          JSON.stringify({
+            error: `Daily limit of ${DAILY_LIMIT} AI posters reached. Try again later.`,
+            retryAt,
+            limit: DAILY_LIMIT,
+          }),
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "Retry-After": String(retryAfter),
+            },
+          }
+        );
+      }
+    }
     // Load competition meta
     const { data: comp, error: compErr } = await admin
       .from("competitions")
