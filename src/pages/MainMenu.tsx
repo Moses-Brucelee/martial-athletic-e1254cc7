@@ -104,12 +104,13 @@ export default function MainMenu() {
   // not a hard route redirect. Intentionally no navigation effect here.
 
   // Map feature_key -> minimum required tier slug. Items not listed have no tier gate.
+  // Keys must match menu_items.feature_key in DB.
   const FEATURE_TIER_REQUIREMENT: Record<string, string> = {
     create_competitions: "tournament_pro",
-    performances_analytics: "tournament_pro",
-    members_management: "affiliate_pro",
-    affiliation_network: "affiliate_pro",
-    gym_website_builder: "affiliate_pro",
+    manage_members: "affiliate_pro",
+    manage_affiliation: "affiliate_pro",
+    link_gym_website: "affiliate_pro",
+    // track_performances + view_profile + view_leaderboards: free
   };
 
   // Flatten all accessible menu items (no tier grouping)
