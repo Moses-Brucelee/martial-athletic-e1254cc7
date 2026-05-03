@@ -26,9 +26,15 @@ export default function Login() {
   const safeRedirect = (raw: string | null): string => {
     if (!raw) return "/dashboard";
     try {
-      const decoded = decodeURIComponent(raw);
+      const decoded = decodeURIComponent(raw).trim();
       // Only allow same-origin internal paths to prevent open-redirects.
-      if (decoded.startsWith("/") && !decoded.startsWith("//")) return decoded;
+      if (
+        decoded.startsWith("/") &&
+        !decoded.startsWith("//") &&
+        !/^javascript:/i.test(decoded)
+      ) {
+        return decoded;
+      }
     } catch {
       /* fall through */
     }
