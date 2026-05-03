@@ -229,18 +229,29 @@ export default function CompetitionPublic() {
         }
       }
 
-      // Skip duplicates already on the team (by name, case-insensitive)
-      const existingNames = new Set(
-        registrations
-          .filter((r) => r.team_id === teamId && r.status !== "withdrawn" && r.status !== "rejected" && r.status !== "removed")
-          .map((r) => r.athlete_name.trim().toLowerCase()),
+      // De-dup by name + email (case-insensitive) within this competition's team
+      const teamRegs = registrations.filter(
+        (r) => r.team_id === teamId && !["withdrawn", "rejected", "removed"].includes(r.status),
       );
+      const existingNames = new Set(teamRegs.map((r) => r.athlete_name.trim().toLowerCase()));
+      const existingEmails = new Set(
+        teamRegs.map((r) => (r.email || "").trim().toLowerCase()).filter(Boolean),
+      );
+      // Also block re-adding the captain themselves as a member by email
+      if (user.email) existingEmails.add(user.email.trim().toLowerCase());
+
+      // Catch in-form duplicates too
+      const formNames = new Set<string>();
+      const formEmails = new Set<string>();
       let added = 0;
       let skipped = 0;
       for (const m of validMembers) {
-        const key = m.name.trim().toLowerCase();
-        if (existingNames.has(key)) { skipped++; continue; }
-        existingNames.add(key);
+        const nameKey = m.name.trim().toLowerCase();
+        const emailKey = m.email.trim().toLowerCase();
+        if (existingNames.has(nameKey) || formNames.has(nameKey)) { skipped++; continue; }
+        if (emailKey && (existingEmails.has(emailKey) || formEmails.has(emailKey))) { skipped++; continue; }
+        formNames.add(nameKey);
+        if (emailKey) formEmails.add(emailKey);
         await createReg.mutateAsync({
           competition_id: id,
           athlete_name: m.name.trim(),
