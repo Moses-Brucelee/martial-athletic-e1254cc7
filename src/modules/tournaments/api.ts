@@ -92,10 +92,16 @@ export async function addTeam(input: AddTeamInput): Promise<Team> {
       team_name: input.team_name,
       division: input.division || null,
       division_id: input.division_id || null,
+      captain_user_id: input.captain_user_id || null,
     })
     .select("*")
     .single();
-  if (error) throw error;
+  if (error) {
+    if ((error as any).code === "23505") {
+      throw new Error("TEAM_NAME_TAKEN");
+    }
+    throw error;
+  }
   return data as Team;
 }
 
