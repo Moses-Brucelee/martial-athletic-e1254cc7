@@ -130,6 +130,17 @@ export function useUpdateRegistrationDetails() {
   });
 }
 
+export function useDeleteRegistration() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string; competitionId: string }) =>
+      api.deleteRegistration(id),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["registrations", v.competitionId] });
+    },
+  });
+}
+
 
 // ── Athletes ──────────────────────────────────────────────
 
