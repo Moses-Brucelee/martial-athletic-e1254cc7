@@ -1728,6 +1728,9 @@ export type Database = {
           id: string
           profile_completed: boolean
           subscription_tier: string
+          tier_assigned_at: string
+          tier_assigned_by: string | null
+          tier_slug: string
           updated_at: string
           user_id: string
         }
@@ -1744,6 +1747,9 @@ export type Database = {
           id?: string
           profile_completed?: boolean
           subscription_tier?: string
+          tier_assigned_at?: string
+          tier_assigned_by?: string | null
+          tier_slug?: string
           updated_at?: string
           user_id: string
         }
@@ -1760,10 +1766,21 @@ export type Database = {
           id?: string
           profile_completed?: boolean
           subscription_tier?: string
+          tier_assigned_at?: string
+          tier_assigned_by?: string | null
+          tier_slug?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tier_slug_fkey"
+            columns: ["tier_slug"]
+            isOneToOne: false
+            referencedRelation: "pricing_tiers"
+            referencedColumns: ["key"]
+          },
+        ]
       }
       provider_health_status: {
         Row: {
@@ -1965,6 +1982,36 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tier_change_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_tier_slug: string
+          old_tier_slug: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_tier_slug: string
+          old_tier_slug?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_tier_slug?: string
+          old_tier_slug?: string | null
+          reason?: string | null
           user_id?: string
         }
         Relationships: []
@@ -2319,6 +2366,7 @@ export type Database = {
         Args: { p_competition_id: string; p_workout_id: string }
         Returns: undefined
       }
+      user_tier_at_least: { Args: { min_tier: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
