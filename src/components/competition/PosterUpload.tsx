@@ -333,12 +333,21 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={handleGenerate} disabled={generating || !currentPosterUrl} className="flex-1">
+                  <Button onClick={handleGenerate} disabled={generating || onCooldown || !currentPosterUrl} className="flex-1">
                     {generating ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Wand2 className="h-4 w-4 mr-1.5" />}
-                    {generating ? "Generating…" : aiPreviewUrl ? "Regenerate" : "Generate Stunning Poster"}
+                    {generating
+                      ? "Generating…"
+                      : onCooldown
+                        ? `Retry in ${formatCooldown(cooldownRemaining)}`
+                        : aiPreviewUrl
+                          ? "Regenerate"
+                          : "Generate Stunning Poster"}
                   </Button>
                 </TooltipTrigger>
                 {!currentPosterUrl && <TooltipContent>Upload a hero image first</TooltipContent>}
+                {onCooldown && currentPosterUrl && (
+                  <TooltipContent>Daily limit reached or AI cooling down</TooltipContent>
+                )}
               </Tooltip>
             </TooltipProvider>
           </div>
