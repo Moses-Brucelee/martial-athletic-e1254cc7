@@ -67,6 +67,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamDivisionId, setNewTeamDivisionId] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const [editingReg, setEditingReg] = useState<AthleteRegistration | null>(null);
 
   // Build team→heat+lane lookup
   const teamHeatMap = useMemo(() => {
