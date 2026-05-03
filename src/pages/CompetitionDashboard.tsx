@@ -102,6 +102,7 @@ function getQuickModeTabs(status: CompetitionStatus): { value: string; label: st
 
 export default function CompetitionDashboard() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
   const { isOwner, isJudge, loading: roleLoading } = useCompetitionRole(id);
