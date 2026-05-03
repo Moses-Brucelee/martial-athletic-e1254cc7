@@ -173,6 +173,12 @@ export default function CompetitionPublic() {
       } else {
         const tName = teamName.trim();
         if (tName.length < 2) { toast.error("Team name is required"); setSubmitting(false); return; }
+        const nameTaken = teams.some((t) => t.team_name.trim().toLowerCase() === tName.toLowerCase());
+        if (nameTaken) {
+          toast.error(`Team name "${tName}" is already taken. Please choose another.`);
+          setSubmitting(false);
+          return;
+        }
         const div = divisions.find((d) => d.id === selectedDivisionId);
         const team = await addTeamMutation.mutateAsync({
           competition_id: id,
