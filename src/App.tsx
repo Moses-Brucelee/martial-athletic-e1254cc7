@@ -58,7 +58,7 @@ const App = () => (
               <Route path="/dashboard" element={<ProtectedRoute><MainMenu /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ViewProfile /></ProtectedRoute>} />
               <Route path="/competitions" element={<ProtectedRoute><CompetitionList /></ProtectedRoute>} />
-              <Route path="/competition/create" element={<ProtectedRoute><RequireTier tier="tournament_pro"><CompetitionCreate /></RequireTier></ProtectedRoute>} />
+              <Route path="/competition/create" element={<ProtectedRoute><RequireTier tier="affiliate_pro"><CompetitionCreate /></RequireTier></ProtectedRoute>} />
               {/* /competition/:id/workouts removed — now part of creation wizard */}
               <Route path="/competition/:id" element={<ProtectedRoute><CompetitionDashboard /></ProtectedRoute>} />
               

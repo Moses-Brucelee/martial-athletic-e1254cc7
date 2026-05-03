@@ -106,7 +106,7 @@ export default function MainMenu() {
   // Map feature_key -> minimum required tier slug. Items not listed have no tier gate.
   // Keys must match menu_items.feature_key in DB.
   const FEATURE_TIER_REQUIREMENT: Record<string, string> = {
-    create_competitions: "tournament_pro",
+    create_competitions: "affiliate_pro",
     manage_members: "affiliate_pro",
     manage_affiliation: "affiliate_pro",
     link_gym_website: "affiliate_pro",
