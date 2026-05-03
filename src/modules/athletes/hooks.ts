@@ -128,6 +128,8 @@ export function useUpdateRegistrationDetails() {
       qc.invalidateQueries({ queryKey: ["registrations", v.competitionId] });
     },
   });
+}
+
 
 // ── Athletes ──────────────────────────────────────────────
 
