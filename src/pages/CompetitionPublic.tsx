@@ -26,6 +26,8 @@ import { differenceInYears } from "date-fns";
 import { athleteNameSchema, emailSchema } from "@/lib/validation";
 import { STATUS_LABELS, STATUS_COLORS } from "@/modules/athletes/types";
 import { AdaptivePoster } from "@/components/competition/AdaptivePoster";
+import { listSponsors, type SponsorAsset } from "@/lib/posterAssets";
+import { useEffect } from "react";
 
 export default function CompetitionPublic() {
   const { id } = useParams<{ id: string }>();
