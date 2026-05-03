@@ -99,11 +99,8 @@ export default function MainMenu() {
     fetchMenu();
   }, []);
 
-  useEffect(() => {
-    if (!profileLoading && profile && !profile.profile_completed) {
-      navigate("/create-profile", { replace: true });
-    }
-  }, [profile, profileLoading, navigate]);
+  // Profile completeness is now a soft concern (handled via banner in Slice E),
+  // not a hard route redirect. Intentionally no navigation effect here.
 
   // Map feature_key -> minimum required tier slug. Items not listed have no tier gate.
   const FEATURE_TIER_REQUIREMENT: Record<string, string> = {
