@@ -782,19 +782,49 @@ export default function CompetitionPublic() {
                         {members.length === 0 ? (
                           <p className="text-xs text-muted-foreground px-3 py-2">No members yet</p>
                         ) : (
-                          members.map((m) => (
-                            <div key={m.id} className="flex items-center justify-between px-3 py-2 border-b border-border last:border-b-0">
-                              <span className="text-sm text-foreground">
-                                {m.athlete_name}
-                                {m.registration_type === "team_captain" && (
-                                  <span className="ml-2 text-[10px] uppercase font-bold text-primary">Captain</span>
-                                )}
-                              </span>
-                              <Badge variant="outline" className={`text-xs ${STATUS_COLORS[m.status] ?? ""}`}>
-                                {STATUS_LABELS[m.status] ?? m.status}
-                              </Badge>
-                            </div>
-                          ))
+                          members.map((m) => {
+                            const canManage = !!user && (
+                              t.captain_user_id === user.id ||
+                              competition.created_by === user.id
+                            );
+                            return (
+                              <div key={m.id} className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border last:border-b-0">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {canManage ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingReg(m)}
+                                      className="text-sm font-medium text-primary underline-offset-2 hover:underline truncate"
+                                    >
+                                      {m.athlete_name}
+                                    </button>
+                                  ) : (
+                                    <span className="text-sm text-foreground truncate">{m.athlete_name}</span>
+                                  )}
+                                  {m.registration_type === "team_captain" && (
+                                    <span className="text-[10px] uppercase font-bold text-primary shrink-0">Captain</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <Badge variant="outline" className={`text-xs ${STATUS_COLORS[m.status] ?? ""}`}>
+                                    {STATUS_LABELS[m.status] ?? m.status}
+                                  </Badge>
+                                  {canManage && (
+                                    <>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingReg(m)} aria-label="Edit">
+                                        <Pencil className="h-3.5 w-3.5" />
+                                      </Button>
+                                      {m.registration_type !== "team_captain" && (
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setRemovingReg(m)} aria-label="Remove">
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
                         )}
                       </div>
                     )}
