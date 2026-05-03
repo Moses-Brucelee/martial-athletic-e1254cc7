@@ -49,6 +49,7 @@ export default function CompetitionPublic() {
   const [teamName, setTeamName] = useState("");
   const [teamMembers, setTeamMembers] = useState<{ name: string; email: string }[]>([{ name: "", email: "" }]);
   const [submitting, setSubmitting] = useState(false);
+  const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
 
   const derivedStatus = competition ? deriveStatus(competition) : "draft";
   const canRegister = derivedStatus === "published" || derivedStatus === "live";
@@ -647,6 +648,62 @@ export default function CompetitionPublic() {
             </div>
           )}
         </div>
+
+        {/* Teams */}
+        {teams.length > 0 && (
+          <div className="bg-card border border-border rounded-xl p-6">
+            <h2 className="text-lg font-bold text-foreground uppercase mb-3 flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" /> Teams ({teams.length})
+            </h2>
+            <div className="space-y-2">
+              {teams.map((t) => {
+                const members = registrations.filter(
+                  (r) => r.team_id === t.id && r.status !== "removed" && r.status !== "withdrawn" && r.status !== "rejected"
+                );
+                const isOpen = expandedTeamId === t.id;
+                return (
+                  <div key={t.id} className="rounded-lg border border-border overflow-hidden bg-background">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedTeamId(isOpen ? null : t.id)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                        <span className="font-semibold text-foreground text-sm truncate">{t.team_name}</span>
+                        {t.division && (
+                          <Badge variant="outline" className="text-xs shrink-0">{t.division}</Badge>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground shrink-0">{members.length} member{members.length === 1 ? "" : "s"}</span>
+                    </button>
+                    {isOpen && (
+                      <div className="border-t border-border">
+                        {members.length === 0 ? (
+                          <p className="text-xs text-muted-foreground px-3 py-2">No members yet</p>
+                        ) : (
+                          members.map((m) => (
+                            <div key={m.id} className="flex items-center justify-between px-3 py-2 border-b border-border last:border-b-0">
+                              <span className="text-sm text-foreground">
+                                {m.athlete_name}
+                                {m.registration_type === "team_captain" && (
+                                  <span className="ml-2 text-[10px] uppercase font-bold text-primary">Captain</span>
+                                )}
+                              </span>
+                              <Badge variant="outline" className={`text-xs ${STATUS_COLORS[m.status] ?? ""}`}>
+                                {STATUS_LABELS[m.status] ?? m.status}
+                              </Badge>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Registered athletes */}
         {registrations.length > 0 && (
