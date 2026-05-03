@@ -148,12 +148,10 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
     if (validationError) { toast.error(validationError); return; }
     setSponsorBusy(true);
     try {
-      // Resize first so the bg-removal model and storage stay snappy
+      // Background removal temporarily disabled — upload sponsor logo as-is.
       const resized = await resizeImage(file, { maxDim: 800, preferPng: true });
-      toast.info("Removing background…");
-      const transparent = await removeBackground(resized);
       const baseName = (file.name.replace(/\.[^.]+$/, "") || "sponsor") + ".png";
-      const asset = await uploadSponsor(competitionId, transparent, baseName);
+      const asset = await uploadSponsor(competitionId, resized, baseName);
       setSponsors((s) => [...s, asset]);
       toast.success("Sponsor added");
     } catch (err: any) {
@@ -282,7 +280,7 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
               {!aiUnlocked && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
             </h3>
             <p className="text-xs text-muted-foreground">
-              Auto background-removed — transparent PNGs work best. {sponsors.length}/{MAX_SPONSORS}
+              Upload PNG/JPG logos — transparent PNGs work best. {sponsors.length}/{MAX_SPONSORS}
             </p>
           </div>
         </div>
