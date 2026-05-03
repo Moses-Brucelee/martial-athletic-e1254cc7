@@ -42,11 +42,35 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
   const [generating, setGenerating] = useState(false);
   const [aiPreviewUrl, setAiPreviewUrl] = useState<string | null>(null);
   const [savingPoster, setSavingPoster] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
   const heroInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     listSponsors(competitionId).then(setSponsors).catch(() => {});
   }, [competitionId]);
+
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const tick = () => setNow(Date.now());
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  const cooldownRemaining = cooldownUntil ? Math.max(0, cooldownUntil - now) : 0;
+  const onCooldown = cooldownRemaining > 0;
+  useEffect(() => {
+    if (cooldownUntil && now >= cooldownUntil) setCooldownUntil(null);
+  }, [now, cooldownUntil]);
+
+  const formatCooldown = (ms: number) => {
+    const s = Math.ceil(ms / 1000);
+    if (s < 60) return `${s}s`;
+    const m = Math.ceil(s / 60);
+    if (m < 60) return `${m}m`;
+    const h = Math.ceil(m / 60);
+    return `${h}h`;
+  };
 
   const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
