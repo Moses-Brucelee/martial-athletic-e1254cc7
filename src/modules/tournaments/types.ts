@@ -44,6 +44,7 @@ export interface AddTeamInput {
   team_name: string;
   division?: string | null;
   division_id?: string | null;
+  captain_user_id?: string | null;
 }
 
 export interface AddWorkoutInput {

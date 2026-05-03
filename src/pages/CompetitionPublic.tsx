@@ -145,8 +145,18 @@ export default function CompetitionPublic() {
     }
   };
 
-  // Team the current user already captains in this competition
-  const myCaptainTeam = user ? teams.find((t) => t.captain_user_id === user.id) : null;
+  // Team the current user already belongs to (as captain or member) in this competition
+  const myCaptainTeam = (() => {
+    if (!user) return null;
+    const captained = teams.find((t) => t.captain_user_id === user.id);
+    if (captained) return captained;
+    // Fallback: find via existing registration (covers legacy teams missing captain_user_id)
+    const myReg = registrations.find(
+      (r) => r.user_id === user.id && r.team_id && !["withdrawn", "rejected", "removed"].includes(r.status),
+    );
+    if (myReg?.team_id) return teams.find((t) => t.id === myReg.team_id) ?? null;
+    return null;
+  })();
 
   const handleSubmitTeam = async () => {
     if (!user || !id) return;
@@ -173,6 +183,12 @@ export default function CompetitionPublic() {
       } else {
         const tName = teamName.trim();
         if (tName.length < 2) { toast.error("Team name is required"); setSubmitting(false); return; }
+        const nameTaken = teams.some((t) => t.team_name.trim().toLowerCase() === tName.toLowerCase());
+        if (nameTaken) {
+          toast.error(`Team name "${tName}" is already taken. Please choose another.`);
+          setSubmitting(false);
+          return;
+        }
         const div = divisions.find((d) => d.id === selectedDivisionId);
         const team = await addTeamMutation.mutateAsync({
           competition_id: id,
@@ -243,8 +259,12 @@ export default function CompetitionPublic() {
       setTeamName("");
       setTeamMembers([{ name: "", email: "" }]);
       setSelectedDivisionId("");
-    } catch {
-      toast.error("Team registration failed. Please try again.");
+    } catch (err: any) {
+      if (err?.message === "TEAM_NAME_TAKEN") {
+        toast.error("Team name is already taken in this competition. Please choose another.");
+      } else {
+        toast.error("Team registration failed. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }
