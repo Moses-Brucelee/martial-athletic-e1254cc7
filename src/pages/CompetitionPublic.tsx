@@ -231,6 +231,52 @@ export default function CompetitionPublic() {
 
   // Wizard steps
   const renderWizardStep = () => {
+    if (regMode === "team") {
+      // Team registration single-step form
+      return (
+        <div className="space-y-4">
+          <h3 className="text-base font-bold text-foreground">Team Registration</h3>
+          <div>
+            <Label className="text-sm font-medium">Team Name *</Label>
+            <Input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="e.g. Iron Wolves" className="mt-1" maxLength={100} />
+          </div>
+          {divisions.length > 0 && (
+            <div>
+              <Label className="text-sm font-medium">Division</Label>
+              <Select value={selectedDivisionId || "__none__"} onValueChange={(v) => setSelectedDivisionId(v === "__none__" ? "" : v)}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No division</SelectItem>
+                  {divisions.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">You ({profile?.display_name || "Captain"}) will be added as captain. Add additional team members below.</p>
+            <Label className="text-sm font-medium">Team Members</Label>
+            <div className="space-y-2 mt-1">
+              {teamMembers.map((m, i) => (
+                <div key={i} className="flex gap-2">
+                  <Input value={m.name} onChange={(e) => {
+                    const next = [...teamMembers]; next[i] = { ...next[i], name: e.target.value }; setTeamMembers(next);
+                  }} placeholder="Member name" className="flex-1" maxLength={100} />
+                  <Input value={m.email} onChange={(e) => {
+                    const next = [...teamMembers]; next[i] = { ...next[i], email: e.target.value }; setTeamMembers(next);
+                  }} placeholder="email (optional)" type="email" className="flex-1" maxLength={255} />
+                  {teamMembers.length > 1 && (
+                    <Button variant="ghost" size="sm" onClick={() => setTeamMembers(teamMembers.filter((_, idx) => idx !== i))}>×</Button>
+                  )}
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={() => setTeamMembers([...teamMembers, { name: "", email: "" }])} className="w-full">
+                + Add Member
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
     switch (regStep) {
       case 0:
         return (
