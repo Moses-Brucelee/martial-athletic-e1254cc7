@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Eye, EyeOff, ArrowLeft, AlertCircle, Lock } from "lucide-react";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -236,6 +237,17 @@ export default function Login() {
                 )}
               </Button>
             </form>
+
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">Or</span>
+              </div>
+            </div>
+
+            <GoogleSignInButton redirectTo={redirectTarget} />
 
             <div className="mt-5 text-center">
               <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary transition-colors">
