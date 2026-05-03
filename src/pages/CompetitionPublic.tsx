@@ -684,7 +684,7 @@ export default function CompetitionPublic() {
                     disabled={submitting}
                     className="flex-1 h-11 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
                   >
-                    {submitting ? "Submitting…" : "Register Team"}
+                    {submitting ? "Submitting…" : myCaptainTeam ? "Add Members" : "Register Team"}
                   </Button>
                 ) : regStep < totalSteps - 1 ? (
                   <Button
