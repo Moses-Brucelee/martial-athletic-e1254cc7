@@ -144,12 +144,14 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
       toast.error(`Max ${MAX_SPONSORS} sponsors`);
       return;
     }
-    const validationError = validateImageFile(file);
+    const validationError = validateImageType(file);
     if (validationError) { toast.error(validationError); return; }
     setSponsorBusy(true);
     try {
+      // Resize first so the bg-removal model and storage stay snappy
+      const resized = await resizeImage(file, { maxDim: 800, preferPng: true });
       toast.info("Removing background…");
-      const transparent = await removeBackground(file);
+      const transparent = await removeBackground(resized);
       const baseName = (file.name.replace(/\.[^.]+$/, "") || "sponsor") + ".png";
       const asset = await uploadSponsor(competitionId, transparent, baseName);
       setSponsors((s) => [...s, asset]);
