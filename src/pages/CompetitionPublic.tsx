@@ -144,6 +144,64 @@ export default function CompetitionPublic() {
     }
   };
 
+  const handleSubmitTeam = async () => {
+    if (!user || !id) return;
+    const tName = teamName.trim();
+    if (tName.length < 2) { toast.error("Team name is required"); return; }
+    const validMembers = teamMembers.filter((m) => m.name.trim().length >= 2);
+    if (validMembers.length === 0) { toast.error("Add at least one team member"); return; }
+    for (const m of validMembers) {
+      if (m.email) {
+        const e = emailSchema.safeParse(m.email);
+        if (!e.success) { toast.error(`Invalid email for ${m.name}`); return; }
+      }
+    }
+    setSubmitting(true);
+    try {
+      const div = divisions.find((d) => d.id === selectedDivisionId);
+      const team = await addTeamMutation.mutateAsync({
+        competition_id: id,
+        team_name: tName,
+        division: div?.name || null,
+        division_id: selectedDivisionId || null,
+        captain_user_id: user.id,
+      } as any);
+      const captainName = profile?.display_name || profile?.full_name || "Captain";
+      await createReg.mutateAsync({
+        competition_id: id,
+        athlete_name: captainName,
+        user_id: user.id,
+        team_id: team.id,
+        division_id: selectedDivisionId || null,
+        registered_by_user_id: user.id,
+        registration_type: "team_captain",
+        status: "pending",
+      });
+      for (const m of validMembers) {
+        await createReg.mutateAsync({
+          competition_id: id,
+          athlete_name: m.name.trim(),
+          team_id: team.id,
+          division_id: selectedDivisionId || null,
+          registered_by_user_id: user.id,
+          registration_type: "team_member",
+          email: m.email.trim() || null,
+          status: "pending",
+        });
+      }
+      toast.success(`Team "${tName}" registered with ${validMembers.length + 1} member(s)!`);
+      setShowRegWizard(false);
+      setRegStep(0);
+      setTeamName("");
+      setTeamMembers([{ name: "", email: "" }]);
+      setSelectedDivisionId("");
+    } catch {
+      toast.error("Team registration failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
