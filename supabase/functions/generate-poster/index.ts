@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     // Load competition meta
     const { data: comp, error: compErr } = await admin
       .from("competitions")
-      .select("name, start_date, end_date, venue_name, venue_address")
+      .select("name, start_date, end_date, venue")
       .eq("id", competitionId)
       .maybeSingle();
     if (compErr || !comp) throw new Error("Competition not found");
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
           year: "numeric",
         })
       : "";
-    const venue = [comp.venue_name, comp.venue_address].filter(Boolean).join(" • ");
+    const venue = comp.venue || "";
 
     const promptText = `${STYLE_PROMPTS[style]}
 
