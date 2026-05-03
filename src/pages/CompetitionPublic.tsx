@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
-import { useCompetition, useTeams, useDivisions, useWorkouts } from "@/modules/tournaments/hooks";
+import { useCompetition, useTeams, useDivisions, useWorkouts, useAddTeam } from "@/modules/tournaments/hooks";
 import { useRegistrations, useCreateRegistration } from "@/modules/athletes/hooks";
 import { checkDuplicateRegistration } from "@/modules/athletes/api";
 import { deriveStatus, getStatusLabel, getStatusColor } from "@/modules/tournaments/stateMachine";
