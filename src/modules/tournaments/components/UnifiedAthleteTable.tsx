@@ -29,6 +29,7 @@ import { athleteNameSchema } from "@/lib/validation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { EditRegistrationDialog } from "@/modules/athletes/components/EditRegistrationDialog";
 
 interface Props {
   competitionId: string;
