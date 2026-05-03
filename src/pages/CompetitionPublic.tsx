@@ -62,6 +62,11 @@ export default function CompetitionPublic() {
   const [editingReg, setEditingReg] = useState<AthleteRegistration | null>(null);
   const [removingReg, setRemovingReg] = useState<AthleteRegistration | null>(null);
   const deleteReg = useDeleteRegistration();
+  const [sponsors, setSponsors] = useState<SponsorAsset[]>([]);
+  useEffect(() => {
+    if (!id) return;
+    listSponsors(id).then(setSponsors).catch(() => {});
+  }, [id]);
 
   const derivedStatus = competition ? deriveStatus(competition) : "draft";
   const canRegister = derivedStatus === "published" || derivedStatus === "live";
