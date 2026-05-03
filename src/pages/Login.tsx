@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,21 @@ const LOCKOUT_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+
+  const safeRedirect = (raw: string | null): string => {
+    if (!raw) return "/dashboard";
+    try {
+      const decoded = decodeURIComponent(raw);
+      // Only allow same-origin internal paths to prevent open-redirects.
+      if (decoded.startsWith("/") && !decoded.startsWith("//")) return decoded;
+    } catch {
+      /* fall through */
+    }
+    return "/dashboard";
+  };
+  const redirectTarget = safeRedirect(searchParams.get("redirectTo"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -44,8 +58,8 @@ export default function Login() {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) navigate("/dashboard", { replace: true });
-  }, [user, navigate]);
+    if (user) navigate(redirectTarget, { replace: true });
+  }, [user, navigate, redirectTarget]);
 
   // Load brute force state from sessionStorage
   useEffect(() => {
@@ -123,7 +137,7 @@ export default function Login() {
     // Success - clear attempts
     sessionStorage.removeItem("ma-login-attempts");
     setLoading(false);
-    navigate("/dashboard", { replace: true });
+    navigate(redirectTarget, { replace: true });
   };
 
   return (
