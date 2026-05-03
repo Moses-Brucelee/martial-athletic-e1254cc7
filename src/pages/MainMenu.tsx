@@ -6,6 +6,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { V1_FULL_ACCESS, MENU_FEATURE_TO_FLAG, type FeatureFlagKey } from "@/lib/featureFlags";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
+import { useTier } from "@/hooks/useTier";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -65,6 +66,7 @@ export default function MainMenu() {
   const { profile, loading: profileLoading, error: profileError } = useProfile();
   const { canAccess, loading: subLoading } = useSubscription();
   const { flags, loading: flagsLoading } = useFeatureFlags();
+  const { isAtLeast, loading: tierLoading } = useTier();
   const [hasCompetitions, setHasCompetitions] = useState(false);
   const [compLoading, setCompLoading] = useState(true);
 
@@ -103,15 +105,26 @@ export default function MainMenu() {
     }
   }, [profile, profileLoading, navigate]);
 
+  // Map feature_key -> minimum required tier slug. Items not listed have no tier gate.
+  const FEATURE_TIER_REQUIREMENT: Record<string, string> = {
+    create_competitions: "tournament_pro",
+    performances_analytics: "tournament_pro",
+    members_management: "affiliate_pro",
+    affiliation_network: "affiliate_pro",
+    gym_website_builder: "affiliate_pro",
+  };
+
   // Flatten all accessible menu items (no tier grouping)
   const accessibleItems = useMemo(() => {
     return menuItems.filter((m) => {
       if (!V1_FULL_ACCESS && !canAccess(m.feature_key)) return false;
       const flagKey = MENU_FEATURE_TO_FLAG[m.feature_key] as FeatureFlagKey | undefined;
       if (flagKey && flags[flagKey] === false) return false;
+      const requiredTier = FEATURE_TIER_REQUIREMENT[m.feature_key];
+      if (requiredTier && !isAtLeast(requiredTier)) return false;
       return true;
     });
-  }, [menuItems, canAccess, flags]);
+  }, [menuItems, canAccess, flags, isAtLeast]);
 
   const initials = profile?.display_name
     ? profile.display_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -119,7 +132,7 @@ export default function MainMenu() {
 
   const firstName = profile?.display_name?.split(" ")[0] ?? "Athlete";
 
-  const isLoading = profileLoading || compLoading || subLoading || menuLoading || flagsLoading;
+  const isLoading = profileLoading || compLoading || subLoading || menuLoading || flagsLoading || tierLoading;
 
   if (isLoading) {
     return (
