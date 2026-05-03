@@ -77,7 +77,7 @@ export function ProfileFieldsPromptProvider({ children }: { children: ReactNode 
       <ProfileFieldsPromptDialog
         request={pending}
         userId={user?.id ?? null}
-        profile={profile}
+        profile={(profile as unknown as Record<string, unknown>) ?? null}
         onClose={(success) => {
           if (pending) pending.resolve(success);
           if (success) refetch();
