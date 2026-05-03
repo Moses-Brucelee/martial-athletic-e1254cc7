@@ -2318,6 +2318,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_get_user_emails: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
       get_competition_leaderboard: {
         Args: { p_competition_id: string }
         Returns: {
