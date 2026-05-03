@@ -17,7 +17,7 @@ export function ShopSpotlight() {
         <div className="p-4 space-y-3">
           <h3 className="text-sm font-bold text-foreground">Official Gear</h3>
           <p className="text-xs text-muted-foreground">
-            Premium martial arts apparel and equipment — coming soon.
+            Quality martial arts apparel and equipment — coming soon.
           </p>
           <Button
             variant="outline"

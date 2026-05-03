@@ -32,7 +32,7 @@ const sections = [
       <ul className="space-y-2 list-disc list-inside text-muted-foreground">
         <li><strong className="text-foreground">Create your account</strong> — Sign up with your email and verify it. You'll be prompted to create a profile with your display name, affiliation, date of birth, and gender.</li>
         <li><strong className="text-foreground">Navigate the Main Menu</strong> — After logging in, the main menu gives you quick access to competitions, your profile, and platform features.</li>
-        <li><strong className="text-foreground">Understand your tier</strong> — Free users can view competitions. Upgraded tiers unlock competition creation, gym management, and more. Check the Upgrade page for details.</li>
+        <li><strong className="text-foreground">Explore your menu</strong> — The main menu shows everything available to your account. Use it to view competitions, manage your profile, and access platform features.</li>
       </ul>
     ),
   },

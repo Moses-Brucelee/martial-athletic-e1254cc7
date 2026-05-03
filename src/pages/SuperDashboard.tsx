@@ -7,6 +7,7 @@ import { AthleteMergeManager } from "@/modules/athletes/components/AthleteMergeM
 import { SuperUserManager } from "@/components/super/SuperUserManager";
 import { FeatureFlagsManager } from "@/components/super/FeatureFlagsManager";
 import { UserTiersManager } from "@/components/super/UserTiersManager";
+import { UpgradePackagePreview } from "@/components/super/UpgradePackagePreview";
 import { AppHeader } from "@/components/AppHeader";
 
 export default function SuperDashboard() {
@@ -17,7 +18,7 @@ export default function SuperDashboard() {
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
         <Tabs defaultValue="competitions" className="w-full">
           <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 mb-6">
-            <TabsList className="inline-flex w-auto min-w-full md:w-full md:grid md:grid-cols-8 gap-1">
+            <TabsList className="inline-flex w-auto min-w-full md:w-full md:grid md:grid-cols-9 gap-1">
               <TabsTrigger value="competitions">Competitions</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="tiers">User Tiers</TabsTrigger>
@@ -26,6 +27,7 @@ export default function SuperDashboard() {
               <TabsTrigger value="overrides">Overrides</TabsTrigger>
               <TabsTrigger value="athletes">Athletes</TabsTrigger>
               <TabsTrigger value="flags">Feature Flags</TabsTrigger>
+              <TabsTrigger value="pricing-preview">Pricing Preview</TabsTrigger>
             </TabsList>
           </div>
 
@@ -59,6 +61,10 @@ export default function SuperDashboard() {
 
           <TabsContent value="flags">
             <FeatureFlagsManager />
+          </TabsContent>
+
+          <TabsContent value="pricing-preview">
+            <UpgradePackagePreview />
           </TabsContent>
         </Tabs>
       </main>

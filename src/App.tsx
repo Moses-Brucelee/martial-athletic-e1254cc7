@@ -22,7 +22,7 @@ import CompetitionDashboard from "./pages/CompetitionDashboard";
 import CompetitionList from "./pages/CompetitionList";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import UpgradePackage from "./pages/UpgradePackage";
+
 import SuperDashboard from "./pages/SuperDashboard";
 import MembersPage from "./modules/members/components/MembersPage";
 import NotFound from "./pages/NotFound";
@@ -59,7 +59,7 @@ const App = () => (
               <Route path="/competition/create" element={<ProtectedRoute><RequireTier tier="tournament_pro"><CompetitionCreate /></RequireTier></ProtectedRoute>} />
               {/* /competition/:id/workouts removed — now part of creation wizard */}
               <Route path="/competition/:id" element={<ProtectedRoute><CompetitionDashboard /></ProtectedRoute>} />
-              <Route path="/upgrade" element={<ProtectedRoute><UpgradePackage /></ProtectedRoute>} />
+              
               <Route path="/super-dashboard" element={<ProtectedRoute><SuperUserGuard><SuperDashboard /></SuperUserGuard></ProtectedRoute>} />
               <Route path="/members" element={<ProtectedRoute><RequireTier tier="affiliate_pro"><MembersPage /></RequireTier></ProtectedRoute>} />
               <Route path="/affiliation" element={<ProtectedRoute><RequireTier tier="affiliate_pro"><Affiliation /></RequireTier></ProtectedRoute>} />
