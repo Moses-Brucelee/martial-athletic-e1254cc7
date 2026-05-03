@@ -138,21 +138,40 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
 
   const handleGenerate = async () => {
     if (!currentPosterUrl) { toast.error("Upload a hero image first"); return; }
+    if (cooldownUntil && cooldownUntil > Date.now()) return;
     setGenerating(true);
     setAiPreviewUrl(null);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-poster", {
-        body: { competitionId, style },
+      const { data: { session } } = await supabase.auth.getSession();
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-poster`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ competitionId, style }),
       });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      setAiPreviewUrl((data as any).url);
+      const payload = await resp.json().catch(() => ({}));
+      if (resp.status === 429) {
+        const retryAt = payload?.retryAt ? new Date(payload.retryAt).getTime() : Date.now() + 60_000;
+        setCooldownUntil(retryAt);
+        toast.error(payload?.error || "Rate limit reached.");
+        return;
+      }
+      if (resp.status === 402) {
+        toast.error("AI credits exhausted. Add credits in Workspace → Usage.");
+        return;
+      }
+      if (!resp.ok) {
+        toast.error(payload?.error || "Generation failed");
+        return;
+      }
+      setAiPreviewUrl(payload.url);
       toast.success("AI poster ready!");
     } catch (err: any) {
-      const msg = err?.message || "Generation failed";
-      if (msg.toLowerCase().includes("rate")) toast.error("Rate limit reached. Try again shortly.");
-      else if (msg.toLowerCase().includes("credit")) toast.error("AI credits exhausted. Add credits in Workspace → Usage.");
-      else toast.error(msg);
+      toast.error(err?.message || "Generation failed");
     } finally {
       setGenerating(false);
     }
