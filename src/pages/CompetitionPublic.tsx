@@ -283,26 +283,38 @@ export default function CompetitionPublic() {
       // Team registration single-step form
       return (
         <div className="space-y-4">
-          <h3 className="text-base font-bold text-foreground">Team Registration</h3>
-          <div>
-            <Label className="text-sm font-medium">Team Name *</Label>
-            <Input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="e.g. Iron Wolves" className="mt-1" maxLength={100} />
-          </div>
-          {divisions.length > 0 && (
-            <div>
-              <Label className="text-sm font-medium">Division</Label>
-              <Select value={selectedDivisionId || "__none__"} onValueChange={(v) => setSelectedDivisionId(v === "__none__" ? "" : v)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">No division</SelectItem>
-                  {divisions.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+          <h3 className="text-base font-bold text-foreground">
+            {myCaptainTeam ? `Add Members to "${myCaptainTeam.team_name}"` : "Team Registration"}
+          </h3>
+          {myCaptainTeam ? (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-foreground">
+              You're the captain of <span className="font-semibold">{myCaptainTeam.team_name}</span>
+              {myCaptainTeam.division ? <> · <span className="text-muted-foreground">{myCaptainTeam.division}</span></> : null}.
+              New members below will be added to this team — duplicates are skipped automatically.
             </div>
+          ) : (
+            <>
+              <div>
+                <Label className="text-sm font-medium">Team Name *</Label>
+                <Input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="e.g. Iron Wolves" className="mt-1" maxLength={100} />
+              </div>
+              {divisions.length > 0 && (
+                <div>
+                  <Label className="text-sm font-medium">Division</Label>
+                  <Select value={selectedDivisionId || "__none__"} onValueChange={(v) => setSelectedDivisionId(v === "__none__" ? "" : v)}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">No division</SelectItem>
+                      {divisions.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">You ({profile?.display_name || "Captain"}) will be added as captain.</p>
+            </>
           )}
           <div>
-            <p className="text-xs text-muted-foreground mb-2">You ({profile?.display_name || "Captain"}) will be added as captain. Add additional team members below.</p>
-            <Label className="text-sm font-medium">Team Members</Label>
+            <Label className="text-sm font-medium">{myCaptainTeam ? "New Members" : "Team Members"}</Label>
             <div className="space-y-2 mt-1">
               {teamMembers.map((m, i) => (
                 <div key={i} className="flex gap-2">
