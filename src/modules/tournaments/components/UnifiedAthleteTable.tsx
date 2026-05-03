@@ -445,6 +445,13 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
           <span className="flex items-center gap-1 ml-auto"><strong className="text-foreground">{approvedCount}/{maxAthletes}</strong> Capacity</span>
         )}
       </div>
+
+      <EditRegistrationDialog
+        open={!!editingReg}
+        onOpenChange={(o) => !o && setEditingReg(null)}
+        reg={editingReg}
+        competitionId={competitionId}
+      />
     </div>
   );
 }
