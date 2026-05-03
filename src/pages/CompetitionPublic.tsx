@@ -863,6 +863,43 @@ export default function CompetitionPublic() {
           </div>
         )}
       </main>
+
+      <EditRegistrationDialog
+        open={!!editingReg}
+        onOpenChange={(o) => !o && setEditingReg(null)}
+        reg={editingReg}
+        competitionId={id!}
+      />
+
+      <AlertDialog open={!!removingReg} onOpenChange={(o) => !o && setRemovingReg(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove team member?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {removingReg ? `This will remove ${removingReg.athlete_name} from the team.` : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!removingReg || !id) return;
+                try {
+                  await deleteReg.mutateAsync({ id: removingReg.id, competitionId: id });
+                  toast.success("Member removed");
+                } catch {
+                  toast.error("Failed to remove member");
+                } finally {
+                  setRemovingReg(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
