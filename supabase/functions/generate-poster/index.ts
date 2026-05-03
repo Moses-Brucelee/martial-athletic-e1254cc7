@@ -213,10 +213,16 @@ Render the title in HUGE legible typography. Include date and venue clearly. Mak
       const t = await aiResp.text();
       console.error("AI gateway error", aiResp.status, t);
       if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit reached. Try again shortly." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        const ra = aiResp.headers.get("retry-after");
+        const seconds = ra ? parseInt(ra, 10) || 60 : 60;
+        const retryAt = new Date(Date.now() + seconds * 1000).toISOString();
+        return new Response(
+          JSON.stringify({ error: "AI service rate limit reached. Try again shortly.", retryAt }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(seconds) },
+          }
+        );
       }
       if (aiResp.status === 402) {
         return new Response(
