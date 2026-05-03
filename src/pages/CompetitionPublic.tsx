@@ -558,73 +558,109 @@ export default function CompetitionPublic() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
-      <div className="relative">
+      <div className="relative pb-20 sm:pb-24">
         {competition.poster_url ? (
-          <div className="h-56 md:h-72 overflow-hidden relative">
-            <AdaptivePoster src={competition.poster_url} alt={competition.name} className="h-56 md:h-72" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-20" />
+          <div className="h-48 sm:h-64 md:h-80 overflow-hidden relative">
+            <AdaptivePoster src={competition.poster_url} alt={competition.name} className="h-48 sm:h-64 md:h-80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent z-20" />
           </div>
         ) : (
-          <div className="h-40 bg-gradient-to-br from-primary/20 to-accent/20" />
+          <div className="h-32 sm:h-40 bg-gradient-to-br from-primary/20 to-accent/20" />
         )}
 
-        <div className="max-w-3xl mx-auto px-4 relative -mt-16 z-10">
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-lg">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div>
+        <div className="max-w-3xl mx-auto px-4 relative -mt-16 sm:-mt-20 z-10">
+          <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-lg">
+            <div className="flex items-start justify-between gap-3 sm:gap-4 flex-wrap">
+              <div className="min-w-0 flex-1">
                 <Badge className={`mb-2 ${getStatusColor(derivedStatus)}`}>{getStatusLabel(derivedStatus)}</Badge>
-                <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tight">{competition.name}</h1>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-foreground tracking-tight break-words">{competition.name}</h1>
                 {competition.description && (
-                  <p className="text-muted-foreground mt-2 max-w-xl">{competition.description}</p>
+                  <p className="text-sm sm:text-base text-muted-foreground mt-2 max-w-xl">{competition.description}</p>
                 )}
               </div>
-              <Trophy className="h-10 w-10 text-primary shrink-0" />
+              <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-primary shrink-0" />
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 text-xs sm:text-sm text-muted-foreground">
               {displayDate && (
                 <span className="flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4" />
-                  {new Date(displayDate).toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                  <Calendar className="h-4 w-4 shrink-0" />
+                  {new Date(displayDate).toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" })}
                 </span>
               )}
               {competition.end_date && competition.start_date && (
                 <span className="flex items-center gap-1.5">
-                  <Clock className="h-4 w-4" />
+                  <Clock className="h-4 w-4 shrink-0" />
                   to {new Date(competition.end_date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                 </span>
               )}
               {competition.venue && (
-                <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{competition.venue}</span>
+                <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 shrink-0" />{competition.venue}</span>
               )}
               {competition.host_gym && (
-                <span className="flex items-center gap-1.5"><Users className="h-4 w-4" />{competition.host_gym}</span>
+                <span className="flex items-center gap-1.5"><Users className="h-4 w-4 shrink-0" />{competition.host_gym}</span>
               )}
             </div>
 
             {competition.registration_deadline && (
               <p className="text-xs text-muted-foreground mt-3">
-                Registration deadline: {new Date(competition.registration_deadline).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                Registration deadline: {new Date(competition.registration_deadline).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
               </p>
+            )}
+
+            {registrationOpen && !alreadyRegistered && (
+              <Button
+                onClick={() => {
+                  if (!user) { navigate(`/login?redirect=/event/${id}`); return; }
+                  setShowRegWizard(true);
+                  document.getElementById("register-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className="mt-4 w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
+              >
+                Sign Up Now
+              </Button>
             )}
           </div>
         </div>
       </div>
 
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+      <main className="max-w-3xl mx-auto px-4 pb-8 space-y-6 sm:space-y-8">
+        {/* Sponsor logos — strip on mobile, grid on desktop */}
+        {sponsors.length > 0 && (
+          <div className="bg-card border border-border rounded-xl p-4">
+            <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-bold mb-3 text-center">
+              Proudly Sponsored By
+            </p>
+            <div className="flex sm:hidden gap-3 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
+              {sponsors.map((s) => (
+                <div key={s.path} className="shrink-0 h-14 w-20 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start">
+                  <img src={s.url} alt="sponsor" className="max-h-12 max-w-[72px] object-contain" />
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:grid grid-cols-3 md:grid-cols-6 gap-3">
+              {sponsors.map((s) => (
+                <div key={s.path} className="aspect-square rounded-lg bg-background/50 border border-border/50 flex items-center justify-center p-2">
+                  <img src={s.url} alt="sponsor" className="max-h-full max-w-full object-contain" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-card border border-border rounded-xl p-4 text-center">
-            <p className="text-2xl font-black text-foreground">{workouts.length}</p>
-            <p className="text-xs text-muted-foreground uppercase font-bold">Workouts</p>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="bg-card border border-border rounded-xl p-3 sm:p-4 text-center">
+            <p className="text-xl sm:text-2xl font-black text-foreground">{workouts.length}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground uppercase font-bold">Workouts</p>
           </div>
-          <div className="bg-card border border-border rounded-xl p-4 text-center">
-            <p className="text-2xl font-black text-foreground">{divisions.length}</p>
-            <p className="text-xs text-muted-foreground uppercase font-bold">Divisions</p>
+          <div className="bg-card border border-border rounded-xl p-3 sm:p-4 text-center">
+            <p className="text-xl sm:text-2xl font-black text-foreground">{divisions.length}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground uppercase font-bold">Divisions</p>
           </div>
-          <div className="bg-card border border-border rounded-xl p-4 text-center">
-            <p className="text-2xl font-black text-foreground">{totalCount}</p>
-            <p className="text-xs text-muted-foreground uppercase font-bold">Athletes</p>
+          <div className="bg-card border border-border rounded-xl p-3 sm:p-4 text-center">
+            <p className="text-xl sm:text-2xl font-black text-foreground">{totalCount}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground uppercase font-bold">Athletes</p>
           </div>
         </div>
 
