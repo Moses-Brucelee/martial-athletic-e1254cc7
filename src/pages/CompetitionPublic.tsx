@@ -3,9 +3,16 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useCompetition, useTeams, useDivisions, useWorkouts, useAddTeam } from "@/modules/tournaments/hooks";
-import { useRegistrations, useCreateRegistration } from "@/modules/athletes/hooks";
+import { useRegistrations, useCreateRegistration, useDeleteRegistration } from "@/modules/athletes/hooks";
 import { checkDuplicateRegistration } from "@/modules/athletes/api";
 import { deriveStatus, getStatusLabel, getStatusColor } from "@/modules/tournaments/stateMachine";
+import { EditRegistrationDialog } from "@/modules/athletes/components/EditRegistrationDialog";
+import type { AthleteRegistration } from "@/domain/competition";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,6 +57,9 @@ export default function CompetitionPublic() {
   const [teamMembers, setTeamMembers] = useState<{ name: string; email: string }[]>([{ name: "", email: "" }]);
   const [submitting, setSubmitting] = useState(false);
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
+  const [editingReg, setEditingReg] = useState<AthleteRegistration | null>(null);
+  const [removingReg, setRemovingReg] = useState<AthleteRegistration | null>(null);
+  const deleteReg = useDeleteRegistration();
 
   const derivedStatus = competition ? deriveStatus(competition) : "draft";
   const canRegister = derivedStatus === "published" || derivedStatus === "live";
@@ -219,18 +229,29 @@ export default function CompetitionPublic() {
         }
       }
 
-      // Skip duplicates already on the team (by name, case-insensitive)
-      const existingNames = new Set(
-        registrations
-          .filter((r) => r.team_id === teamId && r.status !== "withdrawn" && r.status !== "rejected" && r.status !== "removed")
-          .map((r) => r.athlete_name.trim().toLowerCase()),
+      // De-dup by name + email (case-insensitive) within this competition's team
+      const teamRegs = registrations.filter(
+        (r) => r.team_id === teamId && !["withdrawn", "rejected", "removed"].includes(r.status),
       );
+      const existingNames = new Set(teamRegs.map((r) => r.athlete_name.trim().toLowerCase()));
+      const existingEmails = new Set(
+        teamRegs.map((r) => (r.email || "").trim().toLowerCase()).filter(Boolean),
+      );
+      // Also block re-adding the captain themselves as a member by email
+      if (user.email) existingEmails.add(user.email.trim().toLowerCase());
+
+      // Catch in-form duplicates too
+      const formNames = new Set<string>();
+      const formEmails = new Set<string>();
       let added = 0;
       let skipped = 0;
       for (const m of validMembers) {
-        const key = m.name.trim().toLowerCase();
-        if (existingNames.has(key)) { skipped++; continue; }
-        existingNames.add(key);
+        const nameKey = m.name.trim().toLowerCase();
+        const emailKey = m.email.trim().toLowerCase();
+        if (existingNames.has(nameKey) || formNames.has(nameKey)) { skipped++; continue; }
+        if (emailKey && (existingEmails.has(emailKey) || formEmails.has(emailKey))) { skipped++; continue; }
+        formNames.add(nameKey);
+        if (emailKey) formEmails.add(emailKey);
         await createReg.mutateAsync({
           competition_id: id,
           athlete_name: m.name.trim(),
@@ -761,19 +782,49 @@ export default function CompetitionPublic() {
                         {members.length === 0 ? (
                           <p className="text-xs text-muted-foreground px-3 py-2">No members yet</p>
                         ) : (
-                          members.map((m) => (
-                            <div key={m.id} className="flex items-center justify-between px-3 py-2 border-b border-border last:border-b-0">
-                              <span className="text-sm text-foreground">
-                                {m.athlete_name}
-                                {m.registration_type === "team_captain" && (
-                                  <span className="ml-2 text-[10px] uppercase font-bold text-primary">Captain</span>
-                                )}
-                              </span>
-                              <Badge variant="outline" className={`text-xs ${STATUS_COLORS[m.status] ?? ""}`}>
-                                {STATUS_LABELS[m.status] ?? m.status}
-                              </Badge>
-                            </div>
-                          ))
+                          members.map((m) => {
+                            const canManage = !!user && (
+                              t.captain_user_id === user.id ||
+                              competition.created_by === user.id
+                            );
+                            return (
+                              <div key={m.id} className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border last:border-b-0">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {canManage ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingReg(m)}
+                                      className="text-sm font-medium text-primary underline-offset-2 hover:underline truncate"
+                                    >
+                                      {m.athlete_name}
+                                    </button>
+                                  ) : (
+                                    <span className="text-sm text-foreground truncate">{m.athlete_name}</span>
+                                  )}
+                                  {m.registration_type === "team_captain" && (
+                                    <span className="text-[10px] uppercase font-bold text-primary shrink-0">Captain</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <Badge variant="outline" className={`text-xs ${STATUS_COLORS[m.status] ?? ""}`}>
+                                    {STATUS_LABELS[m.status] ?? m.status}
+                                  </Badge>
+                                  {canManage && (
+                                    <>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingReg(m)} aria-label="Edit">
+                                        <Pencil className="h-3.5 w-3.5" />
+                                      </Button>
+                                      {m.registration_type !== "team_captain" && (
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setRemovingReg(m)} aria-label="Remove">
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
                         )}
                       </div>
                     )}
@@ -812,6 +863,43 @@ export default function CompetitionPublic() {
           </div>
         )}
       </main>
+
+      <EditRegistrationDialog
+        open={!!editingReg}
+        onOpenChange={(o) => !o && setEditingReg(null)}
+        reg={editingReg}
+        competitionId={id!}
+      />
+
+      <AlertDialog open={!!removingReg} onOpenChange={(o) => !o && setRemovingReg(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove team member?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {removingReg ? `This will remove ${removingReg.athlete_name} from the team.` : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!removingReg || !id) return;
+                try {
+                  await deleteReg.mutateAsync({ id: removingReg.id, competitionId: id });
+                  toast.success("Member removed");
+                } catch {
+                  toast.error("Failed to remove member");
+                } finally {
+                  setRemovingReg(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
