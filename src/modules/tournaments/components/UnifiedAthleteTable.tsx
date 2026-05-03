@@ -540,7 +540,7 @@ function AddForm({
 // ── Desktop Row ───────────────────────────────────────────
 function DesktopRow({
   reg, divisions, teams, teamHeatMap, canAdmin, isSelected, onToggle,
-  onStatusChange, onDivisionChange, onTeamChange, onCreateTeam,
+  onStatusChange, onDivisionChange, onTeamChange, onCreateTeam, onEdit,
 }: {
   reg: AthleteRegistration;
   divisions: { id: string; name: string }[];
@@ -553,6 +553,7 @@ function DesktopRow({
   onDivisionChange: (id: string) => void;
   onTeamChange: (id: string) => void;
   onCreateTeam: () => void;
+  onEdit: () => void;
 }) {
   const heatInfo = reg.team_id ? teamHeatMap[reg.team_id] : undefined;
 
@@ -562,7 +563,14 @@ function DesktopRow({
       <div className="flex items-center gap-2 min-w-0">
         {canAdmin && <Checkbox checked={isSelected} onCheckedChange={onToggle} />}
         <div className="min-w-0">
-          <span className="text-sm font-medium text-foreground truncate block">{reg.athlete_name}</span>
+          <button
+            type="button"
+            onClick={onEdit}
+            disabled={!canAdmin}
+            className="text-sm font-medium text-foreground truncate block text-left hover:text-primary hover:underline disabled:no-underline disabled:hover:text-foreground"
+          >
+            {reg.athlete_name}
+          </button>
           {reg.email && <span className="text-[11px] text-muted-foreground truncate block">{reg.email}</span>}
         </div>
       </div>
