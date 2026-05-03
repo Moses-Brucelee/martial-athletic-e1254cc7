@@ -659,7 +659,7 @@ function DesktopRow({
 // ── Mobile Card ───────────────────────────────────────────
 function MobileCard({
   reg, divisions, teams, heats, teamHeatMap, canAdmin, isSelected, onToggle,
-  onStatusChange, onDivisionChange, onTeamChange, onCreateTeam,
+  onStatusChange, onDivisionChange, onTeamChange, onCreateTeam, onEdit,
 }: {
   reg: AthleteRegistration;
   divisions: { id: string; name: string }[];
@@ -673,6 +673,7 @@ function MobileCard({
   onDivisionChange: (id: string) => void;
   onTeamChange: (id: string) => void;
   onCreateTeam: () => void;
+  onEdit: () => void;
 }) {
   const divName = divisions.find((d) => d.id === reg.division_id)?.name;
   const teamName = teams.find((t) => t.id === reg.team_id)?.team_name;
@@ -684,7 +685,14 @@ function MobileCard({
         {canAdmin && <Checkbox checked={isSelected} onCheckedChange={onToggle} className="mt-0.5" />}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-foreground truncate">{reg.athlete_name}</span>
+            <button
+              type="button"
+              onClick={onEdit}
+              disabled={!canAdmin}
+              className="text-sm font-semibold text-foreground truncate text-left hover:text-primary hover:underline disabled:no-underline disabled:hover:text-foreground"
+            >
+              {reg.athlete_name}
+            </button>
             <Badge variant="outline" className={`text-[10px] shrink-0 ${STATUS_COLORS[reg.status] ?? ""}`}>
               {STATUS_LABELS[reg.status] ?? reg.status}
             </Badge>
