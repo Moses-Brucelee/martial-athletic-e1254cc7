@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
-import { useCompetition, useTeams, useDivisions, useWorkouts } from "@/modules/tournaments/hooks";
+import { useCompetition, useTeams, useDivisions, useWorkouts, useAddTeam } from "@/modules/tournaments/hooks";
 import { useRegistrations, useCreateRegistration } from "@/modules/athletes/hooks";
 import { checkDuplicateRegistration } from "@/modules/athletes/api";
 import { deriveStatus, getStatusLabel, getStatusColor } from "@/modules/tournaments/stateMachine";
@@ -31,9 +31,11 @@ export default function CompetitionPublic() {
   const { data: workouts = [] } = useWorkouts(id);
   const { data: registrations = [] } = useRegistrations(id);
   const createReg = useCreateRegistration();
+  const addTeamMutation = useAddTeam();
 
   // Registration wizard state
   const [regStep, setRegStep] = useState(0);
+  const [regMode, setRegMode] = useState<"individual" | "team">("individual");
   const [regType, setRegType] = useState<"self" | "other">("self");
   const [athleteName, setAthleteName] = useState("");
   const [athleteEmail, setAthleteEmail] = useState("");
@@ -43,6 +45,10 @@ export default function CompetitionPublic() {
   const [selectedDivisionId, setSelectedDivisionId] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [showRegWizard, setShowRegWizard] = useState(false);
+  // Team registration state
+  const [teamName, setTeamName] = useState("");
+  const [teamMembers, setTeamMembers] = useState<{ name: string; email: string }[]>([{ name: "", email: "" }]);
+  const [submitting, setSubmitting] = useState(false);
 
   const derivedStatus = competition ? deriveStatus(competition) : "draft";
   const canRegister = derivedStatus === "published" || derivedStatus === "live";
@@ -138,6 +144,64 @@ export default function CompetitionPublic() {
     }
   };
 
+  const handleSubmitTeam = async () => {
+    if (!user || !id) return;
+    const tName = teamName.trim();
+    if (tName.length < 2) { toast.error("Team name is required"); return; }
+    const validMembers = teamMembers.filter((m) => m.name.trim().length >= 2);
+    if (validMembers.length === 0) { toast.error("Add at least one team member"); return; }
+    for (const m of validMembers) {
+      if (m.email) {
+        const e = emailSchema.safeParse(m.email);
+        if (!e.success) { toast.error(`Invalid email for ${m.name}`); return; }
+      }
+    }
+    setSubmitting(true);
+    try {
+      const div = divisions.find((d) => d.id === selectedDivisionId);
+      const team = await addTeamMutation.mutateAsync({
+        competition_id: id,
+        team_name: tName,
+        division: div?.name || null,
+        division_id: selectedDivisionId || null,
+        captain_user_id: user.id,
+      } as any);
+      const captainName = profile?.display_name || profile?.full_name || "Captain";
+      await createReg.mutateAsync({
+        competition_id: id,
+        athlete_name: captainName,
+        user_id: user.id,
+        team_id: team.id,
+        division_id: selectedDivisionId || null,
+        registered_by_user_id: user.id,
+        registration_type: "team_captain",
+        status: "pending",
+      });
+      for (const m of validMembers) {
+        await createReg.mutateAsync({
+          competition_id: id,
+          athlete_name: m.name.trim(),
+          team_id: team.id,
+          division_id: selectedDivisionId || null,
+          registered_by_user_id: user.id,
+          registration_type: "team_member",
+          email: m.email.trim() || null,
+          status: "pending",
+        });
+      }
+      toast.success(`Team "${tName}" registered with ${validMembers.length + 1} member(s)!`);
+      setShowRegWizard(false);
+      setRegStep(0);
+      setTeamName("");
+      setTeamMembers([{ name: "", email: "" }]);
+      setSelectedDivisionId("");
+    } catch {
+      toast.error("Team registration failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -167,6 +231,52 @@ export default function CompetitionPublic() {
 
   // Wizard steps
   const renderWizardStep = () => {
+    if (regMode === "team") {
+      // Team registration single-step form
+      return (
+        <div className="space-y-4">
+          <h3 className="text-base font-bold text-foreground">Team Registration</h3>
+          <div>
+            <Label className="text-sm font-medium">Team Name *</Label>
+            <Input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="e.g. Iron Wolves" className="mt-1" maxLength={100} />
+          </div>
+          {divisions.length > 0 && (
+            <div>
+              <Label className="text-sm font-medium">Division</Label>
+              <Select value={selectedDivisionId || "__none__"} onValueChange={(v) => setSelectedDivisionId(v === "__none__" ? "" : v)}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No division</SelectItem>
+                  {divisions.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">You ({profile?.display_name || "Captain"}) will be added as captain. Add additional team members below.</p>
+            <Label className="text-sm font-medium">Team Members</Label>
+            <div className="space-y-2 mt-1">
+              {teamMembers.map((m, i) => (
+                <div key={i} className="flex gap-2">
+                  <Input value={m.name} onChange={(e) => {
+                    const next = [...teamMembers]; next[i] = { ...next[i], name: e.target.value }; setTeamMembers(next);
+                  }} placeholder="Member name" className="flex-1" maxLength={100} />
+                  <Input value={m.email} onChange={(e) => {
+                    const next = [...teamMembers]; next[i] = { ...next[i], email: e.target.value }; setTeamMembers(next);
+                  }} placeholder="email (optional)" type="email" className="flex-1" maxLength={255} />
+                  {teamMembers.length > 1 && (
+                    <Button variant="ghost" size="sm" onClick={() => setTeamMembers(teamMembers.filter((_, idx) => idx !== i))}>×</Button>
+                  )}
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={() => setTeamMembers([...teamMembers, { name: "", email: "" }])} className="w-full">
+                + Add Member
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
     switch (regStep) {
       case 0:
         return (
@@ -461,29 +571,45 @@ export default function CompetitionPublic() {
             </Button>
           ) : (
             <div className="space-y-4">
-              {/* Step indicator */}
-              <div className="flex items-center gap-2 mb-2">
-                {Array.from({ length: totalSteps }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                      i < regStep ? "bg-primary text-primary-foreground" :
-                      i === regStep ? "bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2 ring-offset-card" :
-                      "bg-muted text-muted-foreground"
-                    }`}>
-                      {i < regStep ? "✓" : i + 1}
-                    </div>
-                    {i < totalSteps - 1 && (
-                      <div className={`h-0.5 w-8 ${i < regStep ? "bg-primary" : "bg-border"}`} />
-                    )}
-                  </div>
-                ))}
+              {/* Mode tabs */}
+              <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => { setRegMode("individual"); setRegStep(0); }}
+                  className={`py-2 text-sm font-semibold rounded-md transition-colors ${regMode === "individual" ? "bg-card text-foreground shadow" : "text-muted-foreground"}`}
+                >Individual</button>
+                <button
+                  type="button"
+                  onClick={() => { setRegMode("team"); setRegStep(0); }}
+                  className={`py-2 text-sm font-semibold rounded-md transition-colors ${regMode === "team" ? "bg-card text-foreground shadow" : "text-muted-foreground"}`}
+                >Team</button>
               </div>
+
+              {/* Step indicator (individual only) */}
+              {regMode === "individual" && (
+                <div className="flex items-center gap-2 mb-2">
+                  {Array.from({ length: totalSteps }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                        i < regStep ? "bg-primary text-primary-foreground" :
+                        i === regStep ? "bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2 ring-offset-card" :
+                        "bg-muted text-muted-foreground"
+                      }`}>
+                        {i < regStep ? "✓" : i + 1}
+                      </div>
+                      {i < totalSteps - 1 && (
+                        <div className={`h-0.5 w-8 ${i < regStep ? "bg-primary" : "bg-border"}`} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {renderWizardStep()}
 
               {/* Navigation */}
               <div className="flex gap-3 pt-2">
-                {regStep > 0 ? (
+                {regMode === "individual" && regStep > 0 ? (
                   <Button variant="outline" onClick={() => setRegStep((s) => s - 1)} className="flex-1 h-11">
                     <ChevronLeft className="h-4 w-4 mr-1" /> Back
                   </Button>
@@ -492,7 +618,15 @@ export default function CompetitionPublic() {
                     Cancel
                   </Button>
                 )}
-                {regStep < totalSteps - 1 ? (
+                {regMode === "team" ? (
+                  <Button
+                    onClick={handleSubmitTeam}
+                    disabled={submitting}
+                    className="flex-1 h-11 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
+                  >
+                    {submitting ? "Submitting…" : "Register Team"}
+                  </Button>
+                ) : regStep < totalSteps - 1 ? (
                   <Button
                     onClick={() => setRegStep((s) => s + 1)}
                     disabled={regStep === 0 && !canProceedStep0}
