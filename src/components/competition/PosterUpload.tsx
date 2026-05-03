@@ -367,8 +367,8 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating} className="flex-1">
-                  Try again
+                <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating || onCooldown} className="flex-1">
+                  {onCooldown ? `Retry in ${formatCooldown(cooldownRemaining)}` : "Try again"}
                 </Button>
                 <Button size="sm" onClick={handleUsePoster} disabled={savingPoster} className="flex-1">
                   {savingPoster ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Check className="h-4 w-4 mr-1.5" />}
