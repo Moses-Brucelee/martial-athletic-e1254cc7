@@ -6,7 +6,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ImagePlus, Trash2, Loader2, Image as ImageIcon, Sparkles, Wand2, Plus, X, Check, Lock } from "lucide-react";
 import { AdaptivePoster } from "@/components/competition/AdaptivePoster";
 import { toast } from "sonner";
-import { validateImageFile } from "@/lib/validation";
+import { validateImageType } from "@/lib/validation";
+import { resizeImage } from "@/lib/imageResize";
 import { removeBackground } from "@/lib/removeBackground";
 import {
   listSponsors,
@@ -75,29 +76,38 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
   const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const validationError = validateImageFile(file);
+    const validationError = validateImageType(file);
     if (validationError) { toast.error(validationError); return; }
     setUploading(true);
     try {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      // Clean any previous hero
-      const { data: rootFiles } = await supabase.storage.from("competition-posters").list(competitionId);
-      const oldHeroes = (rootFiles || []).filter((f) => f.name.startsWith("hero")).map((f) => `${competitionId}/${f.name}`);
-      if (oldHeroes.length) await supabase.storage.from("competition-posters").remove(oldHeroes);
+      // Resize on the fly — accept anything, output a clean JPEG
+      toast.info("Optimizing image…");
+      const resized = await resizeImage(file, { maxDim: 1920, maxBytes: 1.8 * 1024 * 1024 });
 
-      const heroPath = `${competitionId}/hero.${ext}`;
-      const { error: heroErr } = await supabase.storage.from("competition-posters").upload(heroPath, file, { upsert: true });
+      // Wipe previous hero/poster files in this competition
+      const { data: rootFiles } = await supabase.storage.from("competition-posters").list(competitionId);
+      const stale = (rootFiles || [])
+        .filter((f) => f.name.startsWith("hero") || f.name.startsWith("poster"))
+        .map((f) => `${competitionId}/${f.name}`);
+      if (stale.length) await supabase.storage.from("competition-posters").remove(stale);
+
+      const heroPath = `${competitionId}/hero.jpg`;
+      const { error: heroErr } = await supabase.storage
+        .from("competition-posters")
+        .upload(heroPath, resized, { upsert: true, contentType: "image/jpeg" });
       if (heroErr) throw heroErr;
 
-      // Also set as poster_url if none yet, so dashboard preview keeps working
-      const posterPath = `${competitionId}/poster.${ext}`;
-      await supabase.storage.from("competition-posters").remove([posterPath]).catch(() => {});
-      await supabase.storage.from("competition-posters").upload(posterPath, file, { upsert: true });
+      const posterPath = `${competitionId}/poster.jpg`;
+      const { error: posterErr } = await supabase.storage
+        .from("competition-posters")
+        .upload(posterPath, resized, { upsert: true, contentType: "image/jpeg" });
+      if (posterErr) throw posterErr;
+
       const { data: urlData } = supabase.storage.from("competition-posters").getPublicUrl(posterPath);
       const posterUrl = `${urlData.publicUrl}?t=${Date.now()}`;
       await supabase.from("competitions").update({ poster_url: posterUrl }).eq("id", competitionId);
 
-      toast.success("Hero image uploaded!");
+      toast.success("Poster uploaded!");
       onPosterUpdated();
     } catch (err: any) {
       toast.error(err.message || "Upload failed");
@@ -134,12 +144,14 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
       toast.error(`Max ${MAX_SPONSORS} sponsors`);
       return;
     }
-    const validationError = validateImageFile(file);
+    const validationError = validateImageType(file);
     if (validationError) { toast.error(validationError); return; }
     setSponsorBusy(true);
     try {
+      // Resize first so the bg-removal model and storage stay snappy
+      const resized = await resizeImage(file, { maxDim: 800, preferPng: true });
       toast.info("Removing background…");
-      const transparent = await removeBackground(file);
+      const transparent = await removeBackground(resized);
       const baseName = (file.name.replace(/\.[^.]+$/, "") || "sponsor") + ".png";
       const asset = await uploadSponsor(competitionId, transparent, baseName);
       setSponsors((s) => [...s, asset]);

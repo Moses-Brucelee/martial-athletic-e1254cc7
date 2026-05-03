@@ -80,3 +80,18 @@ export function validateImageFile(file: File): string | null {
 
   return null;
 }
+
+/** Type-only validator (no size cap) — pair with client-side resize. */
+export function validateImageType(file: File): string | null {
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  if (!ext || !(ALLOWED_IMAGE_EXTENSIONS as readonly string[]).includes(ext)) {
+    return `Allowed image types: ${ALLOWED_IMAGE_EXTENSIONS.join(", ")}`;
+  }
+  if (file.type && !(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
+    return `Invalid file type. Allowed: ${ALLOWED_IMAGE_EXTENSIONS.join(", ")}`;
+  }
+  // Hard ceiling so the browser doesn't OOM trying to decode huge files
+  const HARD_MAX = 25 * 1024 * 1024;
+  if (file.size > HARD_MAX) return "Image must be under 25 MB";
+  return null;
+}
