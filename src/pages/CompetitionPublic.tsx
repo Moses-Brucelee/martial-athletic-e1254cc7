@@ -57,6 +57,9 @@ export default function CompetitionPublic() {
   const [teamMembers, setTeamMembers] = useState<{ name: string; email: string }[]>([{ name: "", email: "" }]);
   const [submitting, setSubmitting] = useState(false);
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
+  const [editingReg, setEditingReg] = useState<AthleteRegistration | null>(null);
+  const [removingReg, setRemovingReg] = useState<AthleteRegistration | null>(null);
+  const deleteReg = useDeleteRegistration();
 
   const derivedStatus = competition ? deriveStatus(competition) : "draft";
   const canRegister = derivedStatus === "published" || derivedStatus === "live";
