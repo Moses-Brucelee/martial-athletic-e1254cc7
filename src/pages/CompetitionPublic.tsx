@@ -713,7 +713,7 @@ export default function CompetitionPublic() {
         )}
 
         {/* Registration */}
-        <div className="bg-card border border-border rounded-xl p-6">
+        <div id="register-section" className="bg-card border border-border rounded-xl p-6 scroll-mt-20">
           <h2 className="text-lg font-bold text-foreground uppercase mb-4">Register</h2>
 
           {!user ? (
