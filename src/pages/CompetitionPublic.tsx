@@ -145,10 +145,11 @@ export default function CompetitionPublic() {
     }
   };
 
+  // Team the current user already captains in this competition
+  const myCaptainTeam = user ? teams.find((t) => t.captain_user_id === user.id) : null;
+
   const handleSubmitTeam = async () => {
     if (!user || !id) return;
-    const tName = teamName.trim();
-    if (tName.length < 2) { toast.error("Team name is required"); return; }
     const validMembers = teamMembers.filter((m) => m.name.trim().length >= 2);
     if (validMembers.length === 0) { toast.error("Add at least one team member"); return; }
     for (const m of validMembers) {
@@ -157,40 +158,86 @@ export default function CompetitionPublic() {
         if (!e.success) { toast.error(`Invalid email for ${m.name}`); return; }
       }
     }
+
     setSubmitting(true);
     try {
-      const div = divisions.find((d) => d.id === selectedDivisionId);
-      const team = await addTeamMutation.mutateAsync({
-        competition_id: id,
-        team_name: tName,
-        division: div?.name || null,
-        division_id: selectedDivisionId || null,
-        captain_user_id: user.id,
-      } as any);
-      const captainName = profile?.display_name || profile?.full_name || "Captain";
-      await createReg.mutateAsync({
-        competition_id: id,
-        athlete_name: captainName,
-        user_id: user.id,
-        team_id: team.id,
-        division_id: selectedDivisionId || null,
-        registered_by_user_id: user.id,
-        registration_type: "team_captain",
-        status: "pending",
-      });
+      let teamId: string;
+      let teamDivisionId: string | null = selectedDivisionId || null;
+      let teamLabel: string;
+      let isNewTeam = false;
+
+      if (myCaptainTeam) {
+        teamId = myCaptainTeam.id;
+        teamDivisionId = myCaptainTeam.division_id ?? null;
+        teamLabel = myCaptainTeam.team_name;
+      } else {
+        const tName = teamName.trim();
+        if (tName.length < 2) { toast.error("Team name is required"); setSubmitting(false); return; }
+        const div = divisions.find((d) => d.id === selectedDivisionId);
+        const team = await addTeamMutation.mutateAsync({
+          competition_id: id,
+          team_name: tName,
+          division: div?.name || null,
+          division_id: selectedDivisionId || null,
+          captain_user_id: user.id,
+        } as any);
+        teamId = team.id;
+        teamLabel = tName;
+        isNewTeam = true;
+
+        const captainAlreadyRegistered = registrations.some(
+          (r) => r.user_id === user.id && r.status !== "withdrawn" && r.status !== "rejected",
+        );
+        if (!captainAlreadyRegistered) {
+          const captainName = profile?.display_name || profile?.full_name || "Captain";
+          await createReg.mutateAsync({
+            competition_id: id,
+            athlete_name: captainName,
+            user_id: user.id,
+            team_id: teamId,
+            division_id: teamDivisionId,
+            registered_by_user_id: user.id,
+            registration_type: "team_captain",
+            status: "pending",
+          });
+        }
+      }
+
+      // Skip duplicates already on the team (by name, case-insensitive)
+      const existingNames = new Set(
+        registrations
+          .filter((r) => r.team_id === teamId && r.status !== "withdrawn" && r.status !== "rejected" && r.status !== "removed")
+          .map((r) => r.athlete_name.trim().toLowerCase()),
+      );
+      let added = 0;
+      let skipped = 0;
       for (const m of validMembers) {
+        const key = m.name.trim().toLowerCase();
+        if (existingNames.has(key)) { skipped++; continue; }
+        existingNames.add(key);
         await createReg.mutateAsync({
           competition_id: id,
           athlete_name: m.name.trim(),
-          team_id: team.id,
-          division_id: selectedDivisionId || null,
+          team_id: teamId,
+          division_id: teamDivisionId,
           registered_by_user_id: user.id,
           registration_type: "team_member",
           email: m.email.trim() || null,
           status: "pending",
         });
+        added++;
       }
-      toast.success(`Team "${tName}" registered with ${validMembers.length + 1} member(s)!`);
+
+      if (isNewTeam) {
+        toast.success(`Team "${teamLabel}" registered with ${added} member(s)!`);
+      } else {
+        toast.success(
+          added > 0
+            ? `Added ${added} member(s) to ${teamLabel}${skipped ? ` (${skipped} duplicate skipped)` : ""}`
+            : `No new members added — all were duplicates of ${teamLabel}.`,
+        );
+      }
+
       setShowRegWizard(false);
       setRegStep(0);
       setTeamName("");
