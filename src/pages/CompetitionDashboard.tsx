@@ -374,7 +374,12 @@ export default function CompetitionDashboard() {
         <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase mb-1">Competition Dashboard</h2>
         {competition && (
           <>
-            <p className="text-muted-foreground mb-2">{competition.name}</p>
+            <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+              <p className="text-muted-foreground">{competition.name}</p>
+              <Button variant="outline" size="sm" onClick={() => navigate(`/event/${id}`)} className="gap-1.5">
+                <ExternalLink className="h-3.5 w-3.5" /> View Public Page
+              </Button>
+            </div>
             {effectiveCanAdmin && !isQuickMode && (
               <div className="mb-4">
                 <SaveAsTemplate competition={competition} competitionId={id!} />
