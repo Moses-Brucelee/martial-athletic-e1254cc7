@@ -1,11 +1,16 @@
-import { Navigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
+import NotFound from "@/pages/NotFound";
 
 interface SubscriptionGuardProps {
   requiredFeature: string;
   children: React.ReactNode;
 }
 
+/**
+ * Renders children only when the current user has access to the required
+ * feature. In the MVP we never expose upgrade flows to end users, so a
+ * lacking subscription resolves to NotFound (consistent with RequireTier).
+ */
 export function SubscriptionGuard({ requiredFeature, children }: SubscriptionGuardProps) {
   const { canAccess, loading } = useSubscription();
 
@@ -18,7 +23,7 @@ export function SubscriptionGuard({ requiredFeature, children }: SubscriptionGua
   }
 
   if (!canAccess(requiredFeature)) {
-    return <Navigate to="/upgrade" replace />;
+    return <NotFound />;
   }
 
   return <>{children}</>;
