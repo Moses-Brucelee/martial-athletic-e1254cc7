@@ -37,6 +37,10 @@ export default function SuperDashboard() {
             <SuperUserManager />
           </TabsContent>
 
+          <TabsContent value="tiers">
+            <UserTiersManager />
+          </TabsContent>
+
           <TabsContent value="seasons">
             <SeasonManager />
           </TabsContent>
