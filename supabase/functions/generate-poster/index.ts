@@ -253,6 +253,11 @@ Render the title in HUGE legible typography. Include date and venue clearly. Mak
     const { data: urlData } = admin.storage.from("competition-posters").getPublicUrl(previewPath);
     const previewUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
+    // Log successful generation toward daily quota
+    await admin
+      .from("ai_poster_generations")
+      .insert({ user_id: userId, competition_id: competitionId });
+
     return new Response(JSON.stringify({ url: previewUrl, path: previewPath }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
