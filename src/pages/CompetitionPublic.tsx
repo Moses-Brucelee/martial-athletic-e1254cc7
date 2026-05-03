@@ -310,11 +310,42 @@ export default function CompetitionPublic() {
   }
 
   if (error || !competition) {
+    // Distinguish: explicit fetch error vs. row-not-visible (RLS-filtered or truly missing)
+    const isAuthRequired = !user && !competition && !error;
+    const title = error
+      ? "Unable to load competition"
+      : isAuthRequired
+        ? "Sign in to view this competition"
+        : "Competition not found";
+    const detail = error
+      ? "Something went wrong reaching the server. Please try again in a moment."
+      : isAuthRequired
+        ? "This competition may be a draft or restricted. Sign in to see if you have access."
+        : "This event doesn't exist, has been removed, or isn't published yet.";
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center space-y-4 max-w-md">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
-          <p className="text-foreground font-bold">Competition not found</p>
+          <p className="text-foreground font-bold text-lg">{title}</p>
+          <p className="text-sm text-muted-foreground">{detail}</p>
+          <div className="flex gap-2 justify-center">
+            {isAuthRequired && (
+              <Button onClick={() => navigate(`/login?redirect=/event/${id}`)}>Sign In</Button>
+            )}
+            <Button variant="outline" onClick={() => navigate("/")}>Go Home</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (competition.status === "draft" && competition.created_by !== user?.id) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center space-y-4 max-w-md">
+          <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+          <p className="text-foreground font-bold text-lg">Not yet published</p>
+          <p className="text-sm text-muted-foreground">This competition is still a draft. Check back once the organizer publishes it.</p>
           <Button variant="outline" onClick={() => navigate("/")}>Go Home</Button>
         </div>
       </div>
