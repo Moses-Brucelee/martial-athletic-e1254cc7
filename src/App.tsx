@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SuperUserGuard } from "@/components/super/SuperUserGuard";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import { FeatureRouteGuard } from "@/components/FeatureRouteGuard";
+import { RequireTier } from "@/components/RequireTier";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -55,15 +56,15 @@ const App = () => (
               <Route path="/dashboard" element={<ProtectedRoute><MainMenu /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ViewProfile /></ProtectedRoute>} />
               <Route path="/competitions" element={<ProtectedRoute><CompetitionList /></ProtectedRoute>} />
-              <Route path="/competition/create" element={<ProtectedRoute><CompetitionCreate /></ProtectedRoute>} />
+              <Route path="/competition/create" element={<ProtectedRoute><RequireTier tier="tournament_pro"><CompetitionCreate /></RequireTier></ProtectedRoute>} />
               {/* /competition/:id/workouts removed — now part of creation wizard */}
               <Route path="/competition/:id" element={<ProtectedRoute><CompetitionDashboard /></ProtectedRoute>} />
               <Route path="/upgrade" element={<ProtectedRoute><UpgradePackage /></ProtectedRoute>} />
               <Route path="/super-dashboard" element={<ProtectedRoute><SuperUserGuard><SuperDashboard /></SuperUserGuard></ProtectedRoute>} />
-              <Route path="/members" element={<ProtectedRoute><FeatureRouteGuard flag="members_management"><MembersPage /></FeatureRouteGuard></ProtectedRoute>} />
-              <Route path="/affiliation" element={<ProtectedRoute><FeatureRouteGuard flag="affiliation_network"><Affiliation /></FeatureRouteGuard></ProtectedRoute>} />
-              <Route path="/gym-website" element={<ProtectedRoute><FeatureRouteGuard flag="gym_website_builder"><GymWebsite /></FeatureRouteGuard></ProtectedRoute>} />
-              <Route path="/performances" element={<ProtectedRoute><FeatureRouteGuard flag="performances_analytics"><Performances /></FeatureRouteGuard></ProtectedRoute>} />
+              <Route path="/members" element={<ProtectedRoute><RequireTier tier="affiliate_pro"><MembersPage /></RequireTier></ProtectedRoute>} />
+              <Route path="/affiliation" element={<ProtectedRoute><RequireTier tier="affiliate_pro"><Affiliation /></RequireTier></ProtectedRoute>} />
+              <Route path="/gym-website" element={<ProtectedRoute><RequireTier tier="affiliate_pro"><GymWebsite /></RequireTier></ProtectedRoute>} />
+              <Route path="/performances" element={<ProtectedRoute><RequireTier tier="tournament_pro"><Performances /></RequireTier></ProtectedRoute>} />
               <Route path="/browse" element={<FeatureRouteGuard flag="browse_marketplace" redirectTo="/"><Browse /></FeatureRouteGuard>} />
               <Route path="/event/:id" element={<CompetitionPublic />} />
               <Route path="/event/:id/results" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
