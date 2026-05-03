@@ -92,6 +92,40 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Daily quota: 10 generations per 24h (super users unlimited)
+    const DAILY_LIMIT = 10;
+    if (!superOk) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count, data: recent } = await admin
+        .from("ai_poster_generations")
+        .select("created_at", { count: "exact" })
+        .eq("user_id", userId)
+        .gte("created_at", since)
+        .order("created_at", { ascending: true })
+        .limit(DAILY_LIMIT);
+      if ((count ?? 0) >= DAILY_LIMIT) {
+        const oldest = recent?.[0]?.created_at;
+        const retryAt = oldest
+          ? new Date(new Date(oldest).getTime() + 24 * 60 * 60 * 1000).toISOString()
+          : new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        const retryAfter = Math.max(1, Math.ceil((new Date(retryAt).getTime() - Date.now()) / 1000));
+        return new Response(
+          JSON.stringify({
+            error: `Daily limit of ${DAILY_LIMIT} AI posters reached. Try again later.`,
+            retryAt,
+            limit: DAILY_LIMIT,
+          }),
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "Retry-After": String(retryAfter),
+            },
+          }
+        );
+      }
+    }
     // Load competition meta
     const { data: comp, error: compErr } = await admin
       .from("competitions")
@@ -179,10 +213,16 @@ Render the title in HUGE legible typography. Include date and venue clearly. Mak
       const t = await aiResp.text();
       console.error("AI gateway error", aiResp.status, t);
       if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit reached. Try again shortly." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        const ra = aiResp.headers.get("retry-after");
+        const seconds = ra ? parseInt(ra, 10) || 60 : 60;
+        const retryAt = new Date(Date.now() + seconds * 1000).toISOString();
+        return new Response(
+          JSON.stringify({ error: "AI service rate limit reached. Try again shortly.", retryAt }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(seconds) },
+          }
+        );
       }
       if (aiResp.status === 402) {
         return new Response(
@@ -212,6 +252,11 @@ Render the title in HUGE legible typography. Include date and venue clearly. Mak
 
     const { data: urlData } = admin.storage.from("competition-posters").getPublicUrl(previewPath);
     const previewUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+    // Log successful generation toward daily quota
+    await admin
+      .from("ai_poster_generations")
+      .insert({ user_id: userId, competition_id: competitionId });
 
     return new Response(JSON.stringify({ url: previewUrl, path: previewPath }), {
       status: 200,

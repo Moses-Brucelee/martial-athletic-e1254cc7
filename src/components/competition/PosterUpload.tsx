@@ -42,11 +42,35 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
   const [generating, setGenerating] = useState(false);
   const [aiPreviewUrl, setAiPreviewUrl] = useState<string | null>(null);
   const [savingPoster, setSavingPoster] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
   const heroInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     listSponsors(competitionId).then(setSponsors).catch(() => {});
   }, [competitionId]);
+
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const tick = () => setNow(Date.now());
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  const cooldownRemaining = cooldownUntil ? Math.max(0, cooldownUntil - now) : 0;
+  const onCooldown = cooldownRemaining > 0;
+  useEffect(() => {
+    if (cooldownUntil && now >= cooldownUntil) setCooldownUntil(null);
+  }, [now, cooldownUntil]);
+
+  const formatCooldown = (ms: number) => {
+    const s = Math.ceil(ms / 1000);
+    if (s < 60) return `${s}s`;
+    const m = Math.ceil(s / 60);
+    if (m < 60) return `${m}m`;
+    const h = Math.ceil(m / 60);
+    return `${h}h`;
+  };
 
   const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -138,21 +162,40 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
 
   const handleGenerate = async () => {
     if (!currentPosterUrl) { toast.error("Upload a hero image first"); return; }
+    if (cooldownUntil && cooldownUntil > Date.now()) return;
     setGenerating(true);
     setAiPreviewUrl(null);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-poster", {
-        body: { competitionId, style },
+      const { data: { session } } = await supabase.auth.getSession();
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-poster`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ competitionId, style }),
       });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      setAiPreviewUrl((data as any).url);
+      const payload = await resp.json().catch(() => ({}));
+      if (resp.status === 429) {
+        const retryAt = payload?.retryAt ? new Date(payload.retryAt).getTime() : Date.now() + 60_000;
+        setCooldownUntil(retryAt);
+        toast.error(payload?.error || "Rate limit reached.");
+        return;
+      }
+      if (resp.status === 402) {
+        toast.error("AI credits exhausted. Add credits in Workspace → Usage.");
+        return;
+      }
+      if (!resp.ok) {
+        toast.error(payload?.error || "Generation failed");
+        return;
+      }
+      setAiPreviewUrl(payload.url);
       toast.success("AI poster ready!");
     } catch (err: any) {
-      const msg = err?.message || "Generation failed";
-      if (msg.toLowerCase().includes("rate")) toast.error("Rate limit reached. Try again shortly.");
-      else if (msg.toLowerCase().includes("credit")) toast.error("AI credits exhausted. Add credits in Workspace → Usage.");
-      else toast.error(msg);
+      toast.error(err?.message || "Generation failed");
     } finally {
       setGenerating(false);
     }
@@ -290,12 +333,21 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={handleGenerate} disabled={generating || !currentPosterUrl} className="flex-1">
+                  <Button onClick={handleGenerate} disabled={generating || onCooldown || !currentPosterUrl} className="flex-1">
                     {generating ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Wand2 className="h-4 w-4 mr-1.5" />}
-                    {generating ? "Generating…" : aiPreviewUrl ? "Regenerate" : "Generate Stunning Poster"}
+                    {generating
+                      ? "Generating…"
+                      : onCooldown
+                        ? `Retry in ${formatCooldown(cooldownRemaining)}`
+                        : aiPreviewUrl
+                          ? "Regenerate"
+                          : "Generate Stunning Poster"}
                   </Button>
                 </TooltipTrigger>
                 {!currentPosterUrl && <TooltipContent>Upload a hero image first</TooltipContent>}
+                {onCooldown && currentPosterUrl && (
+                  <TooltipContent>Daily limit reached or AI cooling down</TooltipContent>
+                )}
               </Tooltip>
             </TooltipProvider>
           </div>
@@ -315,8 +367,8 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating} className="flex-1">
-                  Try again
+                <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating || onCooldown} className="flex-1">
+                  {onCooldown ? `Retry in ${formatCooldown(cooldownRemaining)}` : "Try again"}
                 </Button>
                 <Button size="sm" onClick={handleUsePoster} disabled={savingPoster} className="flex-1">
                   {savingPoster ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Check className="h-4 w-4 mr-1.5" />}

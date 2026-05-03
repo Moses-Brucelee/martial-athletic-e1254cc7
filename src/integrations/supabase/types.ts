@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_poster_generations: {
+        Row: {
+          competition_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       athlete_registrations: {
         Row: {
           athlete_id: string | null
