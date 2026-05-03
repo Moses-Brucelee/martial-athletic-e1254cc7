@@ -15,14 +15,14 @@ export async function assertCompetitionMutable(competitionId: string): Promise<v
 
 // ── Competitions ──────────────────────────────────────────────────────
 
-export async function fetchCompetition(id: string): Promise<Competition> {
+export async function fetchCompetition(id: string): Promise<Competition | null> {
   const { data, error } = await supabase
     .from("competitions")
     .select("*")
     .eq("id", id)
-    .single();
+    .maybeSingle();
   if (error) throw error;
-  return data as Competition;
+  return (data as Competition | null) ?? null;
 }
 
 export async function fetchCompetitions(): Promise<Competition[]> {
