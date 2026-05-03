@@ -249,8 +249,12 @@ export default function CompetitionPublic() {
       setTeamName("");
       setTeamMembers([{ name: "", email: "" }]);
       setSelectedDivisionId("");
-    } catch {
-      toast.error("Team registration failed. Please try again.");
+    } catch (err: any) {
+      if (err?.message === "TEAM_NAME_TAKEN") {
+        toast.error("Team name is already taken in this competition. Please choose another.");
+      } else {
+        toast.error("Team registration failed. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }
