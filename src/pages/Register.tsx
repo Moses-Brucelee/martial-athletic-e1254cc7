@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { z } from "zod";
 import { toast } from "sonner";
 
