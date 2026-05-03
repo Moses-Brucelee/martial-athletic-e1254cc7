@@ -3,9 +3,16 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useCompetition, useTeams, useDivisions, useWorkouts, useAddTeam } from "@/modules/tournaments/hooks";
-import { useRegistrations, useCreateRegistration } from "@/modules/athletes/hooks";
+import { useRegistrations, useCreateRegistration, useDeleteRegistration } from "@/modules/athletes/hooks";
 import { checkDuplicateRegistration } from "@/modules/athletes/api";
 import { deriveStatus, getStatusLabel, getStatusColor } from "@/modules/tournaments/stateMachine";
+import { EditRegistrationDialog } from "@/modules/athletes/components/EditRegistrationDialog";
+import type { AthleteRegistration } from "@/domain/competition";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
