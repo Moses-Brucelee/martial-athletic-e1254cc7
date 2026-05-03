@@ -145,8 +145,18 @@ export default function CompetitionPublic() {
     }
   };
 
-  // Team the current user already captains in this competition
-  const myCaptainTeam = user ? teams.find((t) => t.captain_user_id === user.id) : null;
+  // Team the current user already belongs to (as captain or member) in this competition
+  const myCaptainTeam = (() => {
+    if (!user) return null;
+    const captained = teams.find((t) => t.captain_user_id === user.id);
+    if (captained) return captained;
+    // Fallback: find via existing registration (covers legacy teams missing captain_user_id)
+    const myReg = registrations.find(
+      (r) => r.user_id === user.id && r.team_id && !["withdrawn", "rejected", "removed"].includes(r.status),
+    );
+    if (myReg?.team_id) return teams.find((t) => t.id === myReg.team_id) ?? null;
+    return null;
+  })();
 
   const handleSubmitTeam = async () => {
     if (!user || !id) return;
