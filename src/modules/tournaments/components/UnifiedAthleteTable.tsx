@@ -651,6 +651,8 @@ function DesktopRow({
             <Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical className="h-3.5 w-3.5" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onEdit}>Edit details</DropdownMenuItem>
+            <DropdownMenuSeparator />
             {reg.status !== "approved" && <DropdownMenuItem onClick={() => onStatusChange("approved")}><CheckCircle2 className="h-4 w-4 mr-2 text-green-600" /> Approve</DropdownMenuItem>}
             {reg.status !== "rejected" && <DropdownMenuItem onClick={() => onStatusChange("rejected")}><XCircle className="h-4 w-4 mr-2 text-destructive" /> Reject</DropdownMenuItem>}
             <DropdownMenuSeparator />
