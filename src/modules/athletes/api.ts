@@ -276,6 +276,14 @@ export async function bulkUpdateStatus(
   if (error) throw error;
 }
 
+export async function deleteRegistration(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("athlete_registrations")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function checkDuplicateRegistration(
   competitionId: string,
   userId?: string | null,
