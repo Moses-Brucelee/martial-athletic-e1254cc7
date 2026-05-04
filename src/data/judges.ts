@@ -72,7 +72,7 @@ export async function searchRegisteredUsers(
 
 export async function findUserByEmail(email: string): Promise<{ user_id: string; display_name: string | null } | null> {
   const { data, error } = await supabase
-    .from("profiles")
+    .from("public_profiles")
     .select("user_id, display_name")
     .ilike("display_name", email)
     .limit(1)
