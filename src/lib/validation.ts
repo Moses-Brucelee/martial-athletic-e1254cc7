@@ -2,8 +2,17 @@ import { z } from "zod";
 
 // ── Reusable schemas ──────────────────────────────────────────────────
 
+// Rejects any input containing digits 0-9
+const noDigitsRegex = /^[^0-9]*$/;
+const NO_DIGITS_MSG = "Numbers are not allowed in names";
+
 export const profileSchema = z.object({
-  fullName: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be under 100 characters"),
+  fullName: z
+    .string()
+    .trim()
+    .min(2, "Name must be at least 2 characters")
+    .max(100, "Name must be under 100 characters")
+    .regex(noDigitsRegex, NO_DIGITS_MSG),
   gender: z.string().min(1, "Please select a gender"),
   affiliation: z.string().max(100, "Affiliation must be under 100 characters").optional().or(z.literal("")),
   aboutMe: z.string().max(500, "About Me must be under 500 characters").optional().or(z.literal("")),
