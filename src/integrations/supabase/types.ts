@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_poster_generations: {
+        Row: {
+          competition_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       athlete_registrations: {
         Row: {
           athlete_id: string | null
@@ -1164,6 +1185,33 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          audience: string
+          description: string | null
+          enabled: boolean | null
+          key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          audience?: string
+          description?: string | null
+          enabled?: boolean | null
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          audience?: string
+          description?: string | null
+          enabled?: boolean | null
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       gym_default_discounts: {
         Row: {
           applies_to: string
@@ -1701,6 +1749,9 @@ export type Database = {
           id: string
           profile_completed: boolean
           subscription_tier: string
+          tier_assigned_at: string
+          tier_assigned_by: string | null
+          tier_slug: string
           updated_at: string
           user_id: string
         }
@@ -1717,6 +1768,9 @@ export type Database = {
           id?: string
           profile_completed?: boolean
           subscription_tier?: string
+          tier_assigned_at?: string
+          tier_assigned_by?: string | null
+          tier_slug?: string
           updated_at?: string
           user_id: string
         }
@@ -1733,10 +1787,21 @@ export type Database = {
           id?: string
           profile_completed?: boolean
           subscription_tier?: string
+          tier_assigned_at?: string
+          tier_assigned_by?: string | null
+          tier_slug?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tier_slug_fkey"
+            columns: ["tier_slug"]
+            isOneToOne: false
+            referencedRelation: "pricing_tiers"
+            referencedColumns: ["key"]
+          },
+        ]
       }
       provider_health_status: {
         Row: {
@@ -1938,6 +2003,36 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tier_change_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_tier_slug: string
+          old_tier_slug: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_tier_slug: string
+          old_tier_slug?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_tier_slug?: string
+          old_tier_slug?: string | null
+          reason?: string | null
           user_id?: string
         }
         Relationships: []
@@ -2244,6 +2339,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_get_user_emails: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
       get_competition_leaderboard: {
         Args: { p_competition_id: string }
         Returns: {
@@ -2292,6 +2394,7 @@ export type Database = {
         Args: { p_competition_id: string; p_workout_id: string }
         Returns: undefined
       }
+      user_tier_at_least: { Args: { min_tier: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
