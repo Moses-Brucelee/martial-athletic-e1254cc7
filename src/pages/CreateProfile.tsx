@@ -187,6 +187,15 @@ export default function CreateProfile() {
               <Textarea placeholder="Tell us about yourself, your training background, goals..." value={aboutMe} onChange={(e) => setAboutMe(e.target.value.slice(0, 500))} disabled={loading} className="min-h-[100px] bg-background" maxLength={500} />
             </div>
 
+            {requiresParentConsent && (
+              <div className="mt-6 p-4 rounded-lg border border-accent/40 bg-accent/5 flex items-start gap-3">
+                <Checkbox id="parent-consent" checked={parentConsent} onCheckedChange={(v) => setParentConsent(v === true)} className="mt-1" />
+                <Label htmlFor="parent-consent" className="text-sm text-foreground leading-relaxed cursor-pointer">
+                  As the athlete is under 18, I confirm that a parent or legal guardian has provided consent for registration and participation. Note: minimum competition age is 14.
+                </Label>
+              </div>
+            )}
+
             <div className="flex justify-end gap-3 mt-8 sticky bottom-0 bg-card py-4 -mx-6 px-6 sm:-mx-8 sm:px-8 border-t border-border/50 md:static md:border-0 md:py-0 md:mx-0 md:px-0 md:bg-transparent z-10">
               <Button variant="outline" onClick={() => handleSubmit(true)} disabled={loading} className="min-h-[44px]">Skip</Button>
               <Button onClick={() => handleSubmit(false)} disabled={loading || !isFormValid} className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8 min-h-[44px]">
