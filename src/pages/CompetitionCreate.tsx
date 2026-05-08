@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
-import { useCreateCompetition, useSaveWorkoutWithMovements } from "@/modules/tournaments/hooks";
+import { useCreateCompetition, useSaveWorkoutWithMovements, useDivisions } from "@/modules/tournaments/hooks";
 import { useUpsertCompetitionSettings } from "@/modules/tournaments/hooks-engine";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { StepIndicator } from "@/modules/tournaments/components/create/StepIndicator";
