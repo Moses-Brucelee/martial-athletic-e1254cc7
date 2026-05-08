@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateOfBirthPicker } from "@/components/ui/DateOfBirthPicker";
 import { Camera, AlertCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import { profileSchema, validateImageFile, sanitizeError } from "@/lib/validation";
 import { calculateAge } from "@/utils/calculateAge";
