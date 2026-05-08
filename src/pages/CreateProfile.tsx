@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateOfBirthPicker } from "@/components/ui/DateOfBirthPicker";
 import { Camera, AlertCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import { profileSchema, validateImageFile, sanitizeError } from "@/lib/validation";
 import { calculateAge } from "@/utils/calculateAge";
@@ -31,9 +32,21 @@ export default function CreateProfile() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [parentConsent, setParentConsent] = useState(false);
 
   const dateOfBirth = dobString ? new Date(dobString + "T00:00:00") : undefined;
   const computedAge = dateOfBirth ? calculateAge(dateOfBirth) : null;
+
+  // Age constraints (CrossFit): min signup 13, max 120
+  const MIN_AGE = 13;
+  const MAX_AGE = 120;
+  let ageError: string | null = null;
+  if (computedAge !== null) {
+    if (computedAge < MIN_AGE) ageError = `Minimum age to sign up is ${MIN_AGE} years.`;
+    else if (computedAge > MAX_AGE) ageError = `Please enter a valid date of birth (max age ${MAX_AGE}).`;
+  }
+  const requiresParentConsent = computedAge !== null && computedAge >= MIN_AGE && computedAge < 18;
+  const consentMissing = requiresParentConsent && !parentConsent;
 
   const validation = profileSchema.safeParse({ fullName, gender, affiliation, aboutMe });
   const fieldErrors: Record<string, string> = {};
@@ -43,7 +56,7 @@ export default function CreateProfile() {
       if (!fieldErrors[key]) fieldErrors[key] = issue.message;
     });
   }
-  const isFormValid = validation.success;
+  const isFormValid = validation.success && !ageError && !consentMissing && !!dobString;
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -150,7 +163,9 @@ export default function CreateProfile() {
                   {touched.gender && fieldErrors.gender && <p className="text-xs text-destructive">{fieldErrors.gender}</p>}
                   {!touched.gender && !gender && <p className="text-xs text-muted-foreground">Required</p>}
                 </div>
-                <DateOfBirthPicker value={dobString} onChange={setDobString} disabled={loading} />
+                <div className="space-y-2">
+                  <DateOfBirthPicker value={dobString} onChange={setDobString} disabled={loading} error={ageError ?? undefined} />
+                </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Age</Label>
                   <div className="h-11 flex items-center px-3 rounded-md border border-border bg-muted text-foreground">
@@ -171,6 +186,15 @@ export default function CreateProfile() {
               </div>
               <Textarea placeholder="Tell us about yourself, your training background, goals..." value={aboutMe} onChange={(e) => setAboutMe(e.target.value.slice(0, 500))} disabled={loading} className="min-h-[100px] bg-background" maxLength={500} />
             </div>
+
+            {requiresParentConsent && (
+              <div className="mt-6 p-4 rounded-lg border border-accent/40 bg-accent/5 flex items-start gap-3">
+                <Checkbox id="parent-consent" checked={parentConsent} onCheckedChange={(v) => setParentConsent(v === true)} className="mt-1" />
+                <Label htmlFor="parent-consent" className="text-sm text-foreground leading-relaxed cursor-pointer">
+                  As the athlete is under 18, I confirm that a parent or legal guardian has provided consent for registration and participation. Note: minimum competition age is 14.
+                </Label>
+              </div>
+            )}
 
             <div className="flex justify-end gap-3 mt-8 sticky bottom-0 bg-card py-4 -mx-6 px-6 sm:-mx-8 sm:px-8 border-t border-border/50 md:static md:border-0 md:py-0 md:mx-0 md:px-0 md:bg-transparent z-10">
               <Button variant="outline" onClick={() => handleSubmit(true)} disabled={loading} className="min-h-[44px]">Skip</Button>
