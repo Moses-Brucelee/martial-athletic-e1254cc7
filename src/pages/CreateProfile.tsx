@@ -163,7 +163,9 @@ export default function CreateProfile() {
                   {touched.gender && fieldErrors.gender && <p className="text-xs text-destructive">{fieldErrors.gender}</p>}
                   {!touched.gender && !gender && <p className="text-xs text-muted-foreground">Required</p>}
                 </div>
-                <DateOfBirthPicker value={dobString} onChange={setDobString} disabled={loading} />
+                <div className="space-y-2">
+                  <DateOfBirthPicker value={dobString} onChange={setDobString} disabled={loading} error={ageError ?? undefined} />
+                </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-medium">Age</Label>
                   <div className="h-11 flex items-center px-3 rounded-md border border-border bg-muted text-foreground">
