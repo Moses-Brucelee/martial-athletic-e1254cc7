@@ -29,6 +29,7 @@ export default function CompetitionCreate() {
 
   const [step, setStep] = useState(0);
   const [competitionId, setCompetitionId] = useState<string | null>(null);
+  const { data: divisionsData = [] } = useDivisions(competitionId ?? undefined);
 
   // Step 1 — Details
   const [name, setName] = useState("");
