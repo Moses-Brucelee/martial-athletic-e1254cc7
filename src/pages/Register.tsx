@@ -57,7 +57,7 @@ export default function Register() {
     }
 
     setLoading(true);
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email: result.data.email,
       password: result.data.password,
       options: { emailRedirectTo: window.location.origin },
@@ -65,7 +65,18 @@ export default function Register() {
 
     setLoading(false);
     if (authError) {
-      setError(authError.message);
+      if (/already|registered|exists/i.test(authError.message)) {
+        setError("This email is already registered. Please sign in instead.");
+      } else {
+        setError(authError.message);
+      }
+      return;
+    }
+
+    // Supabase returns a user with empty identities array when the email already exists
+    // (to prevent email enumeration). Detect this and show a clear error.
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      setError("This email is already registered. Please sign in or reset your password.");
       return;
     }
 
