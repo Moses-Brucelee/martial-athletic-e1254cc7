@@ -262,7 +262,15 @@ export default function CompetitionCreate() {
 
           {/* Advanced mode: step 2 = divisions, step 3 = workouts */}
           {!isQuickMode && step === 2 && competitionId && (
-            <DivisionsPanel competitionId={competitionId} canAdmin={true} />
+            <>
+              <DivisionsPanel competitionId={competitionId} canAdmin={true} />
+              {divisionsData.length === 0 && (
+                <div className="flex items-start gap-3 p-3 mt-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <p className="text-sm text-destructive">At least one division is required to continue.</p>
+                </div>
+              )}
+            </>
           )}
 
           {!isQuickMode && step === 3 && (
