@@ -191,6 +191,7 @@ export default function CompetitionCreate() {
     if (isPending) return true;
     if (step === 0) return !isStep1Valid;
     if (step === 1) return !isStep2Valid;
+    if (!isQuickMode && step === 2) return divisionsData.length === 0;
     return false;
   };
 
