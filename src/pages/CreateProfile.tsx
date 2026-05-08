@@ -32,9 +32,21 @@ export default function CreateProfile() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [parentConsent, setParentConsent] = useState(false);
 
   const dateOfBirth = dobString ? new Date(dobString + "T00:00:00") : undefined;
   const computedAge = dateOfBirth ? calculateAge(dateOfBirth) : null;
+
+  // Age constraints (CrossFit): min signup 13, max 120
+  const MIN_AGE = 13;
+  const MAX_AGE = 120;
+  let ageError: string | null = null;
+  if (computedAge !== null) {
+    if (computedAge < MIN_AGE) ageError = `Minimum age to sign up is ${MIN_AGE} years.`;
+    else if (computedAge > MAX_AGE) ageError = `Please enter a valid date of birth (max age ${MAX_AGE}).`;
+  }
+  const requiresParentConsent = computedAge !== null && computedAge >= MIN_AGE && computedAge < 18;
+  const consentMissing = requiresParentConsent && !parentConsent;
 
   const validation = profileSchema.safeParse({ fullName, gender, affiliation, aboutMe });
   const fieldErrors: Record<string, string> = {};
@@ -44,7 +56,7 @@ export default function CreateProfile() {
       if (!fieldErrors[key]) fieldErrors[key] = issue.message;
     });
   }
-  const isFormValid = validation.success;
+  const isFormValid = validation.success && !ageError && !consentMissing && !!dobString;
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
