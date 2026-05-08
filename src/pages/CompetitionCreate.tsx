@@ -57,7 +57,14 @@ export default function CompetitionCreate() {
     ? ["Details", "Sport & Mode"]
     : ["Details", "Sport & Mode", "Divisions", "Workouts"];
 
-  const isStep1Valid = name.trim().length >= 2 && !!startDate && !!endDate && !!regDeadline;
+  const dateOrderError =
+    startDate && endDate && endDate <= startDate
+      ? "End date must be after the start date"
+      : startDate && regDeadline && regDeadline > startDate
+      ? "Registration deadline must be on or before the start date"
+      : null;
+  const isStep1Valid =
+    name.trim().length >= 2 && !!startDate && !!endDate && !!regDeadline && !dateOrderError;
   const isStep2Valid = !!competitionType;
 
   // ── Create competition (after step 2) ───────────────────────────────
@@ -215,6 +222,13 @@ export default function CompetitionCreate() {
           <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-destructive/10 border border-destructive/20">
             <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
             <p className="text-sm text-destructive">{error}</p>
+          </div>
+        )}
+
+        {step === 0 && dateOrderError && (
+          <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-destructive/10 border border-destructive/20">
+            <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+            <p className="text-sm text-destructive">{dateOrderError}</p>
           </div>
         )}
 
