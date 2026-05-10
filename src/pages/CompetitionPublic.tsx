@@ -679,8 +679,8 @@ export default function CompetitionPublic() {
             </p>
             <div className="flex sm:hidden gap-3 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
               {sponsors.map((s) => (
-                <div key={s.path} className="shrink-0 h-14 w-20 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start">
-                  <img src={s.url} alt="sponsor" className="max-h-12 max-w-[72px] object-contain" />
+                <div key={s.path} className="shrink-0 h-24 w-32 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start p-2">
+                  <img src={s.url} alt="sponsor" className="max-h-full max-w-full object-contain" />
                 </div>
               ))}
             </div>
