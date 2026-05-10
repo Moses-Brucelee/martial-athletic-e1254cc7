@@ -407,12 +407,43 @@ export default function CompetitionPublic() {
                   </Select>
                 </div>
               )}
-              <p className="text-xs text-muted-foreground">You ({profile?.display_name || "Captain"}) will be added as captain.</p>
             </>
           )}
           <div>
             <Label className="text-sm font-medium">{myCaptainTeam ? "New Members" : "Team Members"}</Label>
             <div className="space-y-2 mt-1">
+              {/* Captain (current user) shown as the first roster entry by default — removable. */}
+              {!myCaptainTeam && includeCaptain && (
+                <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {profile?.display_name || profile?.full_name || "You"}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wider text-primary font-bold">
+                      You · Captain
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIncludeCaptain(false)}
+                    aria-label="Remove yourself from the roster"
+                    title="Remove yourself"
+                  >
+                    ×
+                  </Button>
+                </div>
+              )}
+              {!myCaptainTeam && !includeCaptain && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIncludeCaptain(true)}
+                  className="w-full"
+                >
+                  + Add me back as captain
+                </Button>
+              )}
               {teamMembers.map((m, i) => (
                 <div key={i} className="flex gap-2">
                   <Input value={m.name} onChange={(e) => {
