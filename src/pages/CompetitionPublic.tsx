@@ -245,12 +245,19 @@ export default function CompetitionPublic() {
               <p className="text-sm text-muted-foreground">No divisions available. You can proceed without one.</p>
             ) : (
               <RadioGroup value={selectedDivisionId} onValueChange={setSelectedDivisionId} className="space-y-2">
-                {divisions.map((d) => (
-                  <label key={d.id} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedDivisionId === d.id ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
-                    <RadioGroupItem value={d.id} />
-                    <span className="font-medium text-foreground">{d.name}</span>
-                  </label>
-                ))}
+                {divisions.map((d) => {
+                  const ts = (d as any).team_size ?? 1;
+                  return (
+                    <label key={d.id} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedDivisionId === d.id ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
+                      <RadioGroupItem value={d.id} />
+                      <span className="font-medium text-foreground flex-1">{d.name}</span>
+                      <Badge variant="outline" className="text-[10px] gap-1">
+                        <Users className="h-3 w-3" />
+                        {ts === 1 ? "Solo" : `${ts} per team`}
+                      </Badge>
+                    </label>
+                  );
+                })}
               </RadioGroup>
             )}
             {teams.length > 0 && (
@@ -265,6 +272,30 @@ export default function CompetitionPublic() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+
+            {requiresTeammates && (
+              <div className="space-y-2 pt-2">
+                <Label className="text-sm font-medium">
+                  Teammate names ({additionalTeammateSlots} additional)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  This division requires {teamSize} athletes per team. You count as one — please add the other {additionalTeammateSlots}.
+                </p>
+                {Array.from({ length: additionalTeammateSlots }).map((_, i) => (
+                  <Input
+                    key={i}
+                    value={teammateNames[i] || ""}
+                    onChange={(e) => {
+                      const next = [...teammateNames];
+                      next[i] = e.target.value;
+                      setTeammateNames(next);
+                    }}
+                    placeholder={`Teammate ${i + 2} full name`}
+                    maxLength={100}
+                  />
+                ))}
               </div>
             )}
           </div>
