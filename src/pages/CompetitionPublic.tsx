@@ -72,6 +72,9 @@ export default function CompetitionPublic() {
   // Team registration state
   const [teamName, setTeamName] = useState("");
   const [teamMembers, setTeamMembers] = useState<{ name: string; email: string }[]>([{ name: "", email: "" }]);
+  // Whether the signed-in user (the captain creating the team) is also competing.
+  // Defaults to true — they're shown as the first roster entry and can remove themselves.
+  const [includeCaptain, setIncludeCaptain] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
   const [editingReg, setEditingReg] = useState<AthleteRegistration | null>(null);
