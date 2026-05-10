@@ -68,6 +68,7 @@ export default function CompetitionPublic() {
   const additionalTeammateSlots = Math.max(0, teamSize - 1);
   const teammateNamesValid = !requiresTeammates ||
     Array.from({ length: additionalTeammateSlots }).every((_, i) => (teammateNames[i] || "").trim().length >= 2);
+
   // Team registration state
   const [teamName, setTeamName] = useState("");
   const [teamMembers, setTeamMembers] = useState<{ name: string; email: string }[]>([{ name: "", email: "" }]);
@@ -616,7 +617,7 @@ export default function CompetitionPublic() {
         <div className="max-w-3xl mx-auto px-4 relative mt-4 z-10">
           <div className="bg-card border border-border rounded-2xl p-6 shadow-lg">
             <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div>
+              <div className="min-w-0 flex-1">
                 <Badge className={`mb-2 ${getStatusColor(derivedStatus)}`}>{getStatusLabel(derivedStatus)}</Badge>
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-foreground tracking-tight break-words">{competition.name}</h1>
                 {competition.description && (
