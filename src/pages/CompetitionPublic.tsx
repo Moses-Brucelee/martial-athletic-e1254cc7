@@ -432,16 +432,33 @@ export default function CompetitionPublic() {
               <h2 className="text-lg font-bold text-foreground uppercase">Workouts</h2>
             </div>
             <div className="space-y-2">
-              {workouts.map((w) => (
-                <div key={w.id} className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-                  <span className="font-medium text-foreground text-sm">{w.name || `WOD #${w.workout_number}`}</span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">{w.workout_type}</Badge>
-                    <Badge variant="outline" className="text-xs">{w.scoring_type}</Badge>
-                  </div>
-                </div>
-              ))}
+              {workouts.map((w) => {
+                const isHidden = w.visibility === "hidden" ||
+                  (w.visibility === "scheduled" && w.scheduled_reveal_at && new Date(w.scheduled_reveal_at) > new Date());
+                return (
+                  <button
+                    key={w.id}
+                    type="button"
+                    onClick={() => !isHidden && setRevealedWorkoutId(w.id)}
+                    disabled={isHidden}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg bg-background border border-border text-left transition-all ${
+                      isHidden ? "opacity-60 cursor-not-allowed" : "hover:border-primary/40 hover:bg-primary/5 cursor-pointer"
+                    }`}
+                  >
+                    <span className="font-medium text-foreground text-sm flex items-center gap-2">
+                      {isHidden ? <Lock className="h-3.5 w-3.5 text-muted-foreground" /> : <Eye className="h-3.5 w-3.5 text-primary" />}
+                      {w.name || `WOD #${w.workout_number}`}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">{w.workout_type}</Badge>
+                      <Badge variant="outline" className="text-xs">{w.scoring_type}</Badge>
+                      {!isHidden && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
+            <p className="text-[11px] text-muted-foreground mt-3">Tap a workout to view full details.</p>
           </div>
         )}
 
