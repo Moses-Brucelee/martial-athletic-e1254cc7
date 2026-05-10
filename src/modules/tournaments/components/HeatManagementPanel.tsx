@@ -220,6 +220,7 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                           laneCount={heat.lane_count}
                           teams={teams}
                           canAdmin={canAdmin}
+                          excludeTeamIds={heat.workout_id ? teamsAssignedByWorkout.get(heat.workout_id) : undefined}
                         />
                       </div>
                     )}
