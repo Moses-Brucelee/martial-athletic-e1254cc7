@@ -146,9 +146,9 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
           cmp = (a.division_name || "").localeCompare(b.division_name || "");
           break;
         default:
-          // Sort by specific workout score
-          const aScore = workoutScoreMap[a.team_id]?.[sortField] ?? -Infinity;
-          const bScore = workoutScoreMap[b.team_id]?.[sortField] ?? -Infinity;
+          // Sort by specific workout score (use unified sortValue: higher = better)
+          const aScore = workoutScoreMap[a.team_id]?.[sortField]?.sortValue ?? -Infinity;
+          const bScore = workoutScoreMap[b.team_id]?.[sortField]?.sortValue ?? -Infinity;
           cmp = aScore - bScore;
           break;
       }
@@ -263,7 +263,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                       <td className="py-4 px-4 text-xl font-bold text-foreground">{entry.team_name}</td>
                       {workouts.map((w) => (
                         <td key={w.id} className="py-4 px-4 text-center text-lg text-foreground tabular-nums">
-                          {workoutScoreMap[entry.team_id]?.[w.id] ?? "—"}
+                          {renderCell(entry.team_id, w.id)}
                         </td>
                       ))}
                       <td className="py-4 px-4 text-center text-2xl font-black text-primary tabular-nums">
@@ -395,7 +395,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                     </td>
                     {workouts.map((w) => (
                       <td key={w.id} className="py-2 px-2 text-center text-xs text-foreground tabular-nums">
-                        {workoutScoreMap[entry.team_id]?.[w.id] ?? "—"}
+                        {renderCell(entry.team_id, w.id)}
                       </td>
                     ))}
                     <td className="py-2 px-2 text-center font-bold text-primary text-xs tabular-nums">
