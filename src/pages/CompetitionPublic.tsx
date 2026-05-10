@@ -358,13 +358,13 @@ export default function CompetitionPublic() {
         {competition.poster_url ? (
           <div className="relative w-full bg-muted">
             <AdaptivePoster src={competition.poster_url} alt={competition.name} className="w-full" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-20 pointer-events-none" />
           </div>
         ) : (
           <div className="h-40 bg-gradient-to-br from-primary/20 to-accent/20" />
         )}
 
-        <div className="max-w-3xl mx-auto px-4 relative -mt-16 z-10">
+        <div className="max-w-3xl mx-auto px-4 relative mt-4 sm:-mt-16 z-10">
           <div className="bg-card border border-border rounded-2xl p-6 shadow-lg">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
