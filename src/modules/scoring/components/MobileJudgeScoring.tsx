@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Lock, Save, Clock, Dumbbell, Repeat, Award, 
 import { toast } from "sonner";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
+import { TimeInput, formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
 
 interface MobileJudgeScoringProps {
   competitionId: string;
