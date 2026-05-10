@@ -348,7 +348,7 @@ export default function CompetitionPublic() {
   };
 
   const canProceedStep0 = regType === "self" || athleteName.trim().length >= 2;
-  const canProceedStep1 = true; // division is optional
+  const canProceedStep1 = teammateNamesValid;
   const totalSteps = 3;
 
   return (
@@ -356,8 +356,8 @@ export default function CompetitionPublic() {
       {/* Hero */}
       <div className="relative">
         {competition.poster_url ? (
-          <div className="h-56 md:h-72 overflow-hidden relative">
-            <AdaptivePoster src={competition.poster_url} alt={competition.name} className="h-56 md:h-72" />
+          <div className="relative w-full max-h-[40vh] overflow-hidden">
+            <AdaptivePoster src={competition.poster_url} alt={competition.name} className="w-full max-h-[40vh]" />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-20" />
           </div>
         ) : (
