@@ -51,6 +51,8 @@ export default function CreateProfile() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [parentConsent, setParentConsent] = useState(false);
 
   // Hydrate from existing profile so re-entry is safe.
   useEffect(() => {
@@ -66,6 +68,18 @@ export default function CreateProfile() {
   const dateOfBirth = dobString ? new Date(dobString + "T00:00:00") : undefined;
   const computedAge = dateOfBirth ? calculateAge(dateOfBirth) : null;
 
+  // Age constraints: min signup 13, max 120
+  const MIN_AGE = 13;
+  const MAX_AGE = 120;
+  let ageError: string | null = null;
+  if (computedAge !== null) {
+    if (computedAge < MIN_AGE) ageError = `Minimum age to sign up is ${MIN_AGE} years.`;
+    else if (computedAge > MAX_AGE) ageError = `Please enter a valid date of birth (max age ${MAX_AGE}).`;
+  }
+  const requiresParentConsent = computedAge !== null && computedAge >= MIN_AGE && computedAge < 18;
+  const consentMissing = requiresParentConsent && !parentConsent;
+  const nameInvalid = displayName.trim().length > 0 && displayName.trim().length < 2;
+
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -78,6 +92,11 @@ export default function CreateProfile() {
 
   const handleSave = async () => {
     if (!user) return;
+    if (ageError || consentMissing || nameInvalid) {
+      setTouched({ fullName: true, dob: true, consent: true });
+      setError(ageError ?? (consentMissing ? "Parental consent is required for under-18s." : "Please fix the highlighted fields."));
+      return;
+    }
     setError("");
     setLoading(true);
 
@@ -244,10 +263,14 @@ export default function CreateProfile() {
                       placeholder="John Doe"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
+                      onBlur={() => setTouched((p) => ({ ...p, fullName: true }))}
                       disabled={loading}
                       className="h-11 bg-background"
                       maxLength={100}
                     />
+                    {touched.fullName && nameInvalid && (
+                      <p className="text-xs text-destructive">Name must be at least 2 characters.</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -265,7 +288,9 @@ export default function CreateProfile() {
                     </Select>
                   </div>
 
-                  <DateOfBirthPicker value={dobString} onChange={setDobString} disabled={loading} />
+                  <div className="space-y-2">
+                    <DateOfBirthPicker value={dobString} onChange={setDobString} disabled={loading} error={ageError ?? undefined} />
+                  </div>
 
                   <div className="space-y-2">
                     <Label className="text-foreground font-medium">Age</Label>
@@ -274,6 +299,20 @@ export default function CreateProfile() {
                     </div>
                   </div>
 
+                  {requiresParentConsent && (
+                    <div className="sm:col-span-2 flex items-start gap-2 p-3 rounded-lg border border-primary/30 bg-primary/5">
+                      <input
+                        id="parent-consent"
+                        type="checkbox"
+                        checked={parentConsent}
+                        onChange={(e) => setParentConsent(e.target.checked)}
+                        className="mt-1"
+                      />
+                      <Label htmlFor="parent-consent" className="text-xs text-foreground cursor-pointer">
+                        I confirm I have parental/guardian consent to register (required for under-18s).
+                      </Label>
+                    </div>
+                  )}
                   <div className="space-y-2 sm:col-span-2">
                     <Label className="text-foreground font-medium">Gym / Club</Label>
                     <Input
