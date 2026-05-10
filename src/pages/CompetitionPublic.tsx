@@ -604,6 +604,12 @@ export default function CompetitionPublic() {
           </div>
         )}
       </main>
+
+      <WorkoutRevealDialog
+        workoutId={revealedWorkoutId}
+        workouts={workouts}
+        onClose={() => setRevealedWorkoutId(null)}
+      />
     </div>
   );
 }
