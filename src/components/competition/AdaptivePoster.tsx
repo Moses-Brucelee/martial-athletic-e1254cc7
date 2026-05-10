@@ -22,10 +22,16 @@ export function AdaptivePoster({
 }: AdaptivePosterProps) {
   const [needsBlur, setNeedsBlur] = useState(false);
 
+  // PNGs commonly carry transparency / sponsor logos — never apply auto blur fill.
+  const isPng = /\.png(\?|$)/i.test(src);
+
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    if (isPng) {
+      setNeedsBlur(false);
+      return;
+    }
     const img = e.currentTarget;
     const imgRatio = img.naturalWidth / img.naturalHeight;
-    // Container is 16:9 = 1.78. If image ratio deviates significantly, use blur bg
     const containerRatio = aspectRatio.includes("/")
       ? Number(aspectRatio.split("/")[0]) / Number(aspectRatio.split("/")[1])
       : 16 / 9;

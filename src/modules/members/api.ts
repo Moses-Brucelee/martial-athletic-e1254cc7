@@ -170,7 +170,7 @@ export async function deleteGymDefaultDiscount(id: string): Promise<void> {
 
 export async function searchProfiles(query: string) {
   const { data, error } = await supabase
-    .from("profiles")
+    .from("public_profiles")
     .select("id, user_id, display_name, avatar_url, full_name")
     .or(`display_name.ilike.%${query}%,full_name.ilike.%${query}%`)
     .limit(10);

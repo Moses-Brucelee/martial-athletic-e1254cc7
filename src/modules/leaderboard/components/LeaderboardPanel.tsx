@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatTimeMMSS, ordinal } from "@/utils/format";
 
 interface LeaderboardPanelProps {
   competitionId: string;
@@ -53,14 +54,72 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
     ? getAgeCategoryLabel(competition.age_category_type, competition.min_age, competition.max_age)
     : null;
 
+  // Per-workout map: team_id → workout_id → { raw, scoringType, sortValue, rank, display }
+  // - raw: the raw value (seconds, reps, kg, points)
+  // - sortValue: numeric for sort comparisons (always "higher is better")
+  // - rank: per-workout placement (1 = best)
+  // - display: formatted string ("3:24", "120 reps", "200kg", "85 pts")
   const workoutScoreMap = useMemo(() => {
-    const map: Record<string, Record<string, number>> = {};
+    type Cell = { raw: number; scoringType: string; sortValue: number; rank: number; display: string };
+    const workoutTypeMap: Record<string, string> = {};
+    workouts.forEach((w) => { workoutTypeMap[w.id] = w.scoring_type || "points"; });
+
+    // Group raw values per workout to compute ranks
+    const byWorkout: Record<string, { team_id: string; raw: number; sortValue: number }[]> = {};
     scoreRows.forEach((s) => {
-      if (!map[s.team_id]) map[s.team_id] = {};
-      map[s.team_id][s.workout_id] = s.points_awarded ?? s.score;
+      const stype = workoutTypeMap[s.workout_id] || "points";
+      let raw: number | null = null;
+      if (stype === "time") raw = s.time_seconds ?? s.score ?? null;
+      else if (stype === "reps") raw = s.reps_completed ?? s.score ?? null;
+      else if (stype === "load") raw = s.load_value ?? s.score ?? null;
+      else raw = s.points_awarded ?? s.score ?? null;
+      if (raw == null) return;
+      // For "time", lower is better → invert for unified sort
+      const sortValue = stype === "time" ? -Number(raw) : Number(raw);
+      if (!byWorkout[s.workout_id]) byWorkout[s.workout_id] = [];
+      byWorkout[s.workout_id].push({ team_id: s.team_id, raw: Number(raw), sortValue });
+    });
+
+    const map: Record<string, Record<string, Cell>> = {};
+    Object.entries(byWorkout).forEach(([wid, rows]) => {
+      const stype = workoutTypeMap[wid] || "points";
+      // Sort high→low by sortValue (already inverted for time so high = best)
+      const sorted = [...rows].sort((a, b) => b.sortValue - a.sortValue);
+      // Dense-rank (ties share rank)
+      let lastValue: number | null = null;
+      let lastRank = 0;
+      sorted.forEach((row, i) => {
+        let rank: number;
+        if (lastValue !== null && row.sortValue === lastValue) {
+          rank = lastRank;
+        } else {
+          rank = i + 1;
+          lastRank = rank;
+          lastValue = row.sortValue;
+        }
+        const display =
+          stype === "time" ? formatTimeMMSS(row.raw) :
+          stype === "reps" ? `${row.raw}` :
+          stype === "load" ? `${row.raw}kg` :
+          `${row.raw}`;
+        if (!map[row.team_id]) map[row.team_id] = {};
+        map[row.team_id][wid] = { raw: row.raw, scoringType: stype, sortValue: row.sortValue, rank, display };
+      });
     });
     return map;
-  }, [scoreRows]);
+  }, [scoreRows, workouts]);
+
+  // Helper: render a workout cell (display + ordinal rank in parens)
+  const renderCell = (teamId: string, workoutId: string) => {
+    const cell = workoutScoreMap[teamId]?.[workoutId];
+    if (!cell) return "—";
+    return (
+      <span className="inline-flex items-baseline gap-1 tabular-nums">
+        <span className="font-semibold text-foreground">{cell.display}</span>
+        <span className="text-[10px] text-muted-foreground">({ordinal(cell.rank)})</span>
+      </span>
+    );
+  };
 
   // Filter by division
   const filteredEntries = useMemo(() => {
@@ -87,9 +146,9 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
           cmp = (a.division_name || "").localeCompare(b.division_name || "");
           break;
         default:
-          // Sort by specific workout score
-          const aScore = workoutScoreMap[a.team_id]?.[sortField] ?? -Infinity;
-          const bScore = workoutScoreMap[b.team_id]?.[sortField] ?? -Infinity;
+          // Sort by specific workout score (use unified sortValue: higher = better)
+          const aScore = workoutScoreMap[a.team_id]?.[sortField]?.sortValue ?? -Infinity;
+          const bScore = workoutScoreMap[b.team_id]?.[sortField]?.sortValue ?? -Infinity;
           cmp = aScore - bScore;
           break;
       }
@@ -204,7 +263,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                       <td className="py-4 px-4 text-xl font-bold text-foreground">{entry.team_name}</td>
                       {workouts.map((w) => (
                         <td key={w.id} className="py-4 px-4 text-center text-lg text-foreground tabular-nums">
-                          {workoutScoreMap[entry.team_id]?.[w.id] ?? "—"}
+                          {renderCell(entry.team_id, w.id)}
                         </td>
                       ))}
                       <td className="py-4 px-4 text-center text-2xl font-black text-primary tabular-nums">
@@ -336,7 +395,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                     </td>
                     {workouts.map((w) => (
                       <td key={w.id} className="py-2 px-2 text-center text-xs text-foreground tabular-nums">
-                        {workoutScoreMap[entry.team_id]?.[w.id] ?? "—"}
+                        {renderCell(entry.team_id, w.id)}
                       </td>
                     ))}
                     <td className="py-2 px-2 text-center font-bold text-primary text-xs tabular-nums">
