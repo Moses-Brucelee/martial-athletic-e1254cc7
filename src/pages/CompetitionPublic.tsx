@@ -239,7 +239,7 @@ export default function CompetitionPublic() {
         const captainAlreadyRegistered = registrations.some(
           (r) => r.user_id === user.id && r.status !== "withdrawn" && r.status !== "rejected",
         );
-        if (!captainAlreadyRegistered) {
+        if (includeCaptain && !captainAlreadyRegistered) {
           const captainName = profile?.display_name || profile?.full_name || "Captain";
           await createReg.mutateAsync({
             competition_id: id,
