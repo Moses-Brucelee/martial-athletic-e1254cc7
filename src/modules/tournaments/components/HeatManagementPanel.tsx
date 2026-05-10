@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useHeats, useAddHeat, useUpdateHeatStatus, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
 import { Button } from "@/components/ui/button";
