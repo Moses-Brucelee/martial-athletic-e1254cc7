@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Link2, Copy, Check, Users, Gavel, Flame, Users2 } from "lucide-react";
-import { toast } from "sonner";
+import { Users, Gavel, Flame, Users2 } from "lucide-react";
 import { UnifiedAthleteTable } from "@/modules/tournaments/components/UnifiedAthleteTable";
 import { TeamsListView } from "@/modules/tournaments/components/TeamsListView";
 import { HeatManagementPanel } from "@/modules/tournaments/components/HeatManagementPanel";
 import { JudgesPanel as OriginalJudgesPanel } from "@/components/competition/JudgesPanel";
+import { ShareCompetitionMenu } from "@/components/competition/ShareCompetitionMenu";
 import { useJudges } from "@/modules/admin/hooks";
 import { useRegistrations } from "@/modules/athletes/hooks";
-import { useTeams } from "@/modules/tournaments/hooks";
+import { useTeams, useCompetition } from "@/modules/tournaments/hooks";
 import { useHeats } from "@/modules/tournaments/hooks-engine";
 import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 
@@ -18,32 +17,6 @@ interface PeopleTabProps {
   competitionId: string;
   canAdmin: boolean;
   derivedStatus: CompetitionStatus;
-}
-
-function ShareableLink({ competitionId }: { competitionId: string }) {
-  const [copied, setCopied] = useState(false);
-  const link = `${window.location.origin}/event/${competitionId}`;
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(link);
-    setCopied(true);
-    toast.success("Registration link copied!");
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
-      <Link2 className="h-4 w-4 text-primary shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-foreground mb-0.5">Share Registration Link</p>
-        <code className="text-[11px] text-muted-foreground block truncate">{link}</code>
-      </div>
-      <Button variant="outline" size="sm" onClick={handleCopy} className="shrink-0 h-8 px-3">
-        {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
-        <span className="ml-1.5 text-xs">{copied ? "Copied" : "Copy"}</span>
-      </Button>
-    </div>
-  );
 }
 
 function JudgesPanelWrapper({ competitionId, canAdmin }: { competitionId: string; canAdmin: boolean }) {
@@ -68,6 +41,7 @@ export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabP
   const { data: registrations = [] } = useRegistrations(competitionId);
   const { data: teams = [] } = useTeams(competitionId);
   const { data: heats = [] } = useHeats(competitionId);
+  const { data: competition } = useCompetition(competitionId);
 
   const approvedCount = registrations.filter(
     (r) => r.status === "approved" || r.status === "confirmed"
@@ -77,7 +51,24 @@ export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabP
 
   return (
     <div className="space-y-4">
-      {showShareLink && <ShareableLink competitionId={competitionId} />}
+      {showShareLink && (
+        <div className="flex items-center justify-between gap-3 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-foreground mb-0.5">
+              Registration is open
+            </p>
+            <p className="text-[11px] text-muted-foreground truncate">
+              Share the link so athletes can register as individuals or teams.
+            </p>
+          </div>
+          <ShareCompetitionMenu
+            competitionId={competitionId}
+            competitionName={competition?.name}
+            startDate={competition?.start_date}
+            venue={competition?.venue}
+          />
+        </div>
+      )}
 
       {/* Inner tabs — Athletes, Teams, Judges, Heats */}
       <Tabs defaultValue="athletes" className="w-full">

@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
-import { V1_FULL_ACCESS } from "@/lib/featureFlags";
+import { V1_FULL_ACCESS, MENU_FEATURE_TO_FLAG, type FeatureFlagKey } from "@/lib/featureFlags";
+import { useFeatureFlags } from "@/hooks/useFeatureFlag";
+import { useTier } from "@/hooks/useTier";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,6 +22,7 @@ import { UpcomingCompetitionsSpotlight } from "@/components/dashboard/UpcomingCo
 import { BrowseMarketplaceSection } from "@/components/dashboard/BrowseMarketplaceSection";
 import { ShopSpotlight } from "@/components/dashboard/ShopSpotlight";
 import { ProgramSpotlight } from "@/components/dashboard/ProgramSpotlight";
+import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   User, Eye, Trophy, Users, Link2, Settings, BarChart3, Palette,
@@ -63,6 +66,8 @@ export default function MainMenu() {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading, error: profileError } = useProfile();
   const { canAccess, loading: subLoading } = useSubscription();
+  const { flags, loading: flagsLoading } = useFeatureFlags();
+  const { isAtLeast, loading: tierLoading } = useTier();
   const [hasCompetitions, setHasCompetitions] = useState(false);
   const [compLoading, setCompLoading] = useState(true);
 
@@ -95,16 +100,30 @@ export default function MainMenu() {
     fetchMenu();
   }, []);
 
-  useEffect(() => {
-    if (!profileLoading && profile && !profile.profile_completed) {
-      navigate("/create-profile", { replace: true });
-    }
-  }, [profile, profileLoading, navigate]);
+  // Profile completeness is now a soft concern (handled via banner in Slice E),
+  // not a hard route redirect. Intentionally no navigation effect here.
+
+  // Map feature_key -> minimum required tier slug. Items not listed have no tier gate.
+  // Keys must match menu_items.feature_key in DB.
+  const FEATURE_TIER_REQUIREMENT: Record<string, string> = {
+    create_competitions: "affiliate_pro",
+    manage_members: "affiliate_pro",
+    manage_affiliation: "affiliate_pro",
+    link_gym_website: "affiliate_pro",
+    // track_performances + view_profile + view_leaderboards: free
+  };
 
   // Flatten all accessible menu items (no tier grouping)
   const accessibleItems = useMemo(() => {
-    return menuItems.filter((m) => V1_FULL_ACCESS || canAccess(m.feature_key));
-  }, [menuItems, canAccess]);
+    return menuItems.filter((m) => {
+      if (!V1_FULL_ACCESS && !canAccess(m.feature_key)) return false;
+      const flagKey = MENU_FEATURE_TO_FLAG[m.feature_key] as FeatureFlagKey | undefined;
+      if (flagKey && flags[flagKey] === false) return false;
+      const requiredTier = FEATURE_TIER_REQUIREMENT[m.feature_key];
+      if (requiredTier && !isAtLeast(requiredTier)) return false;
+      return true;
+    });
+  }, [menuItems, canAccess, flags, isAtLeast]);
 
   const initials = profile?.display_name
     ? profile.display_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -112,7 +131,7 @@ export default function MainMenu() {
 
   const firstName = profile?.display_name?.split(" ")[0] ?? "Athlete";
 
-  const isLoading = profileLoading || compLoading || subLoading || menuLoading;
+  const isLoading = profileLoading || compLoading || subLoading || menuLoading || flagsLoading || tierLoading;
 
   if (isLoading) {
     return (
@@ -175,6 +194,8 @@ export default function MainMenu() {
       </header>
 
       <main className="flex-1 px-4 py-8 max-w-lg mx-auto w-full space-y-8">
+        <ProfileCompletionBanner />
+
         {/* Welcome */}
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-foreground tracking-tight">

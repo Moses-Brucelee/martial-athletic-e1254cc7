@@ -29,6 +29,7 @@ import { athleteNameSchema } from "@/lib/validation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { EditRegistrationDialog } from "@/modules/athletes/components/EditRegistrationDialog";
 
 interface Props {
   competitionId: string;
@@ -66,6 +67,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamDivisionId, setNewTeamDivisionId] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const [editingReg, setEditingReg] = useState<AthleteRegistration | null>(null);
 
   // Build team→heat+lane lookup
   const teamHeatMap = useMemo(() => {
@@ -397,6 +399,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
               onDivisionChange={(divId) => updateDivision.mutate({ id: r.id, divisionId: divId, competitionId }, { onSuccess: () => toast.success("Division updated"), onError: () => toast.error("Failed") })}
               onTeamChange={(tId) => updateTeam.mutate({ id: r.id, teamId: tId, competitionId }, { onSuccess: () => toast.success("Team updated"), onError: () => toast.error("Failed") })}
               onCreateTeam={() => setShowCreateTeam(true)}
+              onEdit={() => setEditingReg(r)}
             />
           ))}
         </div>
@@ -426,6 +429,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
                 onDivisionChange={(divId) => updateDivision.mutate({ id: r.id, divisionId: divId, competitionId }, { onSuccess: () => toast.success("Division updated"), onError: () => toast.error("Failed") })}
                 onTeamChange={(tId) => updateTeam.mutate({ id: r.id, teamId: tId, competitionId }, { onSuccess: () => toast.success("Team updated"), onError: () => toast.error("Failed") })}
                 onCreateTeam={() => setShowCreateTeam(true)}
+                onEdit={() => setEditingReg(r)}
               />
             ))}
           </div>
@@ -441,6 +445,13 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
           <span className="flex items-center gap-1 ml-auto"><strong className="text-foreground">{approvedCount}/{maxAthletes}</strong> Capacity</span>
         )}
       </div>
+
+      <EditRegistrationDialog
+        open={!!editingReg}
+        onOpenChange={(o) => !o && setEditingReg(null)}
+        reg={editingReg}
+        competitionId={competitionId}
+      />
     </div>
   );
 }
@@ -536,7 +547,7 @@ function AddForm({
 // ── Desktop Row ───────────────────────────────────────────
 function DesktopRow({
   reg, divisions, teams, teamHeatMap, canAdmin, isSelected, onToggle,
-  onStatusChange, onDivisionChange, onTeamChange, onCreateTeam,
+  onStatusChange, onDivisionChange, onTeamChange, onCreateTeam, onEdit,
 }: {
   reg: AthleteRegistration;
   divisions: { id: string; name: string }[];
@@ -549,6 +560,7 @@ function DesktopRow({
   onDivisionChange: (id: string) => void;
   onTeamChange: (id: string) => void;
   onCreateTeam: () => void;
+  onEdit: () => void;
 }) {
   const heatInfo = reg.team_id ? teamHeatMap[reg.team_id] : undefined;
 
@@ -558,7 +570,14 @@ function DesktopRow({
       <div className="flex items-center gap-2 min-w-0">
         {canAdmin && <Checkbox checked={isSelected} onCheckedChange={onToggle} />}
         <div className="min-w-0">
-          <span className="text-sm font-medium text-foreground truncate block">{reg.athlete_name}</span>
+          <button
+            type="button"
+            onClick={onEdit}
+            disabled={!canAdmin}
+            className="text-sm font-medium text-foreground truncate block text-left hover:text-primary hover:underline disabled:no-underline disabled:hover:text-foreground"
+          >
+            {reg.athlete_name}
+          </button>
           {reg.email && <span className="text-[11px] text-muted-foreground truncate block">{reg.email}</span>}
         </div>
       </div>
@@ -632,6 +651,8 @@ function DesktopRow({
             <Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical className="h-3.5 w-3.5" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onEdit}>Edit details</DropdownMenuItem>
+            <DropdownMenuSeparator />
             {reg.status !== "approved" && <DropdownMenuItem onClick={() => onStatusChange("approved")}><CheckCircle2 className="h-4 w-4 mr-2 text-green-600" /> Approve</DropdownMenuItem>}
             {reg.status !== "rejected" && <DropdownMenuItem onClick={() => onStatusChange("rejected")}><XCircle className="h-4 w-4 mr-2 text-destructive" /> Reject</DropdownMenuItem>}
             <DropdownMenuSeparator />
@@ -647,7 +668,7 @@ function DesktopRow({
 // ── Mobile Card ───────────────────────────────────────────
 function MobileCard({
   reg, divisions, teams, heats, teamHeatMap, canAdmin, isSelected, onToggle,
-  onStatusChange, onDivisionChange, onTeamChange, onCreateTeam,
+  onStatusChange, onDivisionChange, onTeamChange, onCreateTeam, onEdit,
 }: {
   reg: AthleteRegistration;
   divisions: { id: string; name: string }[];
@@ -661,6 +682,7 @@ function MobileCard({
   onDivisionChange: (id: string) => void;
   onTeamChange: (id: string) => void;
   onCreateTeam: () => void;
+  onEdit: () => void;
 }) {
   const divName = divisions.find((d) => d.id === reg.division_id)?.name;
   const teamName = teams.find((t) => t.id === reg.team_id)?.team_name;
@@ -672,7 +694,14 @@ function MobileCard({
         {canAdmin && <Checkbox checked={isSelected} onCheckedChange={onToggle} className="mt-0.5" />}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-foreground truncate">{reg.athlete_name}</span>
+            <button
+              type="button"
+              onClick={onEdit}
+              disabled={!canAdmin}
+              className="text-sm font-semibold text-foreground truncate text-left hover:text-primary hover:underline disabled:no-underline disabled:hover:text-foreground"
+            >
+              {reg.athlete_name}
+            </button>
             <Badge variant="outline" className={`text-[10px] shrink-0 ${STATUS_COLORS[reg.status] ?? ""}`}>
               {STATUS_LABELS[reg.status] ?? reg.status}
             </Badge>

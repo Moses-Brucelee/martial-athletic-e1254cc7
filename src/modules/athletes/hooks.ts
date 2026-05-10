@@ -116,6 +116,32 @@ export function useBulkUpdateStatus() {
   });
 }
 
+export function useUpdateRegistrationDetails() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, competitionId, updates }: {
+      id: string;
+      competitionId: string;
+      updates: { athlete_name?: string; email?: string | null; phone?: string | null; gender?: string | null; date_of_birth?: string | null; notes?: string | null };
+    }) => api.updateRegistrationDetails(id, updates),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["registrations", v.competitionId] });
+    },
+  });
+}
+
+export function useDeleteRegistration() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string; competitionId: string }) =>
+      api.deleteRegistration(id),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["registrations", v.competitionId] });
+    },
+  });
+}
+
+
 // ── Athletes ──────────────────────────────────────────────
 
 export function useAthletes() {

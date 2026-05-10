@@ -211,6 +211,27 @@ export async function createRegistration(reg: {
   return data as unknown as AthleteRegistration;
 }
 
+export async function updateRegistrationDetails(
+  id: string,
+  updates: {
+    athlete_name?: string;
+    email?: string | null;
+    phone?: string | null;
+    gender?: string | null;
+    date_of_birth?: string | null;
+    notes?: string | null;
+  }
+): Promise<AthleteRegistration> {
+  const { data, error } = await supabase
+    .from("athlete_registrations")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as unknown as AthleteRegistration;
+}
+
 export async function updateRegistrationStatus(
   id: string,
   status: string
@@ -252,6 +273,14 @@ export async function bulkUpdateStatus(
     .from("athlete_registrations")
     .update({ status })
     .in("id", ids);
+  if (error) throw error;
+}
+
+export async function deleteRegistration(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("athlete_registrations")
+    .delete()
+    .eq("id", id);
   if (error) throw error;
 }
 

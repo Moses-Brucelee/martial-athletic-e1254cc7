@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Eye, EyeOff, ArrowLeft, AlertCircle, Lock } from "lucide-react";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -20,7 +21,27 @@ const LOCKOUT_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+
+  const safeRedirect = (raw: string | null): string => {
+    if (!raw) return "/dashboard";
+    try {
+      const decoded = decodeURIComponent(raw).trim();
+      // Only allow same-origin internal paths to prevent open-redirects.
+      if (
+        decoded.startsWith("/") &&
+        !decoded.startsWith("//") &&
+        !/^javascript:/i.test(decoded)
+      ) {
+        return decoded;
+      }
+    } catch {
+      /* fall through */
+    }
+    return "/dashboard";
+  };
+  const redirectTarget = safeRedirect(searchParams.get("redirectTo"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -44,8 +65,8 @@ export default function Login() {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) navigate("/dashboard", { replace: true });
-  }, [user, navigate]);
+    if (user) navigate(redirectTarget, { replace: true });
+  }, [user, navigate, redirectTarget]);
 
   // Load brute force state from sessionStorage
   useEffect(() => {
@@ -123,7 +144,7 @@ export default function Login() {
     // Success - clear attempts
     sessionStorage.removeItem("ma-login-attempts");
     setLoading(false);
-    navigate("/dashboard", { replace: true });
+    navigate(redirectTarget, { replace: true });
   };
 
   return (
@@ -216,6 +237,17 @@ export default function Login() {
                 )}
               </Button>
             </form>
+
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">Or</span>
+              </div>
+            </div>
+
+            <GoogleSignInButton redirectTo={redirectTarget} />
 
             <div className="mt-5 text-center">
               <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary transition-colors">

@@ -62,6 +62,8 @@ export default function ViewProfile() {
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Allow re-selecting the same file later
+    e.target.value = "";
     if (!file) return;
     const imgError = validateImageFile(file);
     if (imgError) { setError(imgError); return; }
@@ -163,17 +165,27 @@ export default function ViewProfile() {
 
             <div className="flex flex-col md:flex-row gap-8">
               <div className="flex flex-col items-center gap-3">
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="relative group">
+                <label htmlFor="avatar-upload" className="relative group cursor-pointer touch-manipulation">
                   <Avatar className="h-28 w-28 border-2 border-border">
                     <AvatarImage src={avatarPreview || undefined} />
                     <AvatarFallback className="bg-muted text-muted-foreground text-lg font-bold">{initials}</AvatarFallback>
                   </Avatar>
-                  <div className="absolute inset-0 rounded-full bg-foreground/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <div className="absolute inset-0 rounded-full bg-foreground/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
                     <Camera className="h-6 w-6 text-background" />
                   </div>
-                </button>
-                <p className="text-xs text-muted-foreground">Change Photo</p>
-                <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleAvatarChange} />
+                  <span className="sr-only">Change profile photo</span>
+                </label>
+                <label htmlFor="avatar-upload" className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                  Change Photo
+                </label>
+                <input
+                  ref={fileInputRef}
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handleAvatarChange}
+                  className="sr-only"
+                />
               </div>
 
               <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">

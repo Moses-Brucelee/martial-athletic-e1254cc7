@@ -5,13 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Eye, EyeOff, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import { z } from "zod";
+import { toast } from "sonner";
 
 const resetSchema = z
   .object({
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(72, "Password must be under 72 characters")
+      .regex(/[a-z]/, "Password must include a lowercase letter")
+      .regex(/[A-Z]/, "Password must include an uppercase letter")
+      .regex(/[0-9]/, "Password must include a number")
+      .regex(/[^A-Za-z0-9]/, "Password must include a special character"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -19,7 +27,17 @@ const resetSchema = z
     path: ["confirmPassword"],
   });
 
-type ResetState = "validating" | "ready" | "invalid" | "success";
+type ResetState = "validating" | "ready" | "expired";
+
+function isExpiredOrInvalidError(err: { message?: string; status?: number; code?: string } | null | undefined): boolean {
+  if (!err) return false;
+  const msg = (err.message || "").toLowerCase();
+  if (msg.includes("token_expired") || msg.includes("invalid_token") || msg.includes("expired") || msg.includes("invalid")) {
+    return true;
+  }
+  if (err.status === 401 || err.status === 410) return true;
+  return false;
+}
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -32,7 +50,6 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  // Real-time validation
   const validation = resetSchema.safeParse({ password, confirmPassword });
   const fieldErrors: Record<string, string> = {};
   if (!validation.success) {
@@ -44,24 +61,29 @@ export default function ResetPassword() {
   const isFormValid = validation.success;
 
   useEffect(() => {
+    let recoveryDetected = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
+        recoveryDetected = true;
         setState("ready");
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setState("ready");
-      } else {
-        setTimeout(() => {
-          setState((prev) => (prev === "validating" ? "invalid" : prev));
-        }, 2000);
+    // Wait briefly for the recovery event. If it never fires, the user
+    // landed here without a valid email link — bounce to /forgot-password.
+    const timer = setTimeout(() => {
+      if (!recoveryDetected) {
+        toast.error("Reset links must be opened from your email.");
+        navigate("/forgot-password", { replace: true });
       }
-    });
+    }, 2500);
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      clearTimeout(timer);
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,14 +101,19 @@ export default function ResetPassword() {
     });
 
     if (updateError) {
-      setError(updateError.message);
+      if (isExpiredOrInvalidError(updateError as any)) {
+        setState("expired");
+      } else {
+        setError(updateError.message);
+      }
       setLoading(false);
       return;
     }
 
     await supabase.auth.signOut();
-    setState("success");
     setLoading(false);
+    toast.success("Password updated. Please sign in with your new password.");
+    navigate("/login", { replace: true });
   };
 
   if (state === "validating") {
@@ -100,7 +127,7 @@ export default function ResetPassword() {
     );
   }
 
-  if (state === "invalid") {
+  if (state === "expired") {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <header className="flex items-center justify-between px-4 sm:px-8 py-4">
@@ -115,31 +142,9 @@ export default function ResetPassword() {
             <img src={logoCompact} alt="Martial Athletic" className="w-20 h-20 mx-auto mb-4 object-contain" />
             <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg space-y-4">
               <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
-              <h1 className="text-xl font-bold text-foreground">Invalid or Expired Link</h1>
-              <p className="text-sm text-muted-foreground">This password reset link is no longer valid. Please request a new one.</p>
+              <h1 className="text-xl font-bold text-foreground">Link Expired</h1>
+              <p className="text-sm text-muted-foreground">This reset link has expired or has already been used. Request a new one.</p>
               <Button onClick={() => navigate("/forgot-password")} className="w-full">Request New Link</Button>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (state === "success") {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <header className="flex items-center justify-between px-4 sm:px-8 py-4">
-          <div />
-          <ThemeToggle />
-        </header>
-        <main className="flex-1 flex items-center justify-center px-4">
-          <div className="w-full max-w-md text-center">
-            <img src={logoCompact} alt="Martial Athletic" className="w-20 h-20 mx-auto mb-4 object-contain" />
-            <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg space-y-4">
-              <CheckCircle className="h-10 w-10 text-primary mx-auto" />
-              <h1 className="text-xl font-bold text-foreground">Password Updated</h1>
-              <p className="text-sm text-muted-foreground">Your password has been reset successfully. You can now sign in with your new password.</p>
-              <Button onClick={() => navigate("/login")} className="w-full">Go to Login</Button>
             </div>
           </div>
         </main>
@@ -193,7 +198,7 @@ export default function ResetPassword() {
                   </button>
                 </div>
                 {touched.password && fieldErrors.password && <p className="text-xs text-destructive">{fieldErrors.password}</p>}
-                {!touched.password && !password && <p className="text-xs text-muted-foreground">Required — minimum 6 characters</p>}
+                {!touched.password && !password && <p className="text-xs text-muted-foreground">Required — must include upper, lower, number & special character</p>}
               </div>
 
               <div className="space-y-2">

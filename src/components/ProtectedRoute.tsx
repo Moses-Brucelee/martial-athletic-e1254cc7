@@ -1,9 +1,10 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { BottomNav } from "./BottomNav";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -14,7 +15,9 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    const intended = `${location.pathname}${location.search}${location.hash}`;
+    const redirectParam = encodeURIComponent(intended);
+    return <Navigate to={`/login?redirectTo=${redirectParam}`} replace />;
   }
 
   return (

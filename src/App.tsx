@@ -8,6 +8,9 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SuperUserGuard } from "@/components/super/SuperUserGuard";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
+import { FeatureRouteGuard } from "@/components/FeatureRouteGuard";
+import { RequireTier } from "@/components/RequireTier";
+import { ProfileFieldsPromptProvider } from "@/hooks/useRequireProfileFields";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -20,7 +23,7 @@ import CompetitionDashboard from "./pages/CompetitionDashboard";
 import CompetitionList from "./pages/CompetitionList";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import UpgradePackage from "./pages/UpgradePackage";
+
 import SuperDashboard from "./pages/SuperDashboard";
 import MembersPage from "./modules/members/components/MembersPage";
 import NotFound from "./pages/NotFound";
@@ -42,6 +45,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <ProfileFieldsPromptProvider>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
@@ -54,21 +58,22 @@ const App = () => (
               <Route path="/dashboard" element={<ProtectedRoute><MainMenu /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ViewProfile /></ProtectedRoute>} />
               <Route path="/competitions" element={<ProtectedRoute><CompetitionList /></ProtectedRoute>} />
-              <Route path="/competition/create" element={<ProtectedRoute><CompetitionCreate /></ProtectedRoute>} />
+              <Route path="/competition/create" element={<ProtectedRoute><RequireTier tier="affiliate_pro"><CompetitionCreate /></RequireTier></ProtectedRoute>} />
               {/* /competition/:id/workouts removed — now part of creation wizard */}
               <Route path="/competition/:id" element={<ProtectedRoute><CompetitionDashboard /></ProtectedRoute>} />
-              <Route path="/upgrade" element={<ProtectedRoute><UpgradePackage /></ProtectedRoute>} />
+              
               <Route path="/super-dashboard" element={<ProtectedRoute><SuperUserGuard><SuperDashboard /></SuperUserGuard></ProtectedRoute>} />
-              <Route path="/members" element={<ProtectedRoute><MembersPage /></ProtectedRoute>} />
-              <Route path="/affiliation" element={<ProtectedRoute><Affiliation /></ProtectedRoute>} />
-              <Route path="/gym-website" element={<ProtectedRoute><GymWebsite /></ProtectedRoute>} />
-              <Route path="/performances" element={<ProtectedRoute><Performances /></ProtectedRoute>} />
-              <Route path="/browse" element={<Browse />} />
+              <Route path="/members" element={<ProtectedRoute><RequireTier tier="affiliate_pro"><MembersPage /></RequireTier></ProtectedRoute>} />
+              <Route path="/affiliation" element={<ProtectedRoute><RequireTier tier="affiliate_pro"><Affiliation /></RequireTier></ProtectedRoute>} />
+              <Route path="/gym-website" element={<ProtectedRoute><RequireTier tier="affiliate_pro"><GymWebsite /></RequireTier></ProtectedRoute>} />
+              <Route path="/performances" element={<ProtectedRoute><RequireTier tier="tournament_pro"><Performances /></RequireTier></ProtectedRoute>} />
+              <Route path="/browse" element={<FeatureRouteGuard flag="browse_marketplace" redirectTo="/"><Browse /></FeatureRouteGuard>} />
               <Route path="/event/:id" element={<CompetitionPublic />} />
               <Route path="/event/:id/results" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </ProfileFieldsPromptProvider>
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

@@ -2,8 +2,17 @@ import { z } from "zod";
 
 // ── Reusable schemas ──────────────────────────────────────────────────
 
+// Rejects any input containing digits 0-9
+const noDigitsRegex = /^[^0-9]*$/;
+const NO_DIGITS_MSG = "Numbers are not allowed in names";
+
 export const profileSchema = z.object({
-  fullName: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be under 100 characters"),
+  fullName: z
+    .string()
+    .trim()
+    .min(2, "Name must be at least 2 characters")
+    .max(100, "Name must be under 100 characters")
+    .regex(noDigitsRegex, NO_DIGITS_MSG),
   gender: z.string().min(1, "Please select a gender"),
   affiliation: z.string().max(100, "Affiliation must be under 100 characters").optional().or(z.literal("")),
   aboutMe: z.string().max(500, "About Me must be under 500 characters").optional().or(z.literal("")),
@@ -20,11 +29,26 @@ export const competitionSchema = z.object({
   divisions: z.string().max(200, "Divisions must be under 200 characters").optional().or(z.literal("")),
 });
 
-export const teamNameSchema = z.string().trim().min(1, "Team name is required").max(100, "Team name must be under 100 characters");
+export const teamNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Team name is required")
+  .max(100, "Team name must be under 100 characters")
+  .regex(noDigitsRegex, NO_DIGITS_MSG);
 
-export const divisionNameSchema = z.string().trim().min(1, "Division name is required").max(100, "Division name must be under 100 characters");
+export const divisionNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Division name is required")
+  .max(100, "Division name must be under 100 characters")
+  .regex(noDigitsRegex, NO_DIGITS_MSG);
 
-export const athleteNameSchema = z.string().trim().min(1, "Athlete name is required").max(100, "Athlete name must be under 100 characters");
+export const athleteNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Athlete name is required")
+  .max(100, "Athlete name must be under 100 characters")
+  .regex(noDigitsRegex, NO_DIGITS_MSG);
 
 export const scoreSchema = z.coerce.number({ invalid_type_error: "Score must be a number" }).min(0, "Score cannot be negative").max(999999, "Score must be under 999,999");
 
@@ -78,5 +102,20 @@ export function validateImageFile(file: File): string | null {
     return `Invalid file type. Allowed: ${ALLOWED_IMAGE_EXTENSIONS.join(", ")}`;
   }
 
+  return null;
+}
+
+/** Type-only validator (no size cap) — pair with client-side resize. */
+export function validateImageType(file: File): string | null {
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  if (!ext || !(ALLOWED_IMAGE_EXTENSIONS as readonly string[]).includes(ext)) {
+    return `Allowed image types: ${ALLOWED_IMAGE_EXTENSIONS.join(", ")}`;
+  }
+  if (file.type && !(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
+    return `Invalid file type. Allowed: ${ALLOWED_IMAGE_EXTENSIONS.join(", ")}`;
+  }
+  // Hard ceiling so the browser doesn't OOM trying to decode huge files
+  const HARD_MAX = 25 * 1024 * 1024;
+  if (file.size > HARD_MAX) return "Image must be under 25 MB";
   return null;
 }
