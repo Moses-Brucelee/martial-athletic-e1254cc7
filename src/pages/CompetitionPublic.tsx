@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
-import { useCompetition, useTeams, useDivisions, useWorkouts } from "@/modules/tournaments/hooks";
+import { useCompetition, useTeams, useDivisions, useWorkouts, useWorkoutMovements } from "@/modules/tournaments/hooks";
 import { useRegistrations, useCreateRegistration } from "@/modules/athletes/hooks";
 import { checkDuplicateRegistration } from "@/modules/athletes/api";
 import { deriveStatus, getStatusLabel, getStatusColor } from "@/modules/tournaments/stateMachine";
@@ -13,12 +13,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, MapPin, Clock, Users, Dumbbell, AlertCircle, CheckCircle2, Trophy, ChevronRight, ChevronLeft } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar, MapPin, Clock, Users, Dumbbell, AlertCircle, CheckCircle2, Trophy, ChevronRight, ChevronLeft, Eye, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { differenceInYears } from "date-fns";
 import { athleteNameSchema, emailSchema } from "@/lib/validation";
 import { STATUS_LABELS, STATUS_COLORS } from "@/modules/athletes/types";
 import { AdaptivePoster } from "@/components/competition/AdaptivePoster";
+import { formatTimeMMSS } from "@/utils/format";
 
 export default function CompetitionPublic() {
   const { id } = useParams<{ id: string }>();
