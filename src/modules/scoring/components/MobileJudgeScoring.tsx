@@ -16,7 +16,7 @@ interface MobileJudgeScoringProps {
 type ScoringType = "time" | "reps" | "load" | "points";
 
 const SCORING_LABELS: Record<ScoringType, string> = {
-  time: "Time (seconds)",
+  time: "Time",
   reps: "Total Reps",
   load: "Load (kg)",
   points: "Points",
