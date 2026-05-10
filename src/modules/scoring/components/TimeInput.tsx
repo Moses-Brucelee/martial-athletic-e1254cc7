@@ -9,6 +9,7 @@ interface TimeInputProps {
   inputClassName?: string;
   disabled?: boolean;
   size?: "sm" | "md" | "lg";
+  showLabels?: boolean;
 }
 
 function parse(total: string) {
