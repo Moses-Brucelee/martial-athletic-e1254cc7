@@ -66,6 +66,29 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
     return m;
   }, [workouts]);
 
+  // Remember the last scheduled start across heat creations so users don't
+  // have to re-enter the date/time for each consecutive heat.
+  // Pre-fill with the latest heat's scheduled_start for the selected workout.
+  useEffect(() => {
+    if (scheduledStart) return;
+    if (!selectedWorkoutId) return;
+    const workoutHeats = heats
+      .filter((h) => h.workout_id === selectedWorkoutId && h.scheduled_start)
+      .sort(
+        (a, b) =>
+          new Date(b.scheduled_start as string).getTime() -
+          new Date(a.scheduled_start as string).getTime(),
+      );
+    const latest = workoutHeats[0]?.scheduled_start;
+    if (latest) {
+      // Convert ISO → "YYYY-MM-DDTHH:mm" for datetime-local
+      const d = new Date(latest);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      setScheduledStart(local);
+    }
+  }, [selectedWorkoutId, heats, scheduledStart]);
+
   const handleAddHeat = async () => {
     if (!selectedWorkoutId) {
       toast.error("Select a workout first");
@@ -83,7 +106,8 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
         scheduled_start: scheduledStart ? new Date(scheduledStart).toISOString() : undefined,
       });
       toast.success(`Heat #${nextNumber} created`);
-      setScheduledStart("");
+      // Keep the scheduledStart value so the next heat reuses the same time
+      // (the admin can simply bump the time as needed).
     } catch (err) {
       toast.error((err as Error).message);
     }
