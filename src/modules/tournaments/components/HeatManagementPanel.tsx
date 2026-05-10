@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useHeats, useAddHeat, useUpdateHeatStatus } from "@/modules/tournaments/hooks-engine";
+import { useHeats, useAddHeat, useUpdateHeatStatus, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const { data: heats = [], isLoading } = useHeats(competitionId);
   const { data: workouts = [] } = useWorkouts(competitionId);
   const { data: teams = [] } = useTeams(competitionId);
+  const { data: allAssignments = [] } = useAllHeatAssignments(competitionId);
   const addHeatMutation = useAddHeat();
   const updateStatusMutation = useUpdateHeatStatus();
 
