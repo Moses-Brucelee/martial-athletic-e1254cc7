@@ -213,6 +213,7 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
                             value={localScores[key] || "0"}
                             onChange={(v) => updateScore(team.id, w.id, v)}
                             size="sm"
+                            showLabels
                             inputClassName="w-12 px-1 text-xs"
                           />
                         ) : (
