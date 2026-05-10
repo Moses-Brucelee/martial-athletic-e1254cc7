@@ -364,7 +364,7 @@ export default function CompetitionPublic() {
           <div className="h-40 bg-gradient-to-br from-primary/20 to-accent/20" />
         )}
 
-        <div className="max-w-3xl mx-auto px-4 relative mt-4 sm:-mt-16 z-10">
+        <div className="max-w-3xl mx-auto px-4 relative mt-4 z-10">
           <div className="bg-card border border-border rounded-2xl p-6 shadow-lg">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
