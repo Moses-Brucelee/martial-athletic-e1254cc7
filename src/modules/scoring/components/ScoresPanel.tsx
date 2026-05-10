@@ -208,18 +208,27 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
                   return (
                     <td key={w.id} className="py-2 px-1 text-center">
                       {canScore && !isLocked ? (
-                        <Input
-                          type="number"
-                          value={localScores[key] || ""}
-                          onChange={(e) => updateScore(team.id, w.id, e.target.value)}
-                          placeholder={st === "time" ? "sec" : st === "load" ? "kg" : "0"}
-                          className="h-7 w-20 mx-auto text-center text-xs bg-background"
-                        />
+                        st === "time" ? (
+                          <TimeInput
+                            value={localScores[key] || "0"}
+                            onChange={(v) => updateScore(team.id, w.id, v)}
+                            size="sm"
+                            inputClassName="w-12 px-1 text-xs"
+                          />
+                        ) : (
+                          <Input
+                            type="number"
+                            value={localScores[key] || ""}
+                            onChange={(e) => updateScore(team.id, w.id, e.target.value)}
+                            placeholder={st === "load" ? "kg" : "0"}
+                            className="h-7 w-20 mx-auto text-center text-xs bg-background"
+                          />
+                        )
                       ) : (
                         <span className="text-foreground font-medium text-xs">
                           {localScores[key]
                             ? st === "time"
-                              ? `${localScores[key]}s`
+                              ? formatSecondsDisplay(localScores[key])
                               : st === "load"
                               ? `${localScores[key]}kg`
                               : localScores[key]
