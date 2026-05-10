@@ -23,7 +23,7 @@ export async function addDivision(competitionId: string, name: string, sortOrder
   return data as Division;
 }
 
-export async function updateDivision(divisionId: string, updates: { name?: string; sort_order?: number }): Promise<void> {
+export async function updateDivision(divisionId: string, updates: { name?: string; sort_order?: number; team_size?: number }): Promise<void> {
   const { error } = await supabase
     .from("competition_divisions")
     .update(updates)
