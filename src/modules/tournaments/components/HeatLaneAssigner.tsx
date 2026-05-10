@@ -16,9 +16,11 @@ interface HeatLaneAssignerProps {
   laneCount: number;
   teams: Team[];
   canAdmin: boolean;
+  /** Team IDs already assigned to other heats in the same workout — they are hidden from the dropdown. */
+  excludeTeamIds?: Set<string>;
 }
 
-export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canAdmin }: HeatLaneAssignerProps) {
+export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canAdmin, excludeTeamIds }: HeatLaneAssignerProps) {
   const { data: assignments = [], isLoading } = useHeatAssignments(heatId);
   const { data: registrations = [] } = useRegistrations(competitionId);
   const assignMutation = useAssignTeamToHeat();
@@ -36,7 +38,9 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
   }, [assignments, laneCount, teams]);
 
   const assignedTeamIds = new Set(assignments.map((a) => a.team_id));
-  const availableTeams = teams.filter((t) => !assignedTeamIds.has(t.id));
+  const availableTeams = teams.filter(
+    (t) => !assignedTeamIds.has(t.id) && !(excludeTeamIds?.has(t.id))
+  );
 
   // Get approved athletes per team for display
   const approvedRegs = useMemo(

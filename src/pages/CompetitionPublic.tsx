@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
-import { useCompetition, useTeams, useDivisions, useWorkouts } from "@/modules/tournaments/hooks";
+import { useCompetition, useTeams, useDivisions, useWorkouts, useWorkoutMovements } from "@/modules/tournaments/hooks";
 import { useRegistrations, useCreateRegistration } from "@/modules/athletes/hooks";
 import { checkDuplicateRegistration } from "@/modules/athletes/api";
 import { deriveStatus, getStatusLabel, getStatusColor } from "@/modules/tournaments/stateMachine";
@@ -13,12 +13,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, MapPin, Clock, Users, Dumbbell, AlertCircle, CheckCircle2, Trophy, ChevronRight, ChevronLeft } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar, MapPin, Clock, Users, Dumbbell, AlertCircle, CheckCircle2, Trophy, ChevronRight, ChevronLeft, Eye, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { differenceInYears } from "date-fns";
 import { athleteNameSchema, emailSchema } from "@/lib/validation";
 import { STATUS_LABELS, STATUS_COLORS } from "@/modules/athletes/types";
 import { AdaptivePoster } from "@/components/competition/AdaptivePoster";
+import { formatTimeMMSS } from "@/utils/format";
 
 export default function CompetitionPublic() {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +45,18 @@ export default function CompetitionPublic() {
   const [selectedDivisionId, setSelectedDivisionId] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [showRegWizard, setShowRegWizard] = useState(false);
+  const [revealedWorkoutId, setRevealedWorkoutId] = useState<string | null>(null);
+  const [teammateNames, setTeammateNames] = useState<string[]>([]);
+
+  const selectedDivision = useMemo(
+    () => divisions.find((d) => d.id === selectedDivisionId),
+    [divisions, selectedDivisionId]
+  );
+  const teamSize = (selectedDivision as any)?.team_size ?? 1;
+  const requiresTeammates = teamSize > 1;
+  const additionalTeammateSlots = Math.max(0, teamSize - 1);
+  const teammateNamesValid = !requiresTeammates ||
+    Array.from({ length: additionalTeammateSlots }).every((_, i) => (teammateNames[i] || "").trim().length >= 2);
 
   const derivedStatus = competition ? deriveStatus(competition) : "draft";
   const canRegister = derivedStatus === "published" || derivedStatus === "live";
@@ -231,12 +245,19 @@ export default function CompetitionPublic() {
               <p className="text-sm text-muted-foreground">No divisions available. You can proceed without one.</p>
             ) : (
               <RadioGroup value={selectedDivisionId} onValueChange={setSelectedDivisionId} className="space-y-2">
-                {divisions.map((d) => (
-                  <label key={d.id} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedDivisionId === d.id ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
-                    <RadioGroupItem value={d.id} />
-                    <span className="font-medium text-foreground">{d.name}</span>
-                  </label>
-                ))}
+                {divisions.map((d) => {
+                  const ts = (d as any).team_size ?? 1;
+                  return (
+                    <label key={d.id} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedDivisionId === d.id ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
+                      <RadioGroupItem value={d.id} />
+                      <span className="font-medium text-foreground flex-1">{d.name}</span>
+                      <Badge variant="outline" className="text-[10px] gap-1">
+                        <Users className="h-3 w-3" />
+                        {ts === 1 ? "Solo" : `${ts} per team`}
+                      </Badge>
+                    </label>
+                  );
+                })}
               </RadioGroup>
             )}
             {teams.length > 0 && (
@@ -251,6 +272,30 @@ export default function CompetitionPublic() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+
+            {requiresTeammates && (
+              <div className="space-y-2 pt-2">
+                <Label className="text-sm font-medium">
+                  Teammate names ({additionalTeammateSlots} additional)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  This division requires {teamSize} athletes per team. You count as one — please add the other {additionalTeammateSlots}.
+                </p>
+                {Array.from({ length: additionalTeammateSlots }).map((_, i) => (
+                  <Input
+                    key={i}
+                    value={teammateNames[i] || ""}
+                    onChange={(e) => {
+                      const next = [...teammateNames];
+                      next[i] = e.target.value;
+                      setTeammateNames(next);
+                    }}
+                    placeholder={`Teammate ${i + 2} full name`}
+                    maxLength={100}
+                  />
+                ))}
               </div>
             )}
           </div>
@@ -303,7 +348,7 @@ export default function CompetitionPublic() {
   };
 
   const canProceedStep0 = regType === "self" || athleteName.trim().length >= 2;
-  const canProceedStep1 = true; // division is optional
+  const canProceedStep1 = teammateNamesValid;
   const totalSteps = 3;
 
   return (
@@ -311,8 +356,8 @@ export default function CompetitionPublic() {
       {/* Hero */}
       <div className="relative">
         {competition.poster_url ? (
-          <div className="h-56 md:h-72 overflow-hidden relative">
-            <AdaptivePoster src={competition.poster_url} alt={competition.name} className="h-56 md:h-72" />
+          <div className="relative w-full bg-muted">
+            <AdaptivePoster src={competition.poster_url} alt={competition.name} className="w-full" />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-20" />
           </div>
         ) : (
@@ -387,16 +432,33 @@ export default function CompetitionPublic() {
               <h2 className="text-lg font-bold text-foreground uppercase">Workouts</h2>
             </div>
             <div className="space-y-2">
-              {workouts.map((w) => (
-                <div key={w.id} className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-                  <span className="font-medium text-foreground text-sm">{w.name || `WOD #${w.workout_number}`}</span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">{w.workout_type}</Badge>
-                    <Badge variant="outline" className="text-xs">{w.scoring_type}</Badge>
-                  </div>
-                </div>
-              ))}
+              {workouts.map((w) => {
+                const isHidden = w.visibility === "hidden" ||
+                  (w.visibility === "scheduled" && w.scheduled_reveal_at && new Date(w.scheduled_reveal_at) > new Date());
+                return (
+                  <button
+                    key={w.id}
+                    type="button"
+                    onClick={() => !isHidden && setRevealedWorkoutId(w.id)}
+                    disabled={isHidden}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg bg-background border border-border text-left transition-all ${
+                      isHidden ? "opacity-60 cursor-not-allowed" : "hover:border-primary/40 hover:bg-primary/5 cursor-pointer"
+                    }`}
+                  >
+                    <span className="font-medium text-foreground text-sm flex items-center gap-2">
+                      {isHidden ? <Lock className="h-3.5 w-3.5 text-muted-foreground" /> : <Eye className="h-3.5 w-3.5 text-primary" />}
+                      {w.name || `WOD #${w.workout_number}`}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">{w.workout_type}</Badge>
+                      <Badge variant="outline" className="text-xs">{w.scoring_type}</Badge>
+                      {!isHidden && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
+            <p className="text-[11px] text-muted-foreground mt-3">Tap a workout to view full details.</p>
           </div>
         )}
 
@@ -542,6 +604,74 @@ export default function CompetitionPublic() {
           </div>
         )}
       </main>
+
+      <WorkoutRevealDialog
+        workoutId={revealedWorkoutId}
+        workouts={workouts}
+        onClose={() => setRevealedWorkoutId(null)}
+      />
     </div>
+  );
+}
+
+function WorkoutRevealDialog({
+  workoutId,
+  workouts,
+  onClose,
+}: {
+  workoutId: string | null;
+  workouts: any[];
+  onClose: () => void;
+}) {
+  const workout = workouts.find((w) => w.id === workoutId);
+  const { data: movements = [] } = useWorkoutMovements(workoutId ?? undefined);
+  const open = !!workoutId && !!workout;
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Dumbbell className="h-5 w-5 text-primary" />
+            {workout?.name || `WOD #${workout?.workout_number}`}
+          </DialogTitle>
+        </DialogHeader>
+        {workout && (
+          <div className="space-y-4 pt-2">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">{workout.workout_type}</Badge>
+              <Badge variant="outline">Scoring: {workout.scoring_type}</Badge>
+              {workout.time_cap_seconds != null && (
+                <Badge variant="outline">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Cap: {formatTimeMMSS(workout.time_cap_seconds)}
+                </Badge>
+              )}
+            </div>
+            {workout.description && (
+              <div>
+                <h4 className="text-xs font-bold text-muted-foreground uppercase mb-1">Description</h4>
+                <p className="text-sm text-foreground whitespace-pre-wrap">{workout.description}</p>
+              </div>
+            )}
+            <div>
+              <h4 className="text-xs font-bold text-muted-foreground uppercase mb-2">Movements</h4>
+              {movements.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No movements specified.</p>
+              ) : (
+                <ol className="space-y-1.5 list-decimal list-inside">
+                  {movements.map((m: any) => (
+                    <li key={m.id} className="text-sm text-foreground">
+                      <span className="font-medium">{m.movement_name}</span>
+                      {m.reps != null && <span className="text-muted-foreground"> · {m.reps} reps</span>}
+                      {m.weight != null && <span className="text-muted-foreground"> · {m.weight}{m.unit || ""}</span>}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

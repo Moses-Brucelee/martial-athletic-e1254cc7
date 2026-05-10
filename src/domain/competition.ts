@@ -31,6 +31,7 @@ export interface Division {
   competition_id: string;
   name: string;
   sort_order: number;
+  team_size: number;
   created_at: string;
 }
 
