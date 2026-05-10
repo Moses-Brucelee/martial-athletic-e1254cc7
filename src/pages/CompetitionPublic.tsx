@@ -72,6 +72,9 @@ export default function CompetitionPublic() {
   // Team registration state
   const [teamName, setTeamName] = useState("");
   const [teamMembers, setTeamMembers] = useState<{ name: string; email: string }[]>([{ name: "", email: "" }]);
+  // Whether the signed-in user (the captain creating the team) is also competing.
+  // Defaults to true — they're shown as the first roster entry and can remove themselves.
+  const [includeCaptain, setIncludeCaptain] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
   const [editingReg, setEditingReg] = useState<AthleteRegistration | null>(null);
@@ -193,7 +196,7 @@ export default function CompetitionPublic() {
   const handleSubmitTeam = async () => {
     if (!user || !id) return;
     const validMembers = teamMembers.filter((m) => m.name.trim().length >= 2);
-    if (validMembers.length === 0) { toast.error("Add at least one team member"); return; }
+    if (validMembers.length === 0 && !(includeCaptain && !myCaptainTeam)) { toast.error("Add at least one team member"); return; }
     for (const m of validMembers) {
       if (m.email) {
         const e = emailSchema.safeParse(m.email);
@@ -236,7 +239,7 @@ export default function CompetitionPublic() {
         const captainAlreadyRegistered = registrations.some(
           (r) => r.user_id === user.id && r.status !== "withdrawn" && r.status !== "rejected",
         );
-        if (!captainAlreadyRegistered) {
+        if (includeCaptain && !captainAlreadyRegistered) {
           const captainName = profile?.display_name || profile?.full_name || "Captain";
           await createReg.mutateAsync({
             competition_id: id,
@@ -404,12 +407,43 @@ export default function CompetitionPublic() {
                   </Select>
                 </div>
               )}
-              <p className="text-xs text-muted-foreground">You ({profile?.display_name || "Captain"}) will be added as captain.</p>
             </>
           )}
           <div>
             <Label className="text-sm font-medium">{myCaptainTeam ? "New Members" : "Team Members"}</Label>
             <div className="space-y-2 mt-1">
+              {/* Captain (current user) shown as the first roster entry by default — removable. */}
+              {!myCaptainTeam && includeCaptain && (
+                <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {profile?.display_name || profile?.full_name || "You"}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wider text-primary font-bold">
+                      You · Captain
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIncludeCaptain(false)}
+                    aria-label="Remove yourself from the roster"
+                    title="Remove yourself"
+                  >
+                    ×
+                  </Button>
+                </div>
+              )}
+              {!myCaptainTeam && !includeCaptain && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIncludeCaptain(true)}
+                  className="w-full"
+                >
+                  + Add me back as captain
+                </Button>
+              )}
               {teamMembers.map((m, i) => (
                 <div key={i} className="flex gap-2">
                   <Input value={m.name} onChange={(e) => {
@@ -679,8 +713,8 @@ export default function CompetitionPublic() {
             </p>
             <div className="flex sm:hidden gap-3 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
               {sponsors.map((s) => (
-                <div key={s.path} className="shrink-0 h-14 w-20 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start">
-                  <img src={s.url} alt="sponsor" className="max-h-12 max-w-[72px] object-contain" />
+                <div key={s.path} className="shrink-0 h-24 w-32 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start p-2">
+                  <img src={s.url} alt="sponsor" className="max-h-full max-w-full object-contain" />
                 </div>
               ))}
             </div>
