@@ -29,6 +29,7 @@ export function TimeInput({
   inputClassName,
   disabled,
   size = "md",
+  showLabels = false,
 }: TimeInputProps) {
   const { h, m, s } = parse(value);
 
@@ -48,43 +49,32 @@ export function TimeInput({
     inputClassName,
   );
 
+  const Field = ({ val, max, onVal, label }: { val: number; max: number; onVal: (n: number) => void; label: string }) => (
+    <div className="flex flex-col items-center gap-0.5">
+      <Input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={max}
+        value={String(val).padStart(2, "0")}
+        onChange={(e) => onVal(Number(e.target.value))}
+        disabled={disabled}
+        className={inputCls}
+        aria-label={label}
+      />
+      {showLabels && (
+        <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">{label}</span>
+      )}
+    </div>
+  );
+
   return (
-    <div className={cn("flex items-center gap-1", className)}>
-      <Input
-        type="number"
-        inputMode="numeric"
-        min={0}
-        max={99}
-        value={String(h).padStart(2, "0")}
-        onChange={(e) => emit(Number(e.target.value), m, s)}
-        disabled={disabled}
-        className={inputCls}
-        aria-label="Hours"
-      />
-      <span className="font-black text-muted-foreground">:</span>
-      <Input
-        type="number"
-        inputMode="numeric"
-        min={0}
-        max={59}
-        value={String(m).padStart(2, "0")}
-        onChange={(e) => emit(h, Number(e.target.value), s)}
-        disabled={disabled}
-        className={inputCls}
-        aria-label="Minutes"
-      />
-      <span className="font-black text-muted-foreground">:</span>
-      <Input
-        type="number"
-        inputMode="numeric"
-        min={0}
-        max={59}
-        value={String(s).padStart(2, "0")}
-        onChange={(e) => emit(h, m, Number(e.target.value))}
-        disabled={disabled}
-        className={inputCls}
-        aria-label="Seconds"
-      />
+    <div className={cn("inline-flex items-start gap-1", className)}>
+      <Field val={h} max={99} onVal={(n) => emit(n, m, s)} label="hrs" />
+      <span className={cn("font-black text-muted-foreground", showLabels ? "mt-2" : "")}>:</span>
+      <Field val={m} max={59} onVal={(n) => emit(h, n, s)} label="min" />
+      <span className={cn("font-black text-muted-foreground", showLabels ? "mt-2" : "")}>:</span>
+      <Field val={s} max={59} onVal={(n) => emit(h, m, n)} label="sec" />
     </div>
   );
 }
