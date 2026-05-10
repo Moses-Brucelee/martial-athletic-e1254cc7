@@ -613,3 +613,65 @@ export default function CompetitionPublic() {
     </div>
   );
 }
+
+function WorkoutRevealDialog({
+  workoutId,
+  workouts,
+  onClose,
+}: {
+  workoutId: string | null;
+  workouts: any[];
+  onClose: () => void;
+}) {
+  const workout = workouts.find((w) => w.id === workoutId);
+  const { data: movements = [] } = useWorkoutMovements(workoutId ?? undefined);
+  const open = !!workoutId && !!workout;
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Dumbbell className="h-5 w-5 text-primary" />
+            {workout?.name || `WOD #${workout?.workout_number}`}
+          </DialogTitle>
+        </DialogHeader>
+        {workout && (
+          <div className="space-y-4 pt-2">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">{workout.workout_type}</Badge>
+              <Badge variant="outline">Scoring: {workout.scoring_type}</Badge>
+              {workout.time_cap_seconds != null && (
+                <Badge variant="outline">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Cap: {formatTimeMMSS(workout.time_cap_seconds)}
+                </Badge>
+              )}
+            </div>
+            {workout.description && (
+              <div>
+                <h4 className="text-xs font-bold text-muted-foreground uppercase mb-1">Description</h4>
+                <p className="text-sm text-foreground whitespace-pre-wrap">{workout.description}</p>
+              </div>
+            )}
+            <div>
+              <h4 className="text-xs font-bold text-muted-foreground uppercase mb-2">Movements</h4>
+              {movements.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No movements specified.</p>
+              ) : (
+                <ol className="space-y-1.5 list-decimal list-inside">
+                  {movements.map((m: any) => (
+                    <li key={m.id} className="text-sm text-foreground">
+                      <span className="font-medium">{m.movement_name}</span>
+                      {m.reps != null && <span className="text-muted-foreground"> · {m.reps} reps</span>}
+                      {m.weight != null && <span className="text-muted-foreground"> · {m.weight}{m.unit || ""}</span>}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
