@@ -45,6 +45,18 @@ export default function CompetitionPublic() {
   const [selectedDivisionId, setSelectedDivisionId] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [showRegWizard, setShowRegWizard] = useState(false);
+  const [revealedWorkoutId, setRevealedWorkoutId] = useState<string | null>(null);
+  const [teammateNames, setTeammateNames] = useState<string[]>([]);
+
+  const selectedDivision = useMemo(
+    () => divisions.find((d) => d.id === selectedDivisionId),
+    [divisions, selectedDivisionId]
+  );
+  const teamSize = (selectedDivision as any)?.team_size ?? 1;
+  const requiresTeammates = teamSize > 1;
+  const additionalTeammateSlots = Math.max(0, teamSize - 1);
+  const teammateNamesValid = !requiresTeammates ||
+    Array.from({ length: additionalTeammateSlots }).every((_, i) => (teammateNames[i] || "").trim().length >= 2);
 
   const derivedStatus = competition ? deriveStatus(competition) : "draft";
   const canRegister = derivedStatus === "published" || derivedStatus === "live";
