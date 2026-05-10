@@ -24,7 +24,7 @@ const SCORING_ICONS: Record<ScoringType, typeof Clock> = {
 };
 
 const SCORING_LABELS: Record<ScoringType, string> = {
-  time: "Time (sec)",
+  time: "Time (h:m:s)",
   reps: "Reps",
   load: "Load (kg)",
   points: "Points",
@@ -213,6 +213,7 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
                             value={localScores[key] || "0"}
                             onChange={(v) => updateScore(team.id, w.id, v)}
                             size="sm"
+                            showLabels
                             inputClassName="w-12 px-1 text-xs"
                           />
                         ) : (
