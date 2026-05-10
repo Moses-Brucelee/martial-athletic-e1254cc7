@@ -196,7 +196,7 @@ export default function CompetitionPublic() {
   const handleSubmitTeam = async () => {
     if (!user || !id) return;
     const validMembers = teamMembers.filter((m) => m.name.trim().length >= 2);
-    if (validMembers.length === 0) { toast.error("Add at least one team member"); return; }
+    if (validMembers.length === 0 && !(includeCaptain && !myCaptainTeam)) { toast.error("Add at least one team member"); return; }
     for (const m of validMembers) {
       if (m.email) {
         const e = emailSchema.safeParse(m.email);
