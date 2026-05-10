@@ -47,6 +47,19 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
     return map;
   }, [heats]);
 
+  // Map workout_id → set of team IDs already placed in any of its heats
+  const teamsAssignedByWorkout = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    const heatToWorkout = new Map(heats.map((h) => [h.id, h.workout_id]));
+    for (const a of allAssignments) {
+      const wid = heatToWorkout.get(a.heat_id);
+      if (!wid) continue;
+      if (!map.has(wid)) map.set(wid, new Set());
+      map.get(wid)!.add(a.team_id);
+    }
+    return map;
+  }, [allAssignments, heats]);
+
   const workoutMap = useMemo(() => {
     const m = new Map<string, string>();
     for (const w of workouts) m.set(w.id, w.name || `WOD #${w.workout_number}`);
