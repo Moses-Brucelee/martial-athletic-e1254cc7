@@ -24,7 +24,7 @@ const SCORING_ICONS: Record<ScoringType, typeof Clock> = {
 };
 
 const SCORING_LABELS: Record<ScoringType, string> = {
-  time: "Time (sec)",
+  time: "Time (h:m:s)",
   reps: "Reps",
   load: "Load (kg)",
   points: "Points",
