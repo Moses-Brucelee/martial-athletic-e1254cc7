@@ -520,6 +520,7 @@ export type Database = {
           max_athletes: number | null
           name: string
           sort_order: number
+          team_size: number
         }
         Insert: {
           competition_id: string
@@ -528,6 +529,7 @@ export type Database = {
           max_athletes?: number | null
           name: string
           sort_order?: number
+          team_size?: number
         }
         Update: {
           competition_id?: string
@@ -536,6 +538,7 @@ export type Database = {
           max_athletes?: number | null
           name?: string
           sort_order?: number
+          team_size?: number
         }
         Relationships: [
           {
