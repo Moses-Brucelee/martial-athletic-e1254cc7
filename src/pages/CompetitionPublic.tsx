@@ -573,17 +573,17 @@ export default function CompetitionPublic() {
       {/* Hero */}
       <div className="relative pb-20 sm:pb-24">
         {competition.poster_url ? (
-          <div className="h-48 sm:h-64 md:h-80 overflow-hidden relative">
-            <AdaptivePoster src={competition.poster_url} alt={competition.name} className="h-48 sm:h-64 md:h-80" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent z-20" />
+          <div className="relative w-full bg-muted">
+            <AdaptivePoster src={competition.poster_url} alt={competition.name} className="w-full" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-20 pointer-events-none" />
           </div>
         ) : (
           <div className="h-32 sm:h-40 bg-gradient-to-br from-primary/20 to-accent/20" />
         )}
 
-        <div className="max-w-3xl mx-auto px-4 relative -mt-16 sm:-mt-20 z-10">
-          <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-lg">
-            <div className="flex items-start justify-between gap-3 sm:gap-4 flex-wrap">
+        <div className="max-w-3xl mx-auto px-4 relative mt-4 z-10">
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-lg">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="min-w-0 flex-1">
                 <Badge className={`mb-2 ${getStatusColor(derivedStatus)}`}>{getStatusLabel(derivedStatus)}</Badge>
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-foreground tracking-tight break-words">{competition.name}</h1>
