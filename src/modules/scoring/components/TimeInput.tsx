@@ -69,11 +69,15 @@ export function TimeInput({
   );
 
   return (
-    <div className={cn("inline-flex items-start gap-1", className)}>
+    <div
+      className={cn("inline-flex items-start gap-1", className)}
+      title="Enter time as HH:MM:SS (hours 0–99, minutes 0–59, seconds 0–59)"
+      aria-label="Time input in hours, minutes, seconds"
+    >
       <Field val={h} max={99} onVal={(n) => emit(n, m, s)} label="hrs" />
-      <span className={cn("font-black text-muted-foreground", showLabels ? "mt-2" : "")}>:</span>
+      <span className={cn("font-black text-muted-foreground self-center", showLabels ? "mb-3" : "")}>:</span>
       <Field val={m} max={59} onVal={(n) => emit(h, n, s)} label="min" />
-      <span className={cn("font-black text-muted-foreground", showLabels ? "mt-2" : "")}>:</span>
+      <span className={cn("font-black text-muted-foreground self-center", showLabels ? "mb-3" : "")}>:</span>
       <Field val={s} max={59} onVal={(n) => emit(h, m, n)} label="sec" />
     </div>
   );
