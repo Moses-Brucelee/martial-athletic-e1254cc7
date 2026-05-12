@@ -209,13 +209,15 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
                     <td key={w.id} className="py-2 px-1 text-center">
                       {canScore && !isLocked ? (
                         st === "time" ? (
-                          <TimeInput
-                            value={localScores[key] || "0"}
-                            onChange={(v) => updateScore(team.id, w.id, v)}
-                            size="sm"
-                            showLabels
-                            inputClassName="w-12 px-1 text-xs"
-                          />
+                          <div className="flex justify-center">
+                            <TimeInput
+                              value={localScores[key] || "0"}
+                              onChange={(v) => updateScore(team.id, w.id, v)}
+                              size="sm"
+                              showLabels
+                              inputClassName="w-10 px-0.5 text-xs"
+                            />
+                          </div>
                         ) : (
                           <Input
                             type="number"
