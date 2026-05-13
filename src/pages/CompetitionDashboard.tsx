@@ -256,7 +256,7 @@ export default function CompetitionDashboard() {
     <Tabs defaultValue="command" className="w-full">
       <div className="relative mb-6">
         <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
-          <TabsList className="inline-flex w-auto min-w-full md:w-full md:grid md:grid-cols-9 gap-1">
+          <TabsList className={`inline-flex w-auto min-w-full md:w-full md:grid ${showRoster ? "md:grid-cols-9" : "md:grid-cols-8"} gap-1`}>
             <TabsTrigger value="command" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Command</TabsTrigger>
             <TabsTrigger value="setup" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Setup</TabsTrigger>
             <TabsTrigger value="registrations" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Registrations</TabsTrigger>
@@ -265,7 +265,7 @@ export default function CompetitionDashboard() {
             <TabsTrigger value="brackets" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Brackets</TabsTrigger>
             <TabsTrigger value="scores" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Scores</TabsTrigger>
             <TabsTrigger value="leaderboard" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Leaderboard</TabsTrigger>
-            <TabsTrigger value="roster" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Roster</TabsTrigger>
+            {showRoster && <TabsTrigger value="roster" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Roster</TabsTrigger>}
           </TabsList>
         </div>
         <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none md:hidden" />
