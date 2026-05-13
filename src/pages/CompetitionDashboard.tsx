@@ -3,6 +3,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useCompetitionRole } from "@/hooks/useCompetitionRole";
 import { useSuperUserAccess } from "@/hooks/useSuperUserAccess";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useCompetition } from "@/modules/tournaments/hooks";
 import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
@@ -107,6 +108,8 @@ export default function CompetitionDashboard() {
   const { profile, loading: profileLoading } = useProfile();
   const { isOwner, isJudge, loading: roleLoading } = useCompetitionRole(id);
   const { isSuperUser } = useSuperUserAccess();
+  const { tierKey } = useSubscription();
+  const showRoster = tierKey !== "free" || isSuperUser;
   const { data: competition, isLoading: compLoading, error: compError, refetch: refetchComp } = useCompetition(id);
   const { data: settings, isLoading: settingsLoading } = useCompetitionSettings(id);
   const isMobile = useIsMobile();
@@ -253,7 +256,7 @@ export default function CompetitionDashboard() {
     <Tabs defaultValue="command" className="w-full">
       <div className="relative mb-6">
         <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
-          <TabsList className="inline-flex w-auto min-w-full md:w-full md:grid md:grid-cols-9 gap-1">
+          <TabsList className={`inline-flex w-auto min-w-full md:w-full md:grid ${showRoster ? "md:grid-cols-9" : "md:grid-cols-8"} gap-1`}>
             <TabsTrigger value="command" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Command</TabsTrigger>
             <TabsTrigger value="setup" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Setup</TabsTrigger>
             <TabsTrigger value="registrations" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Registrations</TabsTrigger>
@@ -262,7 +265,7 @@ export default function CompetitionDashboard() {
             <TabsTrigger value="brackets" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Brackets</TabsTrigger>
             <TabsTrigger value="scores" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Scores</TabsTrigger>
             <TabsTrigger value="leaderboard" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Leaderboard</TabsTrigger>
-            <TabsTrigger value="roster" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Roster</TabsTrigger>
+            {showRoster && <TabsTrigger value="roster" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Roster</TabsTrigger>}
           </TabsList>
         </div>
         <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none md:hidden" />
@@ -320,37 +323,37 @@ export default function CompetitionDashboard() {
 
       <TabsContent value="scores"><ScoreTab /></TabsContent>
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
-      <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={effectiveCanAdmin} /></TabsContent>
+      {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={effectiveCanAdmin} /></TabsContent>}
 
     </Tabs>
   );
 
   const renderJudgeTabs = () => (
     <Tabs defaultValue="scores" className="w-full">
-      <TabsList className="w-full grid grid-cols-4 mb-6">
+      <TabsList className={`w-full grid ${showRoster ? "grid-cols-4" : "grid-cols-3"} mb-6`}>
         <TabsTrigger value="scores">Scores</TabsTrigger>
         <TabsTrigger value="brackets">Brackets</TabsTrigger>
         <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-        <TabsTrigger value="roster">Roster</TabsTrigger>
+        {showRoster && <TabsTrigger value="roster">Roster</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="scores"><ScoreTab /></TabsContent>
       <TabsContent value="brackets"><BracketsPanel competitionId={id!} canAdmin={false} /></TabsContent>
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
-      <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>
+      {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>}
     </Tabs>
   );
 
   const renderViewerTabs = () => (
     <Tabs defaultValue="leaderboard" className="w-full">
-      <TabsList className="w-full grid grid-cols-3 mb-6">
+      <TabsList className={`w-full grid ${showRoster ? "grid-cols-3" : "grid-cols-2"} mb-6`}>
         <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-        <TabsTrigger value="roster">Roster</TabsTrigger>
+        {showRoster && <TabsTrigger value="roster">Roster</TabsTrigger>}
         <TabsTrigger value="overview">Overview</TabsTrigger>
       </TabsList>
 
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
-      <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>
+      {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>}
       <TabsContent value="overview">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TeamsPanel competitionId={id!} isOwner={false} />
