@@ -13,10 +13,13 @@ import {
   listSponsors,
   uploadSponsor,
   removeSponsor,
+  setSponsorWebsiteUrl,
   setOfficialPosterFromUrl,
   MAX_SPONSORS,
   type SponsorAsset,
 } from "@/lib/posterAssets";
+import { Input } from "@/components/ui/input";
+import { Link as LinkIcon } from "lucide-react";
 import { useTier } from "@/hooks/useTier";
 
 const STYLES = [
@@ -163,10 +166,23 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
 
   const handleSponsorRemove = async (path: string) => {
     try {
-      await removeSponsor(path);
+      await removeSponsor(competitionId, path);
       setSponsors((s) => s.filter((x) => x.path !== path));
     } catch (err: any) {
       toast.error(err.message || "Remove failed");
+    }
+  };
+
+  const handleSponsorUrlChange = (path: string, websiteUrl: string) => {
+    setSponsors((s) => s.map((x) => (x.path === path ? { ...x, websiteUrl } : x)));
+  };
+
+  const handleSponsorUrlSave = async (path: string, websiteUrl: string) => {
+    try {
+      await setSponsorWebsiteUrl(competitionId, path, websiteUrl || null);
+      toast.success("Sponsor link saved");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save link");
     }
   };
 
