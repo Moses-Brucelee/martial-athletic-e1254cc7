@@ -157,8 +157,8 @@ export default function CompetitionDashboard() {
       <div className="min-h-screen bg-background flex flex-col">
         <CompetitionHeader title="Tournament" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
         <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
-          <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase mb-1">Competition Dashboard</h2>
-          {competition && <p className="text-muted-foreground mb-2">{competition.name}</p>}
+          {competition && <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase mb-1">{competition.name}</h2>}
+          <p className="text-muted-foreground mb-2">Competition Dashboard</p>
           <CompetitionStatusBar status={derivedStatus} />
 
           <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-accent/10 border border-accent/20">
@@ -371,11 +371,13 @@ export default function CompetitionDashboard() {
       <CompetitionHeader title="Tournament" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
-        <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase mb-1">Competition Dashboard</h2>
+        {competition && (
+          <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase mb-1">{competition.name}</h2>
+        )}
         {competition && (
           <>
             <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-              <p className="text-muted-foreground">{competition.name}</p>
+              <p className="text-muted-foreground">Competition Dashboard</p>
               <Button variant="outline" size="sm" onClick={() => navigate(`/event/${id}`)} className="gap-1.5">
                 <ExternalLink className="h-3.5 w-3.5" /> View Public Page
               </Button>
