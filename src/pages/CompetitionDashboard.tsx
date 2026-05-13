@@ -330,17 +330,17 @@ export default function CompetitionDashboard() {
 
   const renderJudgeTabs = () => (
     <Tabs defaultValue="scores" className="w-full">
-      <TabsList className="w-full grid grid-cols-4 mb-6">
+      <TabsList className={`w-full grid ${showRoster ? "grid-cols-4" : "grid-cols-3"} mb-6`}>
         <TabsTrigger value="scores">Scores</TabsTrigger>
         <TabsTrigger value="brackets">Brackets</TabsTrigger>
         <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-        <TabsTrigger value="roster">Roster</TabsTrigger>
+        {showRoster && <TabsTrigger value="roster">Roster</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="scores"><ScoreTab /></TabsContent>
       <TabsContent value="brackets"><BracketsPanel competitionId={id!} canAdmin={false} /></TabsContent>
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
-      <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>
+      {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>}
     </Tabs>
   );
 
