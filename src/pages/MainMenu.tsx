@@ -115,14 +115,21 @@ export default function MainMenu() {
 
   // Flatten all accessible menu items (no tier grouping)
   const accessibleItems = useMemo(() => {
-    return menuItems.filter((m) => {
-      if (!V1_FULL_ACCESS && !canAccess(m.feature_key)) return false;
-      const flagKey = MENU_FEATURE_TO_FLAG[m.feature_key] as FeatureFlagKey | undefined;
-      if (flagKey && flags[flagKey] === false) return false;
-      const requiredTier = FEATURE_TIER_REQUIREMENT[m.feature_key];
-      if (requiredTier && !isAtLeast(requiredTier)) return false;
-      return true;
-    });
+    return menuItems
+      .filter((m) => m.feature_key !== "track_performances")
+      .map((m) =>
+        m.feature_key === "view_leaderboards"
+          ? { ...m, label: "View Competitions", description: null }
+          : m,
+      )
+      .filter((m) => {
+        if (!V1_FULL_ACCESS && !canAccess(m.feature_key)) return false;
+        const flagKey = MENU_FEATURE_TO_FLAG[m.feature_key] as FeatureFlagKey | undefined;
+        if (flagKey && flags[flagKey] === false) return false;
+        const requiredTier = FEATURE_TIER_REQUIREMENT[m.feature_key];
+        if (requiredTier && !isAtLeast(requiredTier)) return false;
+        return true;
+      });
   }, [menuItems, canAccess, flags, isAtLeast]);
 
   const initials = profile?.display_name
