@@ -3,6 +3,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useCompetitionRole } from "@/hooks/useCompetitionRole";
 import { useSuperUserAccess } from "@/hooks/useSuperUserAccess";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useCompetition } from "@/modules/tournaments/hooks";
 import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
