@@ -9,6 +9,7 @@ import { useWorkouts, useTeams } from "@/modules/tournaments/hooks";
 import { useHeats, useHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { TimeInput, formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
+import { getWorkoutColor } from "@/lib/workoutColors";
 
 interface QuickScoreEntryProps {
   competitionId: string;
