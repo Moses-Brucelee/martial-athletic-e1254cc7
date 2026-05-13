@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useProfile } from "@/hooks/useProfile";
+import { useTier } from "@/hooks/useTier";
+import { V1_FULL_ACCESS } from "@/lib/featureFlags";
 import { useCompetitions } from "@/modules/tournaments/hooks";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Button } from "@/components/ui/button";
@@ -73,9 +75,11 @@ function Section({ title, comps, navigate }: { title: string; comps: Competition
 export default function CompetitionList() {
   const navigate = useNavigate();
   const { profile, loading: profileLoading } = useProfile();
+  const { isAtLeast, loading: tierLoading } = useTier();
   const { data: competitions = [], isLoading, error } = useCompetitions();
+  const canCreate = V1_FULL_ACCESS || isAtLeast("affiliate_pro");
 
-  if (profileLoading || isLoading) {
+  if (profileLoading || isLoading || tierLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Skeleton className="h-14 w-full" />
@@ -96,10 +100,12 @@ export default function CompetitionList() {
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase">Competitions</h2>
-          <Button onClick={() => navigate("/competition/create")}
-            className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold">
-            <Plus className="h-4 w-4 mr-1" /> Create
-          </Button>
+          {canCreate && (
+            <Button onClick={() => navigate("/competition/create")}
+              className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold">
+              <Plus className="h-4 w-4 mr-1" /> Create
+            </Button>
+          )}
         </div>
 
         {error && (
@@ -112,10 +118,14 @@ export default function CompetitionList() {
         {!hasAny ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground mb-4">No competitions yet.</p>
-            <Button onClick={() => navigate("/competition/create")}
-              className="bg-accent hover:bg-accent/90 text-accent-foreground">
-              Create Your First Competition
-            </Button>
+            {canCreate ? (
+              <Button onClick={() => navigate("/competition/create")}
+                className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                Create Your First Competition
+              </Button>
+            ) : (
+              <p className="text-xs text-muted-foreground">Upgrade to Affiliate Pro to create competitions.</p>
+            )}
           </div>
         ) : (
           <div className="space-y-8">
