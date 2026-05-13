@@ -10,6 +10,7 @@ import { Plus, Play, CheckCircle2, Clock, Users, Flame, Lock } from "lucide-reac
 import { toast } from "sonner";
 import { HeatLaneAssigner } from "./HeatLaneAssigner";
 import { AutoHeatGenerator } from "./AutoHeatGenerator";
+import { getWorkoutColor } from "@/lib/workoutColors";
 
 interface HeatManagementPanelProps {
   competitionId: string;
