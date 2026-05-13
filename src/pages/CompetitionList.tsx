@@ -127,6 +127,7 @@ export default function CompetitionList() {
               <p className="text-xs text-muted-foreground">Upgrade to Affiliate Pro to create competitions.</p>
             )}
           </div>
+        ) : (
           <div className="space-y-8">
             <Section title="🔴 Live" comps={live} navigate={navigate} />
             <Section title="📅 Upcoming" comps={upcoming} navigate={navigate} />
