@@ -323,7 +323,7 @@ export default function CompetitionDashboard() {
 
       <TabsContent value="scores"><ScoreTab /></TabsContent>
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
-      <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={effectiveCanAdmin} /></TabsContent>
+      {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={effectiveCanAdmin} /></TabsContent>}
 
     </Tabs>
   );
