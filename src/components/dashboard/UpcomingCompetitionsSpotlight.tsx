@@ -13,6 +13,7 @@ interface Competition {
   host_gym: string | null;
   type: string | null;
   divisions: string | null;
+  poster_url: string | null;
 }
 
 // Rotating motivational banners for poster area
