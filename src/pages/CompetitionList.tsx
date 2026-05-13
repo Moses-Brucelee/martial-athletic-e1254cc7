@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useProfile } from "@/hooks/useProfile";
 import { useTier } from "@/hooks/useTier";
-import { V1_FULL_ACCESS } from "@/lib/featureFlags";
 import { useCompetitions } from "@/modules/tournaments/hooks";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Button } from "@/components/ui/button";
@@ -77,7 +76,7 @@ export default function CompetitionList() {
   const { profile, loading: profileLoading } = useProfile();
   const { isAtLeast, loading: tierLoading } = useTier();
   const { data: competitions = [], isLoading, error } = useCompetitions();
-  const canCreate = V1_FULL_ACCESS || isAtLeast("affiliate_pro");
+  const canCreate = isAtLeast("affiliate_pro");
 
   if (profileLoading || isLoading || tierLoading) {
     return (
