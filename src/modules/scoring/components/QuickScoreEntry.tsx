@@ -3,16 +3,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardList, Save, Award, Flame, Users } from "lucide-react";
+import { ClipboardList, Save, Award, Flame, Users, Clock, Dumbbell, Repeat } from "lucide-react";
 import { toast } from "sonner";
 import { useWorkouts, useTeams } from "@/modules/tournaments/hooks";
 import { useHeats, useHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
+import { TimeInput, formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
 
 interface QuickScoreEntryProps {
   competitionId: string;
   canScore: boolean;
   judgeId?: string;
+}
+
+type ScoringType = "time" | "reps" | "load" | "points";
+
+const TYPE_META: Record<ScoringType, { label: string; icon: typeof Clock; unit?: string }> = {
+  time: { label: "Time (h:m:s)", icon: Clock },
+  reps: { label: "Reps", icon: Repeat },
+  load: { label: "Load (kg)", icon: Dumbbell, unit: "kg" },
+  points: { label: "Points", icon: Award },
+};
+
+function rawFieldFor(t: ScoringType): "time_seconds" | "reps_completed" | "load_value" | "points_awarded" {
+  return t === "time" ? "time_seconds" : t === "reps" ? "reps_completed" : t === "load" ? "load_value" : "points_awarded";
 }
 
 export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScoreEntryProps) {
@@ -26,13 +40,11 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
   const [selectedHeatId, setSelectedHeatId] = useState<string>("");
   const [localScores, setLocalScores] = useState<Record<string, string>>({});
 
-  // Filter heats by selected workout
   const workoutHeats = useMemo(() => {
     if (!selectedWorkoutId) return [];
     return heats.filter((h) => h.workout_id === selectedWorkoutId);
   }, [heats, selectedWorkoutId]);
 
-  // Auto-select first heat when workout changes
   useEffect(() => {
     if (workoutHeats.length > 0 && !workoutHeats.find((h) => h.id === selectedHeatId)) {
       setSelectedHeatId(workoutHeats[0].id);
@@ -41,14 +53,12 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
     }
   }, [workoutHeats, selectedHeatId]);
 
-  // Auto-select first workout
   useEffect(() => {
     if (workouts.length > 0 && !selectedWorkoutId) {
       setSelectedWorkoutId(workouts[0].id);
     }
   }, [workouts, selectedWorkoutId]);
 
-  // Get teams for the selected heat (or all teams if no heats)
   const { data: heatAssignments = [] } = useHeatAssignments(selectedHeatId || undefined);
 
   const displayTeams = useMemo(() => {
@@ -61,22 +71,26 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
         .filter(Boolean)
         .sort((a, b) => (a!.lane || 0) - (b!.lane || 0)) as (typeof teams[0] & { lane?: number | null })[];
     }
-    // No heats — show all teams
     return teams.map((t) => ({ ...t, lane: null }));
   }, [selectedHeatId, heatAssignments, teams]);
 
-  // Sync existing scores into local state
+  const selectedWorkout = workouts.find((w) => w.id === selectedWorkoutId);
+  const scoringType = ((selectedWorkout?.scoring_type as ScoringType) || "points") as ScoringType;
+  const meta = TYPE_META[scoringType];
+
+  // Sync existing scores into local state (read the right raw field)
   useEffect(() => {
     if (!selectedWorkoutId) return;
+    const field = rawFieldFor(scoringType);
     const map: Record<string, string> = {};
-    scoreRows.forEach((s) => {
+    scoreRows.forEach((s: any) => {
       if (s.workout_id === selectedWorkoutId) {
-        const val = s.points_awarded != null ? String(s.points_awarded) : String(s.score);
-        map[s.team_id] = val;
+        const raw = s[field];
+        map[s.team_id] = raw != null ? String(raw) : s.score != null ? String(s.score) : "";
       }
     });
     setLocalScores(map);
-  }, [scoreRows, selectedWorkoutId]);
+  }, [scoreRows, selectedWorkoutId, scoringType]);
 
   const updateScore = (teamId: string, value: string) => {
     setLocalScores((prev) => ({ ...prev, [teamId]: value }));
@@ -84,6 +98,7 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
 
   const handleSave = async () => {
     if (!selectedWorkoutId) return;
+    const field = rawFieldFor(scoringType);
 
     const upserts = Object.entries(localScores)
       .filter(([, val]) => val !== "" && !isNaN(Number(val)))
@@ -93,7 +108,7 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
         workout_id: selectedWorkoutId,
         score: Number(val),
         judge_id: judgeId || null,
-        points_awarded: Number(val),
+        [field]: Number(val),
         heat_id: selectedHeatId || null,
       }));
 
@@ -123,11 +138,11 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
     );
   }
 
-  const selectedWorkout = workouts.find((w) => w.id === selectedWorkoutId);
+  const Icon = meta.icon;
+  const headingVerb = scoringType === "time" ? "Enter Time" : scoringType === "reps" ? "Enter Reps" : scoringType === "load" ? "Enter Load" : "Enter Points";
 
   return (
     <div className="space-y-4">
-      {/* Workout & Heat selector */}
       <div className="bg-card border border-border rounded-xl p-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex-1 min-w-[180px]">
@@ -179,7 +194,7 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
         {selectedWorkout && (
           <div className="mt-3 flex items-center gap-2">
             <Badge variant="secondary" className="text-xs">
-              <Award className="h-3 w-3 mr-1" /> Points Only
+              <Icon className="h-3 w-3 mr-1" /> {meta.label}
             </Badge>
             {selectedWorkout.name && (
               <span className="text-xs text-muted-foreground">{selectedWorkout.name}</span>
@@ -188,12 +203,11 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
         )}
       </div>
 
-      {/* Score entry grid */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="bg-primary/5 px-4 py-3 border-b border-border flex items-center gap-2">
           <ClipboardList className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-bold text-foreground uppercase">
-            Enter Points — {selectedWorkout?.name || `WOD ${selectedWorkout?.workout_number}`}
+            {headingVerb} — {selectedWorkout?.name || `WOD ${selectedWorkout?.workout_number}`}
           </h3>
           {selectedHeatId && workoutHeats.length > 0 && (
             <Badge variant="outline" className="text-xs ml-auto">
@@ -225,17 +239,38 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
                   )}
                 </div>
                 {canScore ? (
-                  <Input
-                    type="number"
-                    min={0}
-                    value={localScores[team.id] || ""}
-                    onChange={(e) => updateScore(team.id, e.target.value)}
-                    placeholder="0"
-                    className="h-10 w-24 text-center text-sm bg-background font-bold"
-                  />
+                  scoringType === "time" ? (
+                    <TimeInput
+                      value={localScores[team.id] || "0"}
+                      onChange={(v) => updateScore(team.id, v)}
+                      size="sm"
+                      showLabels
+                    />
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        step={scoringType === "load" ? "0.5" : "1"}
+                        value={localScores[team.id] || ""}
+                        onChange={(e) => updateScore(team.id, e.target.value)}
+                        placeholder="0"
+                        className="h-10 w-24 text-center text-sm bg-background font-bold"
+                      />
+                      {meta.unit && (
+                        <span className="text-xs text-muted-foreground font-semibold">{meta.unit}</span>
+                      )}
+                    </div>
+                  )
                 ) : (
                   <span className="text-lg font-black text-primary tabular-nums w-24 text-center">
-                    {localScores[team.id] || "—"}
+                    {localScores[team.id]
+                      ? scoringType === "time"
+                        ? formatSecondsDisplay(localScores[team.id])
+                        : scoringType === "load"
+                        ? `${localScores[team.id]}kg`
+                        : localScores[team.id]
+                      : "—"}
                   </span>
                 )}
               </div>
