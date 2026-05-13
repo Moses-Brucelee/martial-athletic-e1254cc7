@@ -100,10 +100,12 @@ export default function CompetitionList() {
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase">Competitions</h2>
-          <Button onClick={() => navigate("/competition/create")}
-            className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold">
-            <Plus className="h-4 w-4 mr-1" /> Create
-          </Button>
+          {canCreate && (
+            <Button onClick={() => navigate("/competition/create")}
+              className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold">
+              <Plus className="h-4 w-4 mr-1" /> Create
+            </Button>
+          )}
         </div>
 
         {error && (
@@ -116,12 +118,15 @@ export default function CompetitionList() {
         {!hasAny ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground mb-4">No competitions yet.</p>
-            <Button onClick={() => navigate("/competition/create")}
-              className="bg-accent hover:bg-accent/90 text-accent-foreground">
-              Create Your First Competition
-            </Button>
+            {canCreate ? (
+              <Button onClick={() => navigate("/competition/create")}
+                className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                Create Your First Competition
+              </Button>
+            ) : (
+              <p className="text-xs text-muted-foreground">Upgrade to Affiliate Pro to create competitions.</p>
+            )}
           </div>
-        ) : (
           <div className="space-y-8">
             <Section title="🔴 Live" comps={live} navigate={navigate} />
             <Section title="📅 Upcoming" comps={upcoming} navigate={navigate} />
