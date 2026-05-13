@@ -75,9 +75,11 @@ function Section({ title, comps, navigate }: { title: string; comps: Competition
 export default function CompetitionList() {
   const navigate = useNavigate();
   const { profile, loading: profileLoading } = useProfile();
+  const { isAtLeast, loading: tierLoading } = useTier();
   const { data: competitions = [], isLoading, error } = useCompetitions();
+  const canCreate = V1_FULL_ACCESS || isAtLeast("affiliate_pro");
 
-  if (profileLoading || isLoading) {
+  if (profileLoading || isLoading || tierLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Skeleton className="h-14 w-full" />
