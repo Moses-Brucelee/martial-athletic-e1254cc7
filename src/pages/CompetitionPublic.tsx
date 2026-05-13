@@ -736,18 +736,44 @@ export default function CompetitionPublic() {
               Proudly Sponsored By
             </p>
             <div className="flex sm:hidden gap-3 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
-              {sponsors.map((s) => (
-                <div key={s.path} className="shrink-0 h-24 w-32 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start p-2">
-                  <img src={s.url} alt="sponsor" className="max-h-full max-w-full object-contain" />
-                </div>
-              ))}
+              {sponsors.map((s) => {
+                const inner = (
+                  <div className="h-24 w-32 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start p-2 shrink-0">
+                    <img src={s.url} alt="sponsor" className="max-h-full max-w-full object-contain" />
+                  </div>
+                );
+                return s.websiteUrl ? (
+                  <a
+                    key={s.path}
+                    href={`/sponsor-redirect?url=${encodeURIComponent(s.websiteUrl)}&c=${id}&p=${encodeURIComponent(s.path)}`}
+                    className="shrink-0 hover:opacity-80 transition"
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <div key={s.path} className="shrink-0">{inner}</div>
+                );
+              })}
             </div>
             <div className="hidden sm:grid grid-cols-3 md:grid-cols-6 gap-3">
-              {sponsors.map((s) => (
-                <div key={s.path} className="aspect-square rounded-lg bg-background/50 border border-border/50 flex items-center justify-center p-2">
-                  <img src={s.url} alt="sponsor" className="max-h-full max-w-full object-contain" />
-                </div>
-              ))}
+              {sponsors.map((s) => {
+                const inner = (
+                  <div className="aspect-square rounded-lg bg-background/50 border border-border/50 flex items-center justify-center p-2">
+                    <img src={s.url} alt="sponsor" className="max-h-full max-w-full object-contain" />
+                  </div>
+                );
+                return s.websiteUrl ? (
+                  <a
+                    key={s.path}
+                    href={`/sponsor-redirect?url=${encodeURIComponent(s.websiteUrl)}&c=${id}&p=${encodeURIComponent(s.path)}`}
+                    className="hover:opacity-80 transition"
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <div key={s.path}>{inner}</div>
+                );
+              })}
             </div>
           </div>
         )}
