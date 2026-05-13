@@ -93,16 +93,27 @@ export function UpcomingCompetitionsSpotlight() {
                 className="flex rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-colors cursor-pointer group"
                 onClick={() => navigate(`/competition/${c.id}`)}
               >
-                {/* Poster / Banner area */}
+                {/* Poster / Hero thumbnail */}
                 <div
-                  className={`w-28 sm:w-36 shrink-0 bg-gradient-to-br ${gradient} flex items-center justify-center p-3 relative overflow-hidden`}
+                  className={`w-28 sm:w-36 shrink-0 bg-gradient-to-br ${gradient} flex items-center justify-center relative overflow-hidden`}
                 >
-                  <div className="absolute inset-0 opacity-10">
-                    <Trophy className="h-32 w-32 text-background absolute -bottom-4 -right-4" />
-                  </div>
-                  <p className="text-[10px] sm:text-xs font-black text-background uppercase leading-tight text-center whitespace-pre-line tracking-wider z-10">
-                    {quote}
-                  </p>
+                  {c.poster_url ? (
+                    <img
+                      src={c.poster_url}
+                      alt={c.name}
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <>
+                      <div className="absolute inset-0 opacity-10">
+                        <Trophy className="h-32 w-32 text-background absolute -bottom-4 -right-4" />
+                      </div>
+                      <p className="text-[10px] sm:text-xs font-black text-background uppercase leading-tight text-center whitespace-pre-line tracking-wider z-10 p-3">
+                        {quote}
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 {/* Details area */}
