@@ -9,6 +9,7 @@ import { useWorkouts, useTeams } from "@/modules/tournaments/hooks";
 import { useHeats, useHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { TimeInput, formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
+import { getWorkoutColor } from "@/lib/workoutColors";
 
 interface QuickScoreEntryProps {
   competitionId: string;
@@ -203,14 +204,27 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
         )}
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="bg-primary/5 px-4 py-3 border-b border-border flex items-center gap-2">
-          <ClipboardList className="h-4 w-4 text-primary" />
+      {(() => {
+        const wColor = getWorkoutColor(selectedWorkoutId);
+        return (
+      <div
+        className="bg-card border rounded-xl overflow-hidden"
+        style={{ borderColor: wColor.border }}
+      >
+        <div
+          className="px-4 py-3 border-b border-border flex items-center gap-2 border-l-4"
+          style={{ backgroundColor: wColor.bg, borderLeftColor: wColor.solid }}
+        >
+          <ClipboardList className="h-4 w-4" style={{ color: wColor.solid }} />
           <h3 className="text-sm font-bold text-foreground uppercase">
             {headingVerb} — {selectedWorkout?.name || `WOD ${selectedWorkout?.workout_number}`}
           </h3>
           {selectedHeatId && workoutHeats.length > 0 && (
-            <Badge variant="outline" className="text-xs ml-auto">
+            <Badge
+              variant="outline"
+              className="text-xs ml-auto"
+              style={{ backgroundColor: wColor.bg, color: wColor.text, borderColor: wColor.border }}
+            >
               <Flame className="h-3 w-3 mr-1" />
               Heat #{workoutHeats.find((h) => h.id === selectedHeatId)?.heat_number}
             </Badge>
@@ -278,6 +292,8 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
           )}
         </div>
       </div>
+        );
+      })()}
     </div>
   );
 }
