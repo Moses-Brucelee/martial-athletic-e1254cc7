@@ -305,28 +305,50 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
             Sponsor logos & AI poster generation require <strong>Affiliate Pro</strong> or higher.
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          <div className="space-y-2">
             {sponsors.map((s) => (
-              <div key={s.path} className="relative group aspect-square rounded-lg border border-border bg-[repeating-conic-gradient(#0001_0_25%,transparent_0_50%)] [background-size:12px_12px] overflow-hidden">
-                <img src={s.url} alt="sponsor" className="absolute inset-0 w-full h-full object-contain p-1" />
+              <div
+                key={s.path}
+                className="flex items-center gap-3 p-2 rounded-lg border border-border bg-muted/20"
+              >
+                <div className="relative shrink-0 h-14 w-14 rounded-md border border-border bg-[repeating-conic-gradient(#0001_0_25%,transparent_0_50%)] [background-size:8px_8px] overflow-hidden">
+                  <img src={s.url} alt="sponsor" className="absolute inset-0 w-full h-full object-contain p-1" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="relative">
+                    <LinkIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      type="url"
+                      inputMode="url"
+                      placeholder="https://sponsor-website.com"
+                      value={s.websiteUrl ?? ""}
+                      onChange={(e) => handleSponsorUrlChange(s.path, e.target.value)}
+                      onBlur={(e) => handleSponsorUrlSave(s.path, e.target.value)}
+                      className="h-8 pl-7 text-xs"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {s.clickCount} click{s.clickCount === 1 ? "" : "s"}
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={() => handleSponsorRemove(s.path)}
-                  className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition"
+                  className="shrink-0 text-muted-foreground hover:text-destructive p-1.5"
                   aria-label="Remove sponsor"
                 >
-                  <X className="h-3 w-3" />
+                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             ))}
             {sponsors.length < MAX_SPONSORS && (
-              <label className="cursor-pointer aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/40 hover:bg-muted/40 transition flex flex-col items-center justify-center gap-1 text-muted-foreground">
+              <label className="cursor-pointer flex items-center justify-center gap-2 h-12 rounded-lg border-2 border-dashed border-border hover:border-primary/40 hover:bg-muted/40 transition text-muted-foreground text-xs">
                 {sponsorBusy ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    <Plus className="h-5 w-5" />
-                    <span className="text-[10px]">Add sponsor</span>
+                    <Plus className="h-4 w-4" />
+                    <span>Add sponsor logo</span>
                   </>
                 )}
                 <input type="file" accept="image/*" className="hidden" onChange={handleSponsorUpload} disabled={sponsorBusy} />
