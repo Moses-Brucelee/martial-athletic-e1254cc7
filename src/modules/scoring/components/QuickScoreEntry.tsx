@@ -292,6 +292,8 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
           )}
         </div>
       </div>
+        );
+      })()}
     </div>
   );
 }
