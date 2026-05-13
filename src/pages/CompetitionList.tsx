@@ -77,7 +77,7 @@ export default function CompetitionList() {
   const { profile, loading: profileLoading } = useProfile();
   const { isAtLeast, loading: tierLoading } = useTier();
   const { data: competitions = [], isLoading, error } = useCompetitions();
-  const canCreate = V1_FULL_ACCESS || isAtLeast("affiliate_pro");
+  const canCreate = isAtLeast("affiliate_pro");
 
   if (profileLoading || isLoading || tierLoading) {
     return (
