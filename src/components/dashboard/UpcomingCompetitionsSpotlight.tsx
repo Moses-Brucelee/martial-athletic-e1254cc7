@@ -42,7 +42,7 @@ export function UpcomingCompetitionsSpotlight() {
     queryFn: async () => {
       const { data: upcoming, error: upErr } = await supabase
         .from("competitions")
-        .select("id, name, date, venue, host_gym, type, divisions")
+        .select("id, name, date, venue, host_gym, type, divisions, poster_url")
         .gte("date", today)
         .order("date", { ascending: true })
         .limit(5);
@@ -52,7 +52,7 @@ export function UpcomingCompetitionsSpotlight() {
 
       const { data: recent, error: reErr } = await supabase
         .from("competitions")
-        .select("id, name, date, venue, host_gym, type, divisions")
+        .select("id, name, date, venue, host_gym, type, divisions, poster_url")
         .order("date", { ascending: false })
         .limit(5);
 
