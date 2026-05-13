@@ -3,12 +3,18 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Dumbbell, Trophy, Users, Zap } from "lucide-react";
 import logoWide from "@/assets/martial-athletic-logo-wide.png";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
+import { SEO } from "@/components/SEO";
 
 const Index = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <SEO
+        title="Martial Athletic – Train Harder, Compete Smarter"
+        description="Premium fitness platform to create programs, run competitions, and track leaderboards. Built for gyms, affiliates, and athletes."
+        path="/"
+      />
       {/* Hero Section */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:py-20">
         {/* Logo */}

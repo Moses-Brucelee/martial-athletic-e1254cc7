@@ -22,6 +22,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
+import { SEO } from "@/components/SEO";
 
 const sections = [
   {
@@ -305,8 +306,27 @@ const sections = [
 export default function Guide() {
   const navigate = useNavigate();
 
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: sections.map((s) => ({
+      "@type": "Question",
+      name: s.title,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: `Learn about ${s.title.toLowerCase()} on Martial Athletic — see the platform guide for full step-by-step details.`,
+      },
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <SEO
+        title="Platform Guide – How Martial Athletic Works"
+        description="Step-by-step guide to running competitions on Martial Athletic: divisions, teams, registration, workouts, judging, brackets, and scoring."
+        path="/guide"
+        jsonLd={faqJsonLd}
+      />
       <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border bg-card">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-9 w-9">
