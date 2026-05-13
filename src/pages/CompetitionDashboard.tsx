@@ -108,6 +108,8 @@ export default function CompetitionDashboard() {
   const { profile, loading: profileLoading } = useProfile();
   const { isOwner, isJudge, loading: roleLoading } = useCompetitionRole(id);
   const { isSuperUser } = useSuperUserAccess();
+  const { tierKey } = useSubscription();
+  const showRoster = tierKey !== "free" || isSuperUser || V1_FULL_ACCESS;
   const { data: competition, isLoading: compLoading, error: compError, refetch: refetchComp } = useCompetition(id);
   const { data: settings, isLoading: settingsLoading } = useCompetitionSettings(id);
   const isMobile = useIsMobile();
