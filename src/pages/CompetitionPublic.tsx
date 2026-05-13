@@ -30,6 +30,7 @@ import { AdaptivePoster } from "@/components/competition/AdaptivePoster";
 import { formatTimeMMSS } from "@/utils/format";
 import { listSponsors, type SponsorAsset } from "@/lib/posterAssets";
 import { useEffect } from "react";
+import { SEO } from "@/components/SEO";
 
 export default function CompetitionPublic() {
   const { id } = useParams<{ id: string }>();
@@ -635,8 +636,31 @@ export default function CompetitionPublic() {
   const canProceedStep1 = teammateNamesValid;
   const totalSteps = 3;
 
+  const eventJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: competition.name,
+    description: (competition as any).description || `${competition.name} — fitness competition on Martial Athletic.`,
+    startDate: competition.start_date || (competition as any).date || undefined,
+    endDate: (competition as any).end_date || undefined,
+    eventStatus: "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    location: competition.venue
+      ? { "@type": "Place", name: competition.venue, address: competition.venue }
+      : { "@type": "VirtualLocation", url: `https://martial-athletic.jaggulasconsulting.com/event/${id}` },
+    image: competition.poster_url || undefined,
+    organizer: { "@type": "Organization", name: "Martial Athletic", url: "https://martial-athletic.jaggulasconsulting.com/" },
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={`${competition.name} – Martial Athletic`}
+        description={((competition as any).description || `Register and follow ${competition.name}, a fitness competition on Martial Athletic.`).slice(0, 155)}
+        path={`/event/${id}`}
+        type="article"
+        jsonLd={eventJsonLd}
+      />
       {/* Hero */}
       <div className="relative pb-20 sm:pb-24">
         {competition.poster_url ? (
