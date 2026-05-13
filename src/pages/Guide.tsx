@@ -22,6 +22,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
+import { SEO } from "@/components/SEO";
 
 const sections = [
   {
