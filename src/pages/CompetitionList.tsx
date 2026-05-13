@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useProfile } from "@/hooks/useProfile";
 import { useTier } from "@/hooks/useTier";
+import { useAuth } from "@/components/AuthProvider";
 import { useCompetitions } from "@/modules/tournaments/hooks";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Button } from "@/components/ui/button";
@@ -73,10 +74,17 @@ function Section({ title, comps, navigate }: { title: string; comps: Competition
 
 export default function CompetitionList() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
   const { isAtLeast, loading: tierLoading } = useTier();
-  const { data: competitions = [], isLoading, error } = useCompetitions();
+  const { data: competitionsRaw = [], isLoading, error } = useCompetitions();
   const canCreate = isAtLeast("affiliate_pro");
+
+  // Free-tier non-owners only see published-or-later competitions (no drafts).
+  const isFree = !isAtLeast("affiliate_pro");
+  const competitions = isFree
+    ? competitionsRaw.filter((c) => c.created_by === user?.id || deriveStatus(c) !== "draft")
+    : competitionsRaw;
 
   if (profileLoading || isLoading || tierLoading) {
     return (
