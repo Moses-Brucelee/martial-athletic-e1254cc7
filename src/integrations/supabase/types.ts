@@ -896,6 +896,44 @@ export type Database = {
           },
         ]
       }
+      competition_sponsors_meta: {
+        Row: {
+          click_count: number
+          competition_id: string
+          created_at: string
+          id: string
+          storage_path: string
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          click_count?: number
+          competition_id: string
+          created_at?: string
+          id?: string
+          storage_path: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          click_count?: number
+          competition_id?: string
+          created_at?: string
+          id?: string
+          storage_path?: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_sponsors_meta_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_teams: {
         Row: {
           captain_user_id: string | null
@@ -2419,6 +2457,14 @@ export type Database = {
         }[]
       }
       has_competition_access: { Args: { p_user_id: string }; Returns: boolean }
+      increment_sponsor_click: {
+        Args: {
+          p_competition_id: string
+          p_storage_path: string
+          p_website_url?: string
+        }
+        Returns: undefined
+      }
       is_competition_judge: {
         Args: { p_competition_id: string; p_user_id: string }
         Returns: boolean
