@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useCompetition, useTeams, useDivisions, useWorkouts, useWorkoutMovements, useAddTeam } from "@/modules/tournaments/hooks";
@@ -32,9 +32,10 @@ import { listSponsors, type SponsorAsset } from "@/lib/posterAssets";
 import { useEffect } from "react";
 import { SEO } from "@/components/SEO";
 
-export default function CompetitionPublic() {
+export default function CompetitionPublic({ embedded = false }: { embedded?: boolean } = {}) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { profile } = useProfile();
   const { data: competition, isLoading, error } = useCompetition(id);
@@ -86,6 +87,18 @@ export default function CompetitionPublic() {
     if (!id) return;
     listSponsors(id).then(setSponsors).catch(() => {});
   }, [id]);
+
+  // Auto-open registration wizard if URL has ?register=1
+  useEffect(() => {
+    if (user && searchParams.get("register") === "1") {
+      setShowRegWizard(true);
+      // Scroll into view after render
+      setTimeout(() => {
+        document.getElementById("register-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 200);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, searchParams.get("register")]);
 
   const derivedStatus = competition ? deriveStatus(competition) : "draft";
   const canRegister = derivedStatus === "published" || derivedStatus === "live";
@@ -470,23 +483,35 @@ export default function CompetitionPublic() {
       case 0:
         return (
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-foreground">Register as:</h3>
-            <RadioGroup value={regType} onValueChange={(v) => setRegType(v as "self" | "other")} className="grid grid-cols-2 gap-2">
-              <label className={`flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${regType === "self" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
-                <RadioGroupItem value="self" />
-                <div className="min-w-0">
-                  <p className="font-semibold text-foreground text-sm leading-tight">Myself</p>
-                  <p className="text-[11px] text-muted-foreground leading-tight">Use my profile</p>
-                </div>
-              </label>
-              <label className={`flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${regType === "other" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
-                <RadioGroupItem value="other" />
-                <div className="min-w-0">
-                  <p className="font-semibold text-foreground text-sm leading-tight">Someone Else</p>
-                  <p className="text-[11px] text-muted-foreground leading-tight">Another athlete</p>
-                </div>
-              </label>
-            </RadioGroup>
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-foreground">Who are you registering?</Label>
+              <div className="relative grid grid-cols-2 p-1 bg-muted rounded-full">
+                <div
+                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-card shadow-sm transition-transform duration-200 ease-out ${
+                    regType === "self" ? "translate-x-1" : "translate-x-[calc(100%+4px)]"
+                  }`}
+                  aria-hidden
+                />
+                <button
+                  type="button"
+                  onClick={() => setRegType("self")}
+                  className={`relative z-10 py-2 text-sm font-semibold rounded-full transition-colors ${
+                    regType === "self" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Myself
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRegType("other")}
+                  className={`relative z-10 py-2 text-sm font-semibold rounded-full transition-colors ${
+                    regType === "other" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  For an athlete
+                </button>
+              </div>
+            </div>
             {regType === "other" && (
               <div className="space-y-3 pt-2">
                 <div>
@@ -653,16 +678,19 @@ export default function CompetitionPublic() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <SEO
-        title={`${competition.name} – Martial Athletic`}
-        description={((competition as any).description || `Register and follow ${competition.name}, a fitness competition on Martial Athletic.`).slice(0, 155)}
-        path={`/event/${id}`}
-        type="article"
-        jsonLd={eventJsonLd}
-      />
+    <div className={embedded ? "bg-background" : "min-h-screen bg-background"}>
+      {!embedded && (
+        <SEO
+          title={`${competition.name} – Martial Athletic`}
+          description={((competition as any).description || `Register and follow ${competition.name}, a fitness competition on Martial Athletic.`).slice(0, 155)}
+          path={`/event/${id}`}
+          type="article"
+          jsonLd={eventJsonLd}
+        />
+      )}
       {/* Hero */}
-      <div className="relative pb-20 sm:pb-24">
+      <div className={`relative ${embedded ? "pb-8" : "pb-20 sm:pb-24"}`}>
+
         {competition.poster_url ? (
           <div className="relative w-full bg-muted">
             <AdaptivePoster src={competition.poster_url} alt={competition.name} className="w-full" />
@@ -712,18 +740,59 @@ export default function CompetitionPublic() {
               </p>
             )}
 
-            {registrationOpen && !alreadyRegistered && (
-              <Button
-                onClick={() => {
-                  if (!user) { navigate(`/login?redirect=/event/${id}`); return; }
-                  setShowRegWizard(true);
-                  document.getElementById("register-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-                className="mt-4 w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
-              >
-                Sign Up Now
-              </Button>
-            )}
+            {registrationOpen && !alreadyRegistered && (() => {
+              const canOneClick =
+                !!user &&
+                divisions.length === 0 &&
+                !!profile?.display_name &&
+                (!competition.age_category_type || competition.age_category_type === "open" || !!profile?.date_of_birth);
+              const oneClickRegister = async () => {
+                if (!user || !id) return;
+                const ageError = checkAgeEligibility();
+                if (ageError) { toast.error(ageError); return; }
+                try {
+                  const isDup = await checkDuplicateRegistration(id, user.id);
+                  if (isDup) { toast.error("You're already registered."); return; }
+                  await createReg.mutateAsync({
+                    competition_id: id,
+                    athlete_name: profile?.display_name || profile?.full_name || "Athlete",
+                    user_id: user.id,
+                    division_id: null,
+                    team_id: null,
+                    registered_by_user_id: user.id,
+                    registration_type: "self",
+                    status: "pending",
+                  } as any);
+                  toast.success("You're in! Registration submitted.");
+                } catch {
+                  toast.error("Registration failed. Please try again.");
+                }
+              };
+              return (
+                <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                  {canOneClick && (
+                    <Button
+                      onClick={oneClickRegister}
+                      disabled={createReg.isPending}
+                      className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                    >
+                      {createReg.isPending ? "Joining…" : "Join in 1 click"}
+                    </Button>
+                  )}
+                  <Button
+                    onClick={() => {
+                      if (!user) { navigate(`/login?redirect=/event/${id}${embedded ? "" : "?register=1"}`); return; }
+                      setShowRegWizard(true);
+                      document.getElementById("register-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                    variant={canOneClick ? "outline" : "default"}
+                    className={`w-full sm:w-auto font-semibold ${canOneClick ? "" : "bg-accent hover:bg-accent/90 text-accent-foreground"}`}
+                  >
+                    {canOneClick ? "More options" : "Register Now"}
+                  </Button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
