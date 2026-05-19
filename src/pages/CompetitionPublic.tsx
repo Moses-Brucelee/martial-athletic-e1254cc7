@@ -88,6 +88,18 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
     listSponsors(id).then(setSponsors).catch(() => {});
   }, [id]);
 
+  // Auto-open registration wizard if URL has ?register=1
+  useEffect(() => {
+    if (user && searchParams.get("register") === "1") {
+      setShowRegWizard(true);
+      // Scroll into view after render
+      setTimeout(() => {
+        document.getElementById("register-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 200);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, searchParams.get("register")]);
+
   const derivedStatus = competition ? deriveStatus(competition) : "draft";
   const canRegister = derivedStatus === "published" || derivedStatus === "live";
   const isDeadlinePassed = competition?.registration_deadline
