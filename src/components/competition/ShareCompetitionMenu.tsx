@@ -116,7 +116,7 @@ export function ShareCompetitionMenu({
             </>
           )}
 
-          <DropdownMenuItem onClick={handleCopy}>
+          <DropdownMenuItem onClick={() => handleCopy(link, "Link")}>
             {copied ? (
               <Check className="h-4 w-4 mr-2 text-green-600" />
             ) : (
@@ -125,9 +125,14 @@ export function ShareCompetitionMenu({
             {copied ? "Copied!" : "Copy link"}
           </DropdownMenuItem>
 
+          <DropdownMenuItem onClick={() => handleCopy(registerLink, "Registration link")}>
+            <Copy className="h-4 w-4 mr-2 text-primary" />
+            Copy registration link
+          </DropdownMenuItem>
+
           <DropdownMenuItem
             onClick={() =>
-              openWindow(`mailto:?subject=${encodedTitle}&body=${encoded}`)
+              openWindow(`mailto:?subject=${encodedTitle}&body=${encoded}`, "Email")
             }
           >
             <Mail className="h-4 w-4 mr-2 text-blue-600" />
@@ -135,13 +140,13 @@ export function ShareCompetitionMenu({
           </DropdownMenuItem>
 
           <DropdownMenuItem
-            onClick={() => openWindow(`https://wa.me/?text=${encoded}`)}
+            onClick={() => openWindow(`https://wa.me/?text=${encoded}`, "WhatsApp")}
           >
             <MessageCircle className="h-4 w-4 mr-2 text-green-600" />
             WhatsApp
           </DropdownMenuItem>
 
-          <DropdownMenuItem onClick={() => openWindow(`sms:?&body=${encoded}`)}>
+          <DropdownMenuItem onClick={() => openWindow(`sms:?&body=${encoded}`, "SMS")}>
             <MessageSquare className="h-4 w-4 mr-2 text-purple-600" />
             SMS
           </DropdownMenuItem>
@@ -152,6 +157,7 @@ export function ShareCompetitionMenu({
             onClick={() =>
               openWindow(
                 `https://twitter.com/intent/tweet?text=${encoded}`,
+                "X / Twitter",
               )
             }
           >
@@ -163,6 +169,7 @@ export function ShareCompetitionMenu({
             onClick={() =>
               openWindow(
                 `https://www.facebook.com/sharer/sharer.php?u=${encodedLink}`,
+                "Facebook",
               )
             }
           >
@@ -174,6 +181,7 @@ export function ShareCompetitionMenu({
             onClick={() =>
               openWindow(
                 `https://www.linkedin.com/sharing/share-offsite/?url=${encodedLink}`,
+                "LinkedIn",
               )
             }
           >
@@ -183,7 +191,12 @@ export function ShareCompetitionMenu({
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem onClick={() => setShowQR(true)}>
+          <DropdownMenuItem
+            onClick={() => {
+              setShowQR(true);
+              toast.success("QR code ready to scan");
+            }}
+          >
             <QrCode className="h-4 w-4 mr-2" />
             QR code
           </DropdownMenuItem>
