@@ -347,13 +347,19 @@ export default function CompetitionDashboard() {
   );
 
   const renderViewerTabs = () => (
-    <Tabs defaultValue="leaderboard" className="w-full">
-      <TabsList className={`w-full grid ${showRoster ? "grid-cols-3" : "grid-cols-2"} mb-6`}>
+    <Tabs defaultValue="about" className="w-full">
+      <TabsList className={`w-full grid ${showRoster ? "grid-cols-4" : "grid-cols-3"} mb-6`}>
+        <TabsTrigger value="about">About</TabsTrigger>
         <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
         {showRoster && <TabsTrigger value="roster">Roster</TabsTrigger>}
         <TabsTrigger value="overview">Overview</TabsTrigger>
       </TabsList>
 
+      <TabsContent value="about">
+        <div className="-mx-4">
+          <CompetitionPublic />
+        </div>
+      </TabsContent>
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
       {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>}
       <TabsContent value="overview">
