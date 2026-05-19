@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useCompetitionRole } from "@/hooks/useCompetitionRole";
