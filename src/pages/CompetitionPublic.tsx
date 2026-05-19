@@ -32,9 +32,10 @@ import { listSponsors, type SponsorAsset } from "@/lib/posterAssets";
 import { useEffect } from "react";
 import { SEO } from "@/components/SEO";
 
-export default function CompetitionPublic() {
+export default function CompetitionPublic({ embedded = false }: { embedded?: boolean } = {}) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { profile } = useProfile();
   const { data: competition, isLoading, error } = useCompetition(id);
