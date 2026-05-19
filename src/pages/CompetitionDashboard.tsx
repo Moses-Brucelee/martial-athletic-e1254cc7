@@ -348,29 +348,33 @@ export default function CompetitionDashboard() {
     </Tabs>
   );
 
-  const renderViewerTabs = () => (
-    <Tabs defaultValue="about" className="w-full">
-      <TabsList className={`w-full grid ${showRoster ? "grid-cols-4" : "grid-cols-3"} mb-6`}>
-        <TabsTrigger value="about">About</TabsTrigger>
-        <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-        {showRoster && <TabsTrigger value="roster">Roster</TabsTrigger>}
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-      </TabsList>
+  const renderViewerTabs = () => {
+    const validViewerTabs = ["about", "leaderboard", "roster", "overview"];
+    const initialTab = tabFromUrl && validViewerTabs.includes(tabFromUrl) ? tabFromUrl : "about";
+    return (
+      <Tabs defaultValue={initialTab} className="w-full">
+        <TabsList className={`w-full grid ${showRoster ? "grid-cols-4" : "grid-cols-3"} mb-6`}>
+          <TabsTrigger value="about">About</TabsTrigger>
+          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+          {showRoster && <TabsTrigger value="roster">Roster</TabsTrigger>}
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="about">
-        <div className="-mx-4">
-          <CompetitionPublic />
-        </div>
-      </TabsContent>
-      <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
-      {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>}
-      <TabsContent value="overview">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TeamsPanel competitionId={id!} isOwner={false} />
-        </div>
-      </TabsContent>
-    </Tabs>
-  );
+        <TabsContent value="about">
+          <div className="-mx-4 sm:-mx-0">
+            <CompetitionPublic embedded />
+          </div>
+        </TabsContent>
+        <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
+        {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>}
+        <TabsContent value="overview">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TeamsPanel competitionId={id!} isOwner={false} />
+          </div>
+        </TabsContent>
+      </Tabs>
+    );
+  };
 
   const renderTabs = () => {
     if (effectiveCanAdmin && isQuickMode) return renderQuickModeTabs();
