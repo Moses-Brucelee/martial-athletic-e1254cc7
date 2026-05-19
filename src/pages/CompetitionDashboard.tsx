@@ -17,6 +17,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { ShareCompetitionMenu } from "@/components/competition/ShareCompetitionMenu";
+import CompetitionPublic from "@/pages/CompetitionPublic";
 
 // Module components
 import { TeamsPanel } from "@/modules/tournaments/components/TeamsPanel";
