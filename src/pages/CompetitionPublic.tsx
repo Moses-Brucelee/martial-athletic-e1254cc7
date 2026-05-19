@@ -678,16 +678,19 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <SEO
-        title={`${competition.name} – Martial Athletic`}
-        description={((competition as any).description || `Register and follow ${competition.name}, a fitness competition on Martial Athletic.`).slice(0, 155)}
-        path={`/event/${id}`}
-        type="article"
-        jsonLd={eventJsonLd}
-      />
+    <div className={embedded ? "bg-background" : "min-h-screen bg-background"}>
+      {!embedded && (
+        <SEO
+          title={`${competition.name} – Martial Athletic`}
+          description={((competition as any).description || `Register and follow ${competition.name}, a fitness competition on Martial Athletic.`).slice(0, 155)}
+          path={`/event/${id}`}
+          type="article"
+          jsonLd={eventJsonLd}
+        />
+      )}
       {/* Hero */}
-      <div className="relative pb-20 sm:pb-24">
+      <div className={`relative ${embedded ? "pb-8" : "pb-20 sm:pb-24"}`}>
+
         {competition.poster_url ? (
           <div className="relative w-full bg-muted">
             <AdaptivePoster src={competition.poster_url} alt={competition.name} className="w-full" />
