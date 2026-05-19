@@ -17,6 +17,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { ShareCompetitionMenu } from "@/components/competition/ShareCompetitionMenu";
+import CompetitionPublic from "@/pages/CompetitionPublic";
 
 // Module components
 import { TeamsPanel } from "@/modules/tournaments/components/TeamsPanel";
@@ -345,13 +347,19 @@ export default function CompetitionDashboard() {
   );
 
   const renderViewerTabs = () => (
-    <Tabs defaultValue="leaderboard" className="w-full">
-      <TabsList className={`w-full grid ${showRoster ? "grid-cols-3" : "grid-cols-2"} mb-6`}>
+    <Tabs defaultValue="about" className="w-full">
+      <TabsList className={`w-full grid ${showRoster ? "grid-cols-4" : "grid-cols-3"} mb-6`}>
+        <TabsTrigger value="about">About</TabsTrigger>
         <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
         {showRoster && <TabsTrigger value="roster">Roster</TabsTrigger>}
         <TabsTrigger value="overview">Overview</TabsTrigger>
       </TabsList>
 
+      <TabsContent value="about">
+        <div className="-mx-4">
+          <CompetitionPublic />
+        </div>
+      </TabsContent>
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
       {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>}
       <TabsContent value="overview">
@@ -381,9 +389,12 @@ export default function CompetitionDashboard() {
           <>
             <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
               <p className="text-muted-foreground">Competition Dashboard</p>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/event/${id}`)} className="gap-1.5">
-                <ExternalLink className="h-3.5 w-3.5" /> View Public Page
-              </Button>
+              <ShareCompetitionMenu
+                competitionId={id!}
+                competitionName={competition.name}
+                startDate={competition.start_date}
+                venue={competition.venue}
+              />
             </div>
             {effectiveCanAdmin && !isQuickMode && (
               <div className="mb-4">
