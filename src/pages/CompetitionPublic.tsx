@@ -740,18 +740,59 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
               </p>
             )}
 
-            {registrationOpen && !alreadyRegistered && (
-              <Button
-                onClick={() => {
-                  if (!user) { navigate(`/login?redirect=/event/${id}`); return; }
-                  setShowRegWizard(true);
-                  document.getElementById("register-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-                className="mt-4 w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
-              >
-                Sign Up Now
-              </Button>
-            )}
+            {registrationOpen && !alreadyRegistered && (() => {
+              const canOneClick =
+                !!user &&
+                divisions.length === 0 &&
+                !!profile?.display_name &&
+                (!competition.age_category_type || competition.age_category_type === "open" || !!profile?.date_of_birth);
+              const oneClickRegister = async () => {
+                if (!user || !id) return;
+                const ageError = checkAgeEligibility();
+                if (ageError) { toast.error(ageError); return; }
+                try {
+                  const isDup = await checkDuplicateRegistration(id, user.id);
+                  if (isDup) { toast.error("You're already registered."); return; }
+                  await createReg.mutateAsync({
+                    competition_id: id,
+                    athlete_name: profile?.display_name || profile?.full_name || "Athlete",
+                    user_id: user.id,
+                    division_id: null,
+                    team_id: null,
+                    registered_by_user_id: user.id,
+                    registration_type: "self",
+                    status: "pending",
+                  } as any);
+                  toast.success("You're in! Registration submitted.");
+                } catch {
+                  toast.error("Registration failed. Please try again.");
+                }
+              };
+              return (
+                <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                  {canOneClick && (
+                    <Button
+                      onClick={oneClickRegister}
+                      disabled={createReg.isPending}
+                      className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                    >
+                      {createReg.isPending ? "Joining…" : "Join in 1 click"}
+                    </Button>
+                  )}
+                  <Button
+                    onClick={() => {
+                      if (!user) { navigate(`/login?redirect=/event/${id}${embedded ? "" : "?register=1"}`); return; }
+                      setShowRegWizard(true);
+                      document.getElementById("register-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                    variant={canOneClick ? "outline" : "default"}
+                    className={`w-full sm:w-auto font-semibold ${canOneClick ? "" : "bg-accent hover:bg-accent/90 text-accent-foreground"}`}
+                  >
+                    {canOneClick ? "More options" : "Register Now"}
+                  </Button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
