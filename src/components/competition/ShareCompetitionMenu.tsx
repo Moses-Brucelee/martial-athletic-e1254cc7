@@ -41,6 +41,7 @@ export function ShareCompetitionMenu({
   const [showQR, setShowQR] = useState(false);
 
   const link = `${window.location.origin}/event/${competitionId}`;
+  const registerLink = `${link}?register=1`;
 
   const message = useMemo(() => {
     const dateStr = startDate
@@ -63,10 +64,10 @@ export function ShareCompetitionMenu({
   const supportsNativeShare =
     typeof navigator !== "undefined" && typeof navigator.share === "function";
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(link);
+  const handleCopy = async (url: string = link, label = "Link") => {
+    await navigator.clipboard.writeText(url);
     setCopied(true);
-    toast.success("Link copied!");
+    toast.success(`${label} copied to clipboard`);
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -77,6 +78,7 @@ export function ShareCompetitionMenu({
         text: message,
         url: link,
       });
+      toast.success("Shared!");
     } catch (err) {
       // User cancelled — silently ignore
       if ((err as Error).name !== "AbortError") {
@@ -85,8 +87,9 @@ export function ShareCompetitionMenu({
     }
   };
 
-  const openWindow = (url: string) => {
+  const openWindow = (url: string, channel: string) => {
     window.open(url, "_blank", "noopener,noreferrer");
+    toast.success(`Opened ${channel}`);
   };
 
   const encoded = encodeURIComponent(message);
