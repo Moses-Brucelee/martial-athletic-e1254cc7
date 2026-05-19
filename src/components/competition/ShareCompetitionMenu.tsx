@@ -215,7 +215,7 @@ export function ShareCompetitionMenu({
             <p className="text-xs text-muted-foreground text-center break-all px-2">
               {link}
             </p>
-            <Button variant="outline" size="sm" onClick={handleCopy} className="w-full">
+            <Button variant="outline" size="sm" onClick={() => handleCopy(link, "Link")} className="w-full">
               {copied ? (
                 <Check className="h-4 w-4 mr-2 text-green-600" />
               ) : (
