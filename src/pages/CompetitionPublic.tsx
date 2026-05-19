@@ -471,19 +471,19 @@ export default function CompetitionPublic() {
         return (
           <div className="space-y-4">
             <h3 className="text-base font-bold text-foreground">Register as:</h3>
-            <RadioGroup value={regType} onValueChange={(v) => setRegType(v as "self" | "other")} className="space-y-3">
-              <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${regType === "self" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
+            <RadioGroup value={regType} onValueChange={(v) => setRegType(v as "self" | "other")} className="grid grid-cols-2 gap-2">
+              <label className={`flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${regType === "self" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
                 <RadioGroupItem value="self" />
-                <div>
-                  <p className="font-semibold text-foreground">Myself</p>
-                  <p className="text-xs text-muted-foreground">Register using your profile info</p>
+                <div className="min-w-0">
+                  <p className="font-semibold text-foreground text-sm leading-tight">Myself</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight">Use my profile</p>
                 </div>
               </label>
-              <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${regType === "other" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
+              <label className={`flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${regType === "other" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
                 <RadioGroupItem value="other" />
-                <div>
-                  <p className="font-semibold text-foreground">Someone Else</p>
-                  <p className="text-xs text-muted-foreground">Register another athlete</p>
+                <div className="min-w-0">
+                  <p className="font-semibold text-foreground text-sm leading-tight">Someone Else</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight">Another athlete</p>
                 </div>
               </label>
             </RadioGroup>
