@@ -389,9 +389,12 @@ export default function CompetitionDashboard() {
           <>
             <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
               <p className="text-muted-foreground">Competition Dashboard</p>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/event/${id}`)} className="gap-1.5">
-                <ExternalLink className="h-3.5 w-3.5" /> View Public Page
-              </Button>
+              <ShareCompetitionMenu
+                competitionId={id!}
+                competitionName={competition.name}
+                startDate={competition.start_date}
+                venue={competition.venue}
+              />
             </div>
             {effectiveCanAdmin && !isQuickMode && (
               <div className="mb-4">
