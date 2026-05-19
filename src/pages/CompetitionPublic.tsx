@@ -483,23 +483,35 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
       case 0:
         return (
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-foreground">Register as:</h3>
-            <RadioGroup value={regType} onValueChange={(v) => setRegType(v as "self" | "other")} className="grid grid-cols-2 gap-2">
-              <label className={`flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${regType === "self" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
-                <RadioGroupItem value="self" />
-                <div className="min-w-0">
-                  <p className="font-semibold text-foreground text-sm leading-tight">Myself</p>
-                  <p className="text-[11px] text-muted-foreground leading-tight">Use my profile</p>
-                </div>
-              </label>
-              <label className={`flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${regType === "other" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
-                <RadioGroupItem value="other" />
-                <div className="min-w-0">
-                  <p className="font-semibold text-foreground text-sm leading-tight">Someone Else</p>
-                  <p className="text-[11px] text-muted-foreground leading-tight">Another athlete</p>
-                </div>
-              </label>
-            </RadioGroup>
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-foreground">Who are you registering?</Label>
+              <div className="relative grid grid-cols-2 p-1 bg-muted rounded-full">
+                <div
+                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-card shadow-sm transition-transform duration-200 ease-out ${
+                    regType === "self" ? "translate-x-1" : "translate-x-[calc(100%+4px)]"
+                  }`}
+                  aria-hidden
+                />
+                <button
+                  type="button"
+                  onClick={() => setRegType("self")}
+                  className={`relative z-10 py-2 text-sm font-semibold rounded-full transition-colors ${
+                    regType === "self" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Myself
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRegType("other")}
+                  className={`relative z-10 py-2 text-sm font-semibold rounded-full transition-colors ${
+                    regType === "other" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  For an athlete
+                </button>
+              </div>
+            </div>
             {regType === "other" && (
               <div className="space-y-3 pt-2">
                 <div>
