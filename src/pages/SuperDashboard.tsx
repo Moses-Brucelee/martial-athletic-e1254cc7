@@ -12,7 +12,7 @@ import { AppHeader } from "@/components/AppHeader";
 
 export default function SuperDashboard() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <AppHeader title="Platform Administration" />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">

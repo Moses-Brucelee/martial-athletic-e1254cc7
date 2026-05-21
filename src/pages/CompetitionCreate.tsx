@@ -197,7 +197,7 @@ export default function CompetitionCreate() {
 
   if (profileLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <Skeleton className="h-14 w-full" />
         <div className="max-w-2xl mx-auto p-6 space-y-4">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
@@ -210,7 +210,7 @@ export default function CompetitionCreate() {
   const isFinalStep = isQuickMode ? step === 1 : step === 3;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <CompetitionHeader title="Create Competition" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
 
       <main className={`flex-1 w-full px-3 sm:px-4 py-6 sm:py-8 ${isWideStep ? "max-w-7xl mx-auto" : "max-w-2xl mx-auto"}`}>

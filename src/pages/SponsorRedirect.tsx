@@ -48,7 +48,7 @@ export default function SponsorRedirect() {
 
   if (!safeUrl) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-6">
         <div className="max-w-md text-center space-y-4">
           <ShieldAlert className="h-10 w-10 text-destructive mx-auto" />
           <h1 className="text-xl font-bold">Invalid sponsor link</h1>
@@ -64,7 +64,7 @@ export default function SponsorRedirect() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+    <div className="min-h-dvh bg-background flex items-center justify-center p-6">
       <div className="max-w-lg w-full bg-card border border-border rounded-2xl p-6 sm:p-8 space-y-5 text-center">
         <img src={logoCompact} alt="Martial Athletic" className="h-12 w-12 mx-auto" />
         <ShieldAlert className="h-8 w-8 text-accent mx-auto" />

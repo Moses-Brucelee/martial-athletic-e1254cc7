@@ -151,7 +151,7 @@ export default function Register() {
     serverErrors[key] ?? (touched[key] ? fieldErrors[key] : undefined);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <SEO
         title="Create your Martial Athletic account"
         description="Sign up to register for fitness competitions, manage your gym, and track your performances on Martial Athletic."

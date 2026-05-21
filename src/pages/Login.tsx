@@ -149,7 +149,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <SEO
         title="Log in to Martial Athletic"
         description="Sign in to manage your competitions, registrations, scoring, and athlete profile on Martial Athletic."

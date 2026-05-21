@@ -332,7 +332,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <div className="max-w-3xl mx-auto p-6 space-y-4">
           <Skeleton className="h-10 w-2/3" />
           <Skeleton className="h-64 w-full rounded-xl" />
@@ -355,7 +355,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
         ? "This competition may be a draft or restricted. Sign in to see if you have access."
         : "This event doesn't exist, has been removed, or isn't published yet.";
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-md">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
           <p className="text-foreground font-bold text-lg">{title}</p>
@@ -373,7 +373,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
 
   if (competition.status === "draft" && competition.created_by !== user?.id) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-md">
           <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
           <p className="text-foreground font-bold text-lg">Not yet published</p>
@@ -678,7 +678,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
   };
 
   return (
-    <div className={embedded ? "bg-background" : "min-h-screen bg-background"}>
+    <div className={embedded ? "bg-background" : "min-h-dvh bg-background"}>
       {!embedded && (
         <SEO
           title={`${competition.name} – Martial Athletic`}

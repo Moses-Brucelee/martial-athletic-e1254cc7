@@ -62,7 +62,7 @@ export default function ForgotPassword() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-dvh bg-background flex flex-col">
         <header className="flex items-center justify-between px-4 sm:px-8 py-4">
           <button
             onClick={() => navigate("/login")}
@@ -121,7 +121,7 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <header className="flex items-center justify-between px-4 sm:px-8 py-4">
         <button
           onClick={() => navigate("/login")}

@@ -320,7 +320,7 @@ export default function Guide() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <SEO
         title="Platform Guide – How Martial Athletic Works"
         description="Step-by-step guide to running competitions on Martial Athletic: divisions, teams, registration, workouts, judging, brackets, and scoring."
