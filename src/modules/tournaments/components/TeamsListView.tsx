@@ -152,6 +152,7 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
                         size="icon"
                         className="h-7 w-7 text-muted-foreground hover:text-primary"
                         title="Manage members"
+                        aria-label="Manage members"
                         onClick={() => setManageTeam(team)}
                       >
                         <Settings2 className="h-3.5 w-3.5" />
