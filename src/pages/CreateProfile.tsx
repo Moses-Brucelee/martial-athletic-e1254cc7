@@ -173,7 +173,7 @@ export default function CreateProfile() {
     .split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border">
         <div className="flex items-center gap-3">
           <img src={logoCompact} alt="Martial Athletic" className="w-10 h-10 object-contain" />

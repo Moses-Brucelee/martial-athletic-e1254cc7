@@ -105,7 +105,7 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
                     <span className="text-sm font-semibold text-foreground truncate">{teamName || "Unknown"}</span>
                     {canAdmin && (
                       <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
-                        onClick={() => handleRemove(assignment.id)}>
+                        onClick={() => handleRemove(assignment.id)} aria-label="Remove heat assignment">
                         <X className="h-3 w-3" />
                       </Button>
                     )}

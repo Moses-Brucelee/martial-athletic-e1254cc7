@@ -133,7 +133,7 @@ export default function CompetitionDashboard() {
 
   if (profileLoading || compLoading || roleLoading || settingsLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <Skeleton className="h-14 w-full" />
         <div className="max-w-5xl mx-auto p-6 grid sm:grid-cols-2 gap-6">
           <Skeleton className="h-64 w-full" />
@@ -161,7 +161,7 @@ export default function CompetitionDashboard() {
   // Read-only view for completed/expired (non-owner)
   if (isReadOnly && !canAdmin) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-dvh bg-background flex flex-col">
         <CompetitionHeader title="Tournament" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
         <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
           {competition && <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase mb-1">{competition.name}</h2>}
@@ -384,7 +384,7 @@ export default function CompetitionDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <CompetitionHeader title="Tournament" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">

@@ -142,7 +142,7 @@ export default function MainMenu() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border">
           <Skeleton className="h-10 w-48" />
           <Skeleton className="h-8 w-8 rounded-full" />
@@ -158,7 +158,7 @@ export default function MainMenu() {
 
   if (profileError) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="min-h-dvh bg-background flex items-center justify-center px-4">
         <div className="text-center space-y-4">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
           <p className="text-destructive">{profileError}</p>
@@ -177,7 +177,7 @@ export default function MainMenu() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-30">
         <div className="flex items-center gap-3">
@@ -194,7 +194,7 @@ export default function MainMenu() {
             </AvatarFallback>
           </Avatar>
           <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9 text-muted-foreground hover:text-destructive">
+          <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9 text-muted-foreground hover:text-destructive" aria-label="Sign out">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

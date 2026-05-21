@@ -9,7 +9,7 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <SEO
         title="Martial Athletic – Train Harder, Compete Smarter"
         description="Premium fitness platform to create programs, run competitions, and track leaderboards. Built for gyms, affiliates, and athletes."

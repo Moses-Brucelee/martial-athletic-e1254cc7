@@ -100,11 +100,11 @@ export function ValidationQueue({ competitionId }: ValidationQueueProps) {
             <Badge variant="secondary" className="text-[10px] shrink-0">Pending</Badge>
             <div className="flex gap-1 shrink-0">
               <Button size="icon" variant="ghost" className="h-7 w-7 text-accent hover:text-accent"
-                onClick={() => handleValidate(s.id, "validated")}>
+                onClick={() => handleValidate(s.id, "validated")} aria-label="Validate score">
                 <CheckCircle className="h-4 w-4" />
               </Button>
               <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive"
-                onClick={() => handleValidate(s.id, "rejected")}>
+                onClick={() => handleValidate(s.id, "rejected")} aria-label="Reject score">
                 <XCircle className="h-4 w-4" />
               </Button>
             </div>

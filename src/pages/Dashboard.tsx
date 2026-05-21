@@ -8,7 +8,7 @@ export default function Dashboard() {
   const { user, signOut } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border">
         <div className="flex items-center gap-3">
           <img src={logoCompact} alt="Martial Athletic" className="w-10 h-10 object-contain" />
@@ -16,7 +16,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9">
+          <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9" aria-label="Sign out">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

@@ -133,7 +133,7 @@ export function ParticipantsPanel({ competitionId, canAdmin }: ParticipantsPanel
                       <span className="text-sm text-foreground">{m.athlete_name}</span>
                       {canAdmin && (
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleRemove(m.id)}>
+                          onClick={() => handleRemove(m.id)} aria-label="Remove participant">
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       )}

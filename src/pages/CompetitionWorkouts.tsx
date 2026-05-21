@@ -77,7 +77,7 @@ export default function CompetitionWorkouts() {
 
   if (profileLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <Skeleton className="h-14 w-full" />
         <div className="max-w-2xl mx-auto p-6 space-y-4">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
@@ -87,7 +87,7 @@ export default function CompetitionWorkouts() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <CompetitionHeader title="Tournament" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
@@ -118,7 +118,7 @@ export default function CompetitionWorkouts() {
               </Select>
               {workouts.length > 1 && (
                 <Button variant="ghost" size="icon" onClick={() => removeWorkout(index)}
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive" aria-label="Remove workout">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}

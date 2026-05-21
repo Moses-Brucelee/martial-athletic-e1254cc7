@@ -320,7 +320,7 @@ export default function Guide() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <SEO
         title="Platform Guide – How Martial Athletic Works"
         description="Step-by-step guide to running competitions on Martial Athletic: divisions, teams, registration, workouts, judging, brackets, and scoring."
@@ -329,7 +329,7 @@ export default function Guide() {
       />
       <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border bg-card">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-9 w-9">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-9 w-9" aria-label="Go back">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <img src={logoCompact} alt="Martial Athletic" className="w-10 h-10 object-contain" />

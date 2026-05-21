@@ -23,7 +23,7 @@ export default function CompetitionDetail() {
 
   if (compLoading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-dvh bg-background flex flex-col">
         <AppHeader title="Competition" />
         <div className="max-w-3xl mx-auto w-full px-4 py-8 space-y-4">
           <Skeleton className="h-8 w-2/3" />
@@ -35,7 +35,7 @@ export default function CompetitionDetail() {
 
   if (!competition) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+      <div className="min-h-dvh bg-background flex flex-col items-center justify-center">
         <p className="text-foreground font-bold">Competition not found</p>
         <Button variant="outline" onClick={() => navigate("/performances")} className="mt-4">Back</Button>
       </div>
@@ -84,7 +84,7 @@ export default function CompetitionDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <AppHeader title="Competition Detail" />
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 space-y-6">

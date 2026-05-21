@@ -88,7 +88,7 @@ export default function CompetitionList() {
 
   if (profileLoading || isLoading || tierLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <Skeleton className="h-14 w-full" />
         <div className="max-w-2xl mx-auto p-6 space-y-4">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
@@ -101,7 +101,7 @@ export default function CompetitionList() {
   const hasAny = upcoming.length + live.length + completed.length > 0;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <CompetitionHeader title="Competitions" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
