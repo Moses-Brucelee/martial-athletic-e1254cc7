@@ -187,7 +187,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
           <div className="flex items-center justify-between mb-4">
             <Button variant="ghost" size="icon" className="h-12 w-12"
               onClick={() => setCurrentTeamIndex(Math.max(0, currentTeamIndex - 1))}
-              disabled={currentTeamIndex === 0}>
+              disabled={currentTeamIndex === 0} aria-label="Previous team">
               <ChevronLeft className="h-6 w-6" />
             </Button>
             <div className="text-center flex-1">
@@ -201,7 +201,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
             </div>
             <Button variant="ghost" size="icon" className="h-12 w-12"
               onClick={() => setCurrentTeamIndex(Math.min(teams.length - 1, currentTeamIndex + 1))}
-              disabled={currentTeamIndex === teams.length - 1}>
+              disabled={currentTeamIndex === teams.length - 1} aria-label="Next team">
               <ChevronRight className="h-6 w-6" />
             </Button>
           </div>
@@ -252,7 +252,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
               ) : (
                 <div className="flex items-center gap-3">
                   <Button variant="outline" size="icon" className="h-14 w-14 text-xl font-bold shrink-0"
-                    onClick={() => adjustScore(-1)}>−</Button>
+                    onClick={() => adjustScore(-1)} aria-label="Decrease score">−</Button>
                   <div className="flex-1 relative">
                     <Input type="number" value={currentScore}
                       onChange={(e) => updateScore(e.target.value)}
@@ -262,7 +262,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
                     )}
                   </div>
                   <Button variant="outline" size="icon" className="h-14 w-14 text-xl font-bold shrink-0"
-                    onClick={() => adjustScore(1)}>+</Button>
+                    onClick={() => adjustScore(1)} aria-label="Increase score">+</Button>
                 </div>
               )}
 

@@ -91,7 +91,7 @@ export function TeamsPanel({ competitionId, teams, setTeams, isOwner, divisions 
               <div key={team.id} className="flex items-center justify-between px-3 py-2 border-b border-border last:border-b-0 bg-background">
                 <span className="font-semibold text-foreground text-sm">{team.team_name}</span>
                 {isOwner && (
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => team.id && removeTeam(team.id)}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => team.id && removeTeam(team.id)} aria-label="Remove team">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 )}

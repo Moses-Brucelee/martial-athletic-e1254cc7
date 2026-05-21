@@ -224,6 +224,7 @@ export default function Performances() {
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => openEdit(a)}
+                      aria-label="Edit athlete"
                     >
                       <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                     </Button>

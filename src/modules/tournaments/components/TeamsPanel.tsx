@@ -82,7 +82,7 @@ export function TeamsPanel({ competitionId, isOwner }: TeamsPanelProps) {
                   <span className="text-sm font-semibold text-foreground">{team.team_name}</span>
                   {isOwner && (
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleRemove(team.id)}>
+                      onClick={() => handleRemove(team.id)} aria-label="Remove team">
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   )}

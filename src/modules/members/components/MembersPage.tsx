@@ -187,6 +187,7 @@ export default function MembersPage() {
                   variant="ghost"
                   className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive shrink-0"
                   onClick={(e) => handleRemoveMember(m.id, e)}
+                  aria-label="Remove member"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

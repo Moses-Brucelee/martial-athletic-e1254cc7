@@ -200,7 +200,7 @@ export function JudgeAssignmentPanel({ competitionId, canAdmin }: JudgeAssignmen
                 </div>
                 {canAdmin && (
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
-                    onClick={() => handleRemove(a.id)}>
+                    onClick={() => handleRemove(a.id)} aria-label="Remove judge assignment">
                     <X className="h-4 w-4" />
                   </Button>
                 )}

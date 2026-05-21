@@ -16,7 +16,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9">
+          <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9" aria-label="Sign out">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

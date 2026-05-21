@@ -122,20 +122,20 @@ export function MovementBuilderPanel({ workout, workoutIndex: wi, onSetWorkouts,
             {/* Controls: always visible on mobile */}
             <div className="flex items-center gap-1 pl-9 sm:pl-11">
               <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-6 sm:w-6" onClick={() => moveMovement(mi, -1)}
-                disabled={disabled || mi === 0} title="Move up">
+                disabled={disabled || mi === 0} title="Move up" aria-label="Move movement up">
                 <span className="text-xs sm:text-[10px]">↑</span>
               </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-6 sm:w-6" onClick={() => moveMovement(mi, 1)}
-                disabled={disabled || mi === workout.movements.length - 1} title="Move down">
+                disabled={disabled || mi === workout.movements.length - 1} title="Move down" aria-label="Move movement down">
                 <span className="text-xs sm:text-[10px]">↓</span>
               </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-6 sm:w-6 text-muted-foreground hover:text-primary"
-                onClick={() => duplicateMovement(mi)} disabled={disabled} title="Duplicate">
+                onClick={() => duplicateMovement(mi)} disabled={disabled} title="Duplicate" aria-label="Duplicate movement">
                 <Copy className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
               </Button>
               {workout.movements.length > 1 && (
                 <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-6 sm:w-6 text-muted-foreground hover:text-destructive"
-                  onClick={() => removeMovement(mi)} disabled={disabled} title="Delete">
+                  onClick={() => removeMovement(mi)} disabled={disabled} title="Delete" aria-label="Delete movement">
                   <Trash2 className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
                 </Button>
               )}

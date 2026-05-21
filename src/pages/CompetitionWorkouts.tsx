@@ -118,7 +118,7 @@ export default function CompetitionWorkouts() {
               </Select>
               {workouts.length > 1 && (
                 <Button variant="ghost" size="icon" onClick={() => removeWorkout(index)}
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive" aria-label="Remove workout">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
