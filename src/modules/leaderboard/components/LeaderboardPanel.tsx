@@ -64,8 +64,12 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
     const workoutTypeMap: Record<string, string> = {};
     workouts.forEach((w) => { workoutTypeMap[w.id] = w.scoring_type || "points"; });
 
-    // Group raw values per workout to compute ranks
-    const byWorkout: Record<string, { team_id: string; raw: number; sortValue: number }[]> = {};
+    // Team → division lookup so per-workout ranks are scoped per division
+    const teamDivisionMap: Record<string, string> = {};
+    teams.forEach((t: any) => { teamDivisionMap[t.id] = t.division_id || "__nodiv__"; });
+
+    // Group raw values per (workout, division) to compute per-division ranks
+    const byWorkoutDiv: Record<string, { team_id: string; raw: number; sortValue: number }[]> = {};
     scoreRows.forEach((s) => {
       const stype = workoutTypeMap[s.workout_id] || "points";
       let raw: number | null = null;
@@ -74,18 +78,18 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
       else if (stype === "load") raw = s.load_value ?? s.score ?? null;
       else raw = s.points_awarded ?? s.score ?? null;
       if (raw == null) return;
-      // For "time", lower is better → invert for unified sort
       const sortValue = stype === "time" ? -Number(raw) : Number(raw);
-      if (!byWorkout[s.workout_id]) byWorkout[s.workout_id] = [];
-      byWorkout[s.workout_id].push({ team_id: s.team_id, raw: Number(raw), sortValue });
+      const div = teamDivisionMap[s.team_id] || "__nodiv__";
+      const key = `${s.workout_id}::${div}`;
+      if (!byWorkoutDiv[key]) byWorkoutDiv[key] = [];
+      byWorkoutDiv[key].push({ team_id: s.team_id, raw: Number(raw), sortValue });
     });
 
     const map: Record<string, Record<string, Cell>> = {};
-    Object.entries(byWorkout).forEach(([wid, rows]) => {
+    Object.entries(byWorkoutDiv).forEach(([key, rows]) => {
+      const wid = key.split("::")[0];
       const stype = workoutTypeMap[wid] || "points";
-      // Sort high→low by sortValue (already inverted for time so high = best)
       const sorted = [...rows].sort((a, b) => b.sortValue - a.sortValue);
-      // Dense-rank (ties share rank)
       let lastValue: number | null = null;
       let lastRank = 0;
       sorted.forEach((row, i) => {
@@ -107,7 +111,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
       });
     });
     return map;
-  }, [scoreRows, workouts]);
+  }, [scoreRows, workouts, teams]);
 
   // Helper: render a workout cell (display + ordinal rank in parens)
   const renderCell = (teamId: string, workoutId: string) => {

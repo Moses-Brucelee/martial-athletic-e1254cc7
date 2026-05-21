@@ -88,7 +88,7 @@ export default function MembersPage() {
 
   if (gymsLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <AppHeader title="Members" />
         <main className="max-w-2xl mx-auto px-4 py-12 space-y-4">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
@@ -100,7 +100,7 @@ export default function MembersPage() {
   // No gym yet — show create form
   if (!gym) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-dvh bg-background flex flex-col">
         <AppHeader title="Members" />
         <main className="flex-1 flex items-center justify-center px-4">
           <Card className="w-full max-w-md">
@@ -129,7 +129,7 @@ export default function MembersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <AppHeader title={`${gym.name} — Members`} />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-4">
@@ -187,6 +187,7 @@ export default function MembersPage() {
                   variant="ghost"
                   className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive shrink-0"
                   onClick={(e) => handleRemoveMember(m.id, e)}
+                  aria-label="Remove member"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

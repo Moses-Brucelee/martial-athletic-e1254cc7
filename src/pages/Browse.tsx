@@ -7,9 +7,9 @@ export default function Browse() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <header className="flex items-center gap-3 px-4 sm:px-8 py-4 border-b border-border bg-card">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} aria-label="Back to dashboard">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <img src={logoCompact} alt="Martial Athletic" className="w-8 h-8 object-contain" />

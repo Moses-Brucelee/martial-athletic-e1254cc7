@@ -60,7 +60,7 @@ export function DivisionsPanel({ competitionId, divisions, setDivisions, canAdmi
           <div key={div.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-border bg-background">
             <span className="font-semibold text-foreground text-sm">{div.name}</span>
             {canAdmin && (
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleRemove(div.id)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleRemove(div.id)} aria-label="Remove division">
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             )}

@@ -1,0 +1,18 @@
+# Martial Athletic
+
+> Premium fitness platform for creating, sharing, and competing with workout programs. Train harder, compete smarter.
+
+Martial Athletic helps gyms and athletes run competitions end-to-end: registration,
+divisions, workouts, judging, leaderboards, brackets, heats, and seasons.
+
+## Pages
+
+- [Home](/): Platform overview and entry point.
+- [How It Works](/guide): Detailed guide to competitions, divisions, scoring, brackets, heats, and lifecycle.
+- [Sign Up](/register): Create an athlete or affiliate account.
+- [Log In](/login): Sign in to manage competitions or compete.
+- [Browse](/browse): Discover programs, competitions, and gear.
+
+## Optional
+
+- [Tutorial](/tutorial): Step-by-step walkthrough for new users.

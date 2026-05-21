@@ -78,7 +78,7 @@ export function WorkoutsPanel({ competitionId, workouts, setWorkouts, isOwner }:
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeWorkout(workout.id)}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeWorkout(workout.id)} aria-label="Remove workout">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>

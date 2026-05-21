@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useCompetition, useTeams, useDivisions, useWorkouts, useWorkoutMovements, useAddTeam } from "@/modules/tournaments/hooks";
@@ -30,10 +30,12 @@ import { AdaptivePoster } from "@/components/competition/AdaptivePoster";
 import { formatTimeMMSS } from "@/utils/format";
 import { listSponsors, type SponsorAsset } from "@/lib/posterAssets";
 import { useEffect } from "react";
+import { SEO } from "@/components/SEO";
 
-export default function CompetitionPublic() {
+export default function CompetitionPublic({ embedded = false }: { embedded?: boolean } = {}) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { profile } = useProfile();
   const { data: competition, isLoading, error } = useCompetition(id);
@@ -72,6 +74,9 @@ export default function CompetitionPublic() {
   // Team registration state
   const [teamName, setTeamName] = useState("");
   const [teamMembers, setTeamMembers] = useState<{ name: string; email: string }[]>([{ name: "", email: "" }]);
+  // Whether the signed-in user (the captain creating the team) is also competing.
+  // Defaults to true — they're shown as the first roster entry and can remove themselves.
+  const [includeCaptain, setIncludeCaptain] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
   const [editingReg, setEditingReg] = useState<AthleteRegistration | null>(null);
@@ -82,6 +87,18 @@ export default function CompetitionPublic() {
     if (!id) return;
     listSponsors(id).then(setSponsors).catch(() => {});
   }, [id]);
+
+  // Auto-open registration wizard if URL has ?register=1
+  useEffect(() => {
+    if (user && searchParams.get("register") === "1") {
+      setShowRegWizard(true);
+      // Scroll into view after render
+      setTimeout(() => {
+        document.getElementById("register-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 200);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, searchParams.get("register")]);
 
   const derivedStatus = competition ? deriveStatus(competition) : "draft";
   const canRegister = derivedStatus === "published" || derivedStatus === "live";
@@ -193,7 +210,7 @@ export default function CompetitionPublic() {
   const handleSubmitTeam = async () => {
     if (!user || !id) return;
     const validMembers = teamMembers.filter((m) => m.name.trim().length >= 2);
-    if (validMembers.length === 0) { toast.error("Add at least one team member"); return; }
+    if (validMembers.length === 0 && !(includeCaptain && !myCaptainTeam)) { toast.error("Add at least one team member"); return; }
     for (const m of validMembers) {
       if (m.email) {
         const e = emailSchema.safeParse(m.email);
@@ -236,7 +253,7 @@ export default function CompetitionPublic() {
         const captainAlreadyRegistered = registrations.some(
           (r) => r.user_id === user.id && r.status !== "withdrawn" && r.status !== "rejected",
         );
-        if (!captainAlreadyRegistered) {
+        if (includeCaptain && !captainAlreadyRegistered) {
           const captainName = profile?.display_name || profile?.full_name || "Captain";
           await createReg.mutateAsync({
             competition_id: id,
@@ -315,7 +332,7 @@ export default function CompetitionPublic() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <div className="max-w-3xl mx-auto p-6 space-y-4">
           <Skeleton className="h-10 w-2/3" />
           <Skeleton className="h-64 w-full rounded-xl" />
@@ -338,7 +355,7 @@ export default function CompetitionPublic() {
         ? "This competition may be a draft or restricted. Sign in to see if you have access."
         : "This event doesn't exist, has been removed, or isn't published yet.";
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-md">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
           <p className="text-foreground font-bold text-lg">{title}</p>
@@ -356,7 +373,7 @@ export default function CompetitionPublic() {
 
   if (competition.status === "draft" && competition.created_by !== user?.id) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-md">
           <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
           <p className="text-foreground font-bold text-lg">Not yet published</p>
@@ -404,12 +421,43 @@ export default function CompetitionPublic() {
                   </Select>
                 </div>
               )}
-              <p className="text-xs text-muted-foreground">You ({profile?.display_name || "Captain"}) will be added as captain.</p>
             </>
           )}
           <div>
             <Label className="text-sm font-medium">{myCaptainTeam ? "New Members" : "Team Members"}</Label>
             <div className="space-y-2 mt-1">
+              {/* Captain (current user) shown as the first roster entry by default — removable. */}
+              {!myCaptainTeam && includeCaptain && (
+                <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {profile?.display_name || profile?.full_name || "You"}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wider text-primary font-bold">
+                      You · Captain
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIncludeCaptain(false)}
+                    aria-label="Remove yourself from the roster"
+                    title="Remove yourself"
+                  >
+                    ×
+                  </Button>
+                </div>
+              )}
+              {!myCaptainTeam && !includeCaptain && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIncludeCaptain(true)}
+                  className="w-full"
+                >
+                  + Add me back as captain
+                </Button>
+              )}
               {teamMembers.map((m, i) => (
                 <div key={i} className="flex gap-2">
                   <Input value={m.name} onChange={(e) => {
@@ -435,23 +483,35 @@ export default function CompetitionPublic() {
       case 0:
         return (
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-foreground">Register as:</h3>
-            <RadioGroup value={regType} onValueChange={(v) => setRegType(v as "self" | "other")} className="space-y-3">
-              <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${regType === "self" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
-                <RadioGroupItem value="self" />
-                <div>
-                  <p className="font-semibold text-foreground">Myself</p>
-                  <p className="text-xs text-muted-foreground">Register using your profile info</p>
-                </div>
-              </label>
-              <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${regType === "other" ? "border-primary bg-primary/5" : "border-border bg-background hover:border-muted-foreground/30"}`}>
-                <RadioGroupItem value="other" />
-                <div>
-                  <p className="font-semibold text-foreground">Someone Else</p>
-                  <p className="text-xs text-muted-foreground">Register another athlete</p>
-                </div>
-              </label>
-            </RadioGroup>
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-foreground">Who are you registering?</Label>
+              <div className="relative grid grid-cols-2 p-1 bg-muted rounded-full">
+                <div
+                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-card shadow-sm transition-transform duration-200 ease-out ${
+                    regType === "self" ? "translate-x-1" : "translate-x-[calc(100%+4px)]"
+                  }`}
+                  aria-hidden
+                />
+                <button
+                  type="button"
+                  onClick={() => setRegType("self")}
+                  className={`relative z-10 py-2 text-sm font-semibold rounded-full transition-colors ${
+                    regType === "self" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Myself
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRegType("other")}
+                  className={`relative z-10 py-2 text-sm font-semibold rounded-full transition-colors ${
+                    regType === "other" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  For an athlete
+                </button>
+              </div>
+            </div>
             {regType === "other" && (
               <div className="space-y-3 pt-2">
                 <div>
@@ -601,10 +661,36 @@ export default function CompetitionPublic() {
   const canProceedStep1 = teammateNamesValid;
   const totalSteps = 3;
 
+  const eventJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: competition.name,
+    description: (competition as any).description || `${competition.name} — fitness competition on Martial Athletic.`,
+    startDate: competition.start_date || (competition as any).date || undefined,
+    endDate: (competition as any).end_date || undefined,
+    eventStatus: "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    location: competition.venue
+      ? { "@type": "Place", name: competition.venue, address: competition.venue }
+      : { "@type": "VirtualLocation", url: `https://martial-athletic.jaggulasconsulting.com/event/${id}` },
+    image: competition.poster_url || undefined,
+    organizer: { "@type": "Organization", name: "Martial Athletic", url: "https://martial-athletic.jaggulasconsulting.com/" },
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className={embedded ? "bg-background" : "min-h-dvh bg-background"}>
+      {!embedded && (
+        <SEO
+          title={`${competition.name} – Martial Athletic`}
+          description={((competition as any).description || `Register and follow ${competition.name}, a fitness competition on Martial Athletic.`).slice(0, 155)}
+          path={`/event/${id}`}
+          type="article"
+          jsonLd={eventJsonLd}
+        />
+      )}
       {/* Hero */}
-      <div className="relative pb-20 sm:pb-24">
+      <div className={`relative ${embedded ? "pb-8" : "pb-20 sm:pb-24"}`}>
+
         {competition.poster_url ? (
           <div className="relative w-full bg-muted">
             <AdaptivePoster src={competition.poster_url} alt={competition.name} className="w-full" />
@@ -654,18 +740,59 @@ export default function CompetitionPublic() {
               </p>
             )}
 
-            {registrationOpen && !alreadyRegistered && (
-              <Button
-                onClick={() => {
-                  if (!user) { navigate(`/login?redirect=/event/${id}`); return; }
-                  setShowRegWizard(true);
-                  document.getElementById("register-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-                className="mt-4 w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
-              >
-                Sign Up Now
-              </Button>
-            )}
+            {registrationOpen && !alreadyRegistered && (() => {
+              const canOneClick =
+                !!user &&
+                divisions.length === 0 &&
+                !!profile?.display_name &&
+                (!competition.age_category_type || competition.age_category_type === "open" || !!profile?.date_of_birth);
+              const oneClickRegister = async () => {
+                if (!user || !id) return;
+                const ageError = checkAgeEligibility();
+                if (ageError) { toast.error(ageError); return; }
+                try {
+                  const isDup = await checkDuplicateRegistration(id, user.id);
+                  if (isDup) { toast.error("You're already registered."); return; }
+                  await createReg.mutateAsync({
+                    competition_id: id,
+                    athlete_name: profile?.display_name || profile?.full_name || "Athlete",
+                    user_id: user.id,
+                    division_id: null,
+                    team_id: null,
+                    registered_by_user_id: user.id,
+                    registration_type: "self",
+                    status: "pending",
+                  } as any);
+                  toast.success("You're in! Registration submitted.");
+                } catch {
+                  toast.error("Registration failed. Please try again.");
+                }
+              };
+              return (
+                <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                  {canOneClick && (
+                    <Button
+                      onClick={oneClickRegister}
+                      disabled={createReg.isPending}
+                      className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                    >
+                      {createReg.isPending ? "Joining…" : "Join in 1 click"}
+                    </Button>
+                  )}
+                  <Button
+                    onClick={() => {
+                      if (!user) { navigate(`/login?redirect=/event/${id}${embedded ? "" : "?register=1"}`); return; }
+                      setShowRegWizard(true);
+                      document.getElementById("register-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                    variant={canOneClick ? "outline" : "default"}
+                    className={`w-full sm:w-auto font-semibold ${canOneClick ? "" : "bg-accent hover:bg-accent/90 text-accent-foreground"}`}
+                  >
+                    {canOneClick ? "More options" : "Register Now"}
+                  </Button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -678,18 +805,44 @@ export default function CompetitionPublic() {
               Proudly Sponsored By
             </p>
             <div className="flex sm:hidden gap-3 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
-              {sponsors.map((s) => (
-                <div key={s.path} className="shrink-0 h-14 w-20 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start">
-                  <img src={s.url} alt="sponsor" className="max-h-12 max-w-[72px] object-contain" />
-                </div>
-              ))}
+              {sponsors.map((s) => {
+                const inner = (
+                  <div className="h-24 w-32 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start p-2 shrink-0">
+                    <img src={s.url} alt="sponsor" className="max-h-full max-w-full object-contain" />
+                  </div>
+                );
+                return s.websiteUrl ? (
+                  <a
+                    key={s.path}
+                    href={`/sponsor-redirect?url=${encodeURIComponent(s.websiteUrl)}&c=${id}&p=${encodeURIComponent(s.path)}`}
+                    className="shrink-0 hover:opacity-80 transition"
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <div key={s.path} className="shrink-0">{inner}</div>
+                );
+              })}
             </div>
             <div className="hidden sm:grid grid-cols-3 md:grid-cols-6 gap-3">
-              {sponsors.map((s) => (
-                <div key={s.path} className="aspect-square rounded-lg bg-background/50 border border-border/50 flex items-center justify-center p-2">
-                  <img src={s.url} alt="sponsor" className="max-h-full max-w-full object-contain" />
-                </div>
-              ))}
+              {sponsors.map((s) => {
+                const inner = (
+                  <div className="aspect-square rounded-lg bg-background/50 border border-border/50 flex items-center justify-center p-2">
+                    <img src={s.url} alt="sponsor" className="max-h-full max-w-full object-contain" />
+                  </div>
+                );
+                return s.websiteUrl ? (
+                  <a
+                    key={s.path}
+                    href={`/sponsor-redirect?url=${encodeURIComponent(s.websiteUrl)}&c=${id}&p=${encodeURIComponent(s.path)}`}
+                    className="hover:opacity-80 transition"
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <div key={s.path}>{inner}</div>
+                );
+              })}
             </div>
           </div>
         )}

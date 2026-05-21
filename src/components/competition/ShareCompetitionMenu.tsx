@@ -41,6 +41,7 @@ export function ShareCompetitionMenu({
   const [showQR, setShowQR] = useState(false);
 
   const link = `${window.location.origin}/event/${competitionId}`;
+  const registerLink = `${link}?register=1`;
 
   const message = useMemo(() => {
     const dateStr = startDate
@@ -63,10 +64,10 @@ export function ShareCompetitionMenu({
   const supportsNativeShare =
     typeof navigator !== "undefined" && typeof navigator.share === "function";
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(link);
+  const handleCopy = async (url: string = link, label = "Link") => {
+    await navigator.clipboard.writeText(url);
     setCopied(true);
-    toast.success("Link copied!");
+    toast.success(`${label} copied to clipboard`);
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -77,6 +78,7 @@ export function ShareCompetitionMenu({
         text: message,
         url: link,
       });
+      toast.success("Shared!");
     } catch (err) {
       // User cancelled — silently ignore
       if ((err as Error).name !== "AbortError") {
@@ -85,8 +87,9 @@ export function ShareCompetitionMenu({
     }
   };
 
-  const openWindow = (url: string) => {
+  const openWindow = (url: string, channel: string) => {
     window.open(url, "_blank", "noopener,noreferrer");
+    toast.success(`Opened ${channel}`);
   };
 
   const encoded = encodeURIComponent(message);
@@ -113,7 +116,7 @@ export function ShareCompetitionMenu({
             </>
           )}
 
-          <DropdownMenuItem onClick={handleCopy}>
+          <DropdownMenuItem onClick={() => handleCopy(link, "Link")}>
             {copied ? (
               <Check className="h-4 w-4 mr-2 text-green-600" />
             ) : (
@@ -122,9 +125,14 @@ export function ShareCompetitionMenu({
             {copied ? "Copied!" : "Copy link"}
           </DropdownMenuItem>
 
+          <DropdownMenuItem onClick={() => handleCopy(registerLink, "Registration link")}>
+            <Copy className="h-4 w-4 mr-2 text-primary" />
+            Copy registration link
+          </DropdownMenuItem>
+
           <DropdownMenuItem
             onClick={() =>
-              openWindow(`mailto:?subject=${encodedTitle}&body=${encoded}`)
+              openWindow(`mailto:?subject=${encodedTitle}&body=${encoded}`, "Email")
             }
           >
             <Mail className="h-4 w-4 mr-2 text-blue-600" />
@@ -132,13 +140,13 @@ export function ShareCompetitionMenu({
           </DropdownMenuItem>
 
           <DropdownMenuItem
-            onClick={() => openWindow(`https://wa.me/?text=${encoded}`)}
+            onClick={() => openWindow(`https://wa.me/?text=${encoded}`, "WhatsApp")}
           >
             <MessageCircle className="h-4 w-4 mr-2 text-green-600" />
             WhatsApp
           </DropdownMenuItem>
 
-          <DropdownMenuItem onClick={() => openWindow(`sms:?&body=${encoded}`)}>
+          <DropdownMenuItem onClick={() => openWindow(`sms:?&body=${encoded}`, "SMS")}>
             <MessageSquare className="h-4 w-4 mr-2 text-purple-600" />
             SMS
           </DropdownMenuItem>
@@ -149,6 +157,7 @@ export function ShareCompetitionMenu({
             onClick={() =>
               openWindow(
                 `https://twitter.com/intent/tweet?text=${encoded}`,
+                "X / Twitter",
               )
             }
           >
@@ -160,6 +169,7 @@ export function ShareCompetitionMenu({
             onClick={() =>
               openWindow(
                 `https://www.facebook.com/sharer/sharer.php?u=${encodedLink}`,
+                "Facebook",
               )
             }
           >
@@ -171,6 +181,7 @@ export function ShareCompetitionMenu({
             onClick={() =>
               openWindow(
                 `https://www.linkedin.com/sharing/share-offsite/?url=${encodedLink}`,
+                "LinkedIn",
               )
             }
           >
@@ -180,7 +191,12 @@ export function ShareCompetitionMenu({
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem onClick={() => setShowQR(true)}>
+          <DropdownMenuItem
+            onClick={() => {
+              setShowQR(true);
+              toast.success("QR code ready to scan");
+            }}
+          >
             <QrCode className="h-4 w-4 mr-2" />
             QR code
           </DropdownMenuItem>
@@ -199,7 +215,7 @@ export function ShareCompetitionMenu({
             <p className="text-xs text-muted-foreground text-center break-all px-2">
               {link}
             </p>
-            <Button variant="outline" size="sm" onClick={handleCopy} className="w-full">
+            <Button variant="outline" size="sm" onClick={() => handleCopy(link, "Link")} className="w-full">
               {copied ? (
                 <Check className="h-4 w-4 mr-2 text-green-600" />
               ) : (

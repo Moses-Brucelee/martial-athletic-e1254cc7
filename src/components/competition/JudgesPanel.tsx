@@ -112,7 +112,7 @@ export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: Judg
               {j.display_name || j.user_id.slice(0, 8) + "…"}
             </span>
             {canAdmin && (
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleRemove(j.id)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleRemove(j.id)} aria-label="Remove judge">
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             )}

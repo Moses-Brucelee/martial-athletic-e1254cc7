@@ -117,7 +117,7 @@ export default function ViewProfile() {
 
   if (profileLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <Skeleton className="h-14 w-full" />
         <div className="max-w-3xl mx-auto p-6 space-y-4">
           {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
@@ -128,7 +128,7 @@ export default function ViewProfile() {
 
   if (profileError) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="min-h-dvh bg-background flex items-center justify-center px-4">
         <div className="text-center space-y-4">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
           <p className="text-destructive">Failed to load profile. Please try again.</p>
@@ -141,7 +141,7 @@ export default function ViewProfile() {
   const initials = (fullName || profile?.display_name || "MA").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <CompetitionHeader title="Profile" subscriptionTier={profile?.subscription_tier} avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
 
       <main className="flex-1 flex items-start justify-center px-4 py-8">

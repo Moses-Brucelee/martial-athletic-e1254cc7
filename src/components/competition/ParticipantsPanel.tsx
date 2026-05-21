@@ -106,7 +106,7 @@ export function ParticipantsPanel({ competitionId, teams, canAdmin }: Participan
                     <div key={m.id} className="flex items-center justify-between px-3 py-2 border-b border-border last:border-b-0">
                       <span className="text-sm text-foreground">{m.athlete_name}</span>
                       {canAdmin && (
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleRemove(m.id)}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleRemove(m.id)} aria-label="Remove participant">
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       )}

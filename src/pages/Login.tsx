@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Eye, EyeOff, ArrowLeft, AlertCircle, Lock } from "lucide-react";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+import { SEO } from "@/components/SEO";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -148,7 +149,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
+      <SEO
+        title="Log in to Martial Athletic"
+        description="Sign in to manage your competitions, registrations, scoring, and athlete profile on Martial Athletic."
+        path="/login"
+      />
       {/* Header */}
       <header className="flex items-center justify-between px-4 sm:px-8 py-4">
         <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
@@ -237,17 +243,6 @@ export default function Login() {
                 )}
               </Button>
             </form>
-
-            <div className="relative my-5">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or</span>
-              </div>
-            </div>
-
-            <GoogleSignInButton redirectTo={redirectTarget} />
 
             <div className="mt-5 text-center">
               <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary transition-colors">

@@ -152,16 +152,17 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
                         size="icon"
                         className="h-7 w-7 text-muted-foreground hover:text-primary"
                         title="Manage members"
+                        aria-label="Manage members"
                         onClick={() => setManageTeam(team)}
                       >
                         <Settings2 className="h-3.5 w-3.5" />
                       </Button>
                       {(team as any).invite_code && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyInvite(team)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyInvite(team)} aria-label="Copy invite link">
                           {copiedId === team.id ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(team)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(team)} aria-label="Delete team">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>

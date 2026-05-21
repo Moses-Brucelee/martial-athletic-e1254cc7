@@ -73,7 +73,7 @@ export default function Performances() {
   const uniqueCompetitions = new Set(history.map((h) => h.competition_id)).size;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <AppHeader title="Performances" />
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-8 space-y-6">
@@ -224,6 +224,7 @@ export default function Performances() {
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => openEdit(a)}
+                      aria-label="Edit athlete"
                     >
                       <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                     </Button>

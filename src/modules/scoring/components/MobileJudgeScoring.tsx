@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Lock, Save, Clock, Dumbbell, Repeat, Award, 
 import { toast } from "sonner";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
+import { TimeInput, formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
 
 interface MobileJudgeScoringProps {
   competitionId: string;
@@ -15,7 +16,7 @@ interface MobileJudgeScoringProps {
 type ScoringType = "time" | "reps" | "load" | "points";
 
 const SCORING_LABELS: Record<ScoringType, string> = {
-  time: "Time (seconds)",
+  time: "Time",
   reps: "Total Reps",
   load: "Load (kg)",
   points: "Points",
@@ -186,7 +187,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
           <div className="flex items-center justify-between mb-4">
             <Button variant="ghost" size="icon" className="h-12 w-12"
               onClick={() => setCurrentTeamIndex(Math.max(0, currentTeamIndex - 1))}
-              disabled={currentTeamIndex === 0}>
+              disabled={currentTeamIndex === 0} aria-label="Previous team">
               <ChevronLeft className="h-6 w-6" />
             </Button>
             <div className="text-center flex-1">
@@ -200,7 +201,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
             </div>
             <Button variant="ghost" size="icon" className="h-12 w-12"
               onClick={() => setCurrentTeamIndex(Math.min(teams.length - 1, currentTeamIndex + 1))}
-              disabled={currentTeamIndex === teams.length - 1}>
+              disabled={currentTeamIndex === teams.length - 1} aria-label="Next team">
               <ChevronRight className="h-6 w-6" />
             </Button>
           </div>
@@ -216,7 +217,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
               <Lock className="h-8 w-8 text-destructive mx-auto mb-2" />
               <p className="text-sm text-destructive font-bold">Workout locked</p>
               <p className="text-3xl font-black text-foreground mt-2">
-                {currentScoringType === "time" ? `${currentScore}s` :
+                {currentScoringType === "time" ? formatSecondsDisplay(currentScore) :
                  currentScoringType === "load" ? `${currentScore}kg` : currentScore}
               </p>
             </div>
@@ -235,23 +236,35 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Button variant="outline" size="icon" className="h-14 w-14 text-xl font-bold shrink-0"
-                  onClick={() => adjustScore(-1)}>−</Button>
-                <div className="flex-1 relative">
-                  <Input type="number" value={currentScore}
-                    onChange={(e) => updateScore(e.target.value)}
-                    className="h-14 text-center text-2xl font-black bg-background pr-8" />
-                  {currentScoringType === "time" && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">s</span>
-                  )}
-                  {currentScoringType === "load" && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">kg</span>
-                  )}
+              {currentScoringType === "time" ? (
+                <div className="space-y-2">
+                  <TimeInput
+                    value={currentScore}
+                    onChange={(v) => updateScore(v)}
+                    size="lg"
+                  />
+                  <div className="flex items-center justify-center gap-3 text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
+                    <span className="w-14 text-center">Hours</span>
+                    <span className="w-14 text-center">Min</span>
+                    <span className="w-14 text-center">Sec</span>
+                  </div>
                 </div>
-                <Button variant="outline" size="icon" className="h-14 w-14 text-xl font-bold shrink-0"
-                  onClick={() => adjustScore(1)}>+</Button>
-              </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" size="icon" className="h-14 w-14 text-xl font-bold shrink-0"
+                    onClick={() => adjustScore(-1)} aria-label="Decrease score">−</Button>
+                  <div className="flex-1 relative">
+                    <Input type="number" value={currentScore}
+                      onChange={(e) => updateScore(e.target.value)}
+                      className="h-14 text-center text-2xl font-black bg-background pr-8" />
+                    {currentScoringType === "load" && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">kg</span>
+                    )}
+                  </div>
+                  <Button variant="outline" size="icon" className="h-14 w-14 text-xl font-bold shrink-0"
+                    onClick={() => adjustScore(1)} aria-label="Increase score">+</Button>
+                </div>
+              )}
 
               {/* Quick adjusts */}
               <div className="flex gap-2 justify-center">

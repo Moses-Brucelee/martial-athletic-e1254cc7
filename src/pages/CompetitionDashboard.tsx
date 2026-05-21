@@ -1,8 +1,9 @@
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useCompetitionRole } from "@/hooks/useCompetitionRole";
 import { useSuperUserAccess } from "@/hooks/useSuperUserAccess";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useCompetition } from "@/modules/tournaments/hooks";
 import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
@@ -16,6 +17,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { ShareCompetitionMenu } from "@/components/competition/ShareCompetitionMenu";
+import CompetitionPublic from "@/pages/CompetitionPublic";
 
 // Module components
 import { TeamsPanel } from "@/modules/tournaments/components/TeamsPanel";
@@ -103,10 +106,14 @@ function getQuickModeTabs(status: CompetitionStatus): { value: string; label: st
 export default function CompetitionDashboard() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get("tab");
   const { user } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
   const { isOwner, isJudge, loading: roleLoading } = useCompetitionRole(id);
   const { isSuperUser } = useSuperUserAccess();
+  const { tierKey } = useSubscription();
+  const showRoster = tierKey !== "free" || isSuperUser;
   const { data: competition, isLoading: compLoading, error: compError, refetch: refetchComp } = useCompetition(id);
   const { data: settings, isLoading: settingsLoading } = useCompetitionSettings(id);
   const isMobile = useIsMobile();
@@ -126,7 +133,7 @@ export default function CompetitionDashboard() {
 
   if (profileLoading || compLoading || roleLoading || settingsLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <Skeleton className="h-14 w-full" />
         <div className="max-w-5xl mx-auto p-6 grid sm:grid-cols-2 gap-6">
           <Skeleton className="h-64 w-full" />
@@ -154,11 +161,11 @@ export default function CompetitionDashboard() {
   // Read-only view for completed/expired (non-owner)
   if (isReadOnly && !canAdmin) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-dvh bg-background flex flex-col">
         <CompetitionHeader title="Tournament" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
         <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
-          <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase mb-1">Competition Dashboard</h2>
-          {competition && <p className="text-muted-foreground mb-2">{competition.name}</p>}
+          {competition && <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase mb-1">{competition.name}</h2>}
+          <p className="text-muted-foreground mb-2">Competition Dashboard</p>
           <CompetitionStatusBar status={derivedStatus} />
 
           <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-accent/10 border border-accent/20">
@@ -253,7 +260,7 @@ export default function CompetitionDashboard() {
     <Tabs defaultValue="command" className="w-full">
       <div className="relative mb-6">
         <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
-          <TabsList className="inline-flex w-auto min-w-full md:w-full md:grid md:grid-cols-9 gap-1">
+          <TabsList className={`inline-flex w-auto min-w-full md:w-full md:grid ${showRoster ? "md:grid-cols-9" : "md:grid-cols-8"} gap-1`}>
             <TabsTrigger value="command" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Command</TabsTrigger>
             <TabsTrigger value="setup" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Setup</TabsTrigger>
             <TabsTrigger value="registrations" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Registrations</TabsTrigger>
@@ -262,7 +269,7 @@ export default function CompetitionDashboard() {
             <TabsTrigger value="brackets" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Brackets</TabsTrigger>
             <TabsTrigger value="scores" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Scores</TabsTrigger>
             <TabsTrigger value="leaderboard" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Leaderboard</TabsTrigger>
-            <TabsTrigger value="roster" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Roster</TabsTrigger>
+            {showRoster && <TabsTrigger value="roster" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Roster</TabsTrigger>}
           </TabsList>
         </div>
         <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none md:hidden" />
@@ -320,44 +327,54 @@ export default function CompetitionDashboard() {
 
       <TabsContent value="scores"><ScoreTab /></TabsContent>
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
-      <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={effectiveCanAdmin} /></TabsContent>
+      {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={effectiveCanAdmin} /></TabsContent>}
 
     </Tabs>
   );
 
   const renderJudgeTabs = () => (
     <Tabs defaultValue="scores" className="w-full">
-      <TabsList className="w-full grid grid-cols-4 mb-6">
+      <TabsList className={`w-full grid ${showRoster ? "grid-cols-4" : "grid-cols-3"} mb-6`}>
         <TabsTrigger value="scores">Scores</TabsTrigger>
         <TabsTrigger value="brackets">Brackets</TabsTrigger>
         <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-        <TabsTrigger value="roster">Roster</TabsTrigger>
+        {showRoster && <TabsTrigger value="roster">Roster</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="scores"><ScoreTab /></TabsContent>
       <TabsContent value="brackets"><BracketsPanel competitionId={id!} canAdmin={false} /></TabsContent>
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
-      <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>
+      {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>}
     </Tabs>
   );
 
-  const renderViewerTabs = () => (
-    <Tabs defaultValue="leaderboard" className="w-full">
-      <TabsList className="w-full grid grid-cols-3 mb-6">
-        <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-        <TabsTrigger value="roster">Roster</TabsTrigger>
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-      </TabsList>
+  const renderViewerTabs = () => {
+    const validViewerTabs = ["about", "leaderboard", "roster", "overview"];
+    const initialTab = tabFromUrl && validViewerTabs.includes(tabFromUrl) ? tabFromUrl : "about";
+    return (
+      <Tabs defaultValue={initialTab} className="w-full">
+        <TabsList className={`w-full grid ${showRoster ? "grid-cols-4" : "grid-cols-3"} mb-6`}>
+          <TabsTrigger value="about">About</TabsTrigger>
+          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+          {showRoster && <TabsTrigger value="roster">Roster</TabsTrigger>}
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
-      <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>
-      <TabsContent value="overview">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TeamsPanel competitionId={id!} isOwner={false} />
-        </div>
-      </TabsContent>
-    </Tabs>
-  );
+        <TabsContent value="about">
+          <div className="-mx-4 sm:-mx-0">
+            <CompetitionPublic embedded />
+          </div>
+        </TabsContent>
+        <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
+        {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>}
+        <TabsContent value="overview">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TeamsPanel competitionId={id!} isOwner={false} />
+          </div>
+        </TabsContent>
+      </Tabs>
+    );
+  };
 
   const renderTabs = () => {
     if (effectiveCanAdmin && isQuickMode) return renderQuickModeTabs();
@@ -367,18 +384,23 @@ export default function CompetitionDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <CompetitionHeader title="Tournament" avatarUrl={profile?.avatar_url} displayName={profile?.display_name} />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
-        <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase mb-1">Competition Dashboard</h2>
+        {competition && (
+          <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase mb-1">{competition.name}</h2>
+        )}
         {competition && (
           <>
             <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-              <p className="text-muted-foreground">{competition.name}</p>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/event/${id}`)} className="gap-1.5">
-                <ExternalLink className="h-3.5 w-3.5" /> View Public Page
-              </Button>
+              <p className="text-muted-foreground">Competition Dashboard</p>
+              <ShareCompetitionMenu
+                competitionId={id!}
+                competitionName={competition.name}
+                startDate={competition.start_date}
+                venue={competition.venue}
+              />
             </div>
             {effectiveCanAdmin && !isQuickMode && (
               <div className="mb-4">

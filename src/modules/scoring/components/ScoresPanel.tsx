@@ -6,6 +6,7 @@ import { ClipboardList, Save, Lock, Clock, Dumbbell, Repeat, Award } from "lucid
 import { toast } from "sonner";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
+import { TimeInput, formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
 
 interface ScoresPanelProps {
   competitionId: string;
@@ -23,7 +24,7 @@ const SCORING_ICONS: Record<ScoringType, typeof Clock> = {
 };
 
 const SCORING_LABELS: Record<ScoringType, string> = {
-  time: "Time (sec)",
+  time: "Time (h:m:s)",
   reps: "Reps",
   load: "Load (kg)",
   points: "Points",
@@ -207,18 +208,30 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
                   return (
                     <td key={w.id} className="py-2 px-1 text-center">
                       {canScore && !isLocked ? (
-                        <Input
-                          type="number"
-                          value={localScores[key] || ""}
-                          onChange={(e) => updateScore(team.id, w.id, e.target.value)}
-                          placeholder={st === "time" ? "sec" : st === "load" ? "kg" : "0"}
-                          className="h-7 w-20 mx-auto text-center text-xs bg-background"
-                        />
+                        st === "time" ? (
+                          <div className="flex justify-center">
+                            <TimeInput
+                              value={localScores[key] || "0"}
+                              onChange={(v) => updateScore(team.id, w.id, v)}
+                              size="sm"
+                              showLabels
+                              inputClassName="w-10 px-0.5 text-xs"
+                            />
+                          </div>
+                        ) : (
+                          <Input
+                            type="number"
+                            value={localScores[key] || ""}
+                            onChange={(e) => updateScore(team.id, w.id, e.target.value)}
+                            placeholder={st === "load" ? "kg" : "0"}
+                            className="h-7 w-20 mx-auto text-center text-xs bg-background"
+                          />
+                        )
                       ) : (
                         <span className="text-foreground font-medium text-xs">
                           {localScores[key]
                             ? st === "time"
-                              ? `${localScores[key]}s`
+                              ? formatSecondsDisplay(localScores[key])
                               : st === "load"
                               ? `${localScores[key]}kg`
                               : localScores[key]

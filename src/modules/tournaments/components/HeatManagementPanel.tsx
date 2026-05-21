@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useHeats, useAddHeat, useUpdateHeatStatus, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Plus, Play, CheckCircle2, Clock, Users, Flame, Lock } from "lucide-reac
 import { toast } from "sonner";
 import { HeatLaneAssigner } from "./HeatLaneAssigner";
 import { AutoHeatGenerator } from "./AutoHeatGenerator";
+import { getWorkoutColor } from "@/lib/workoutColors";
 
 interface HeatManagementPanelProps {
   competitionId: string;
@@ -66,6 +67,29 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
     return m;
   }, [workouts]);
 
+  // Remember the last scheduled start across heat creations so users don't
+  // have to re-enter the date/time for each consecutive heat.
+  // Pre-fill with the latest heat's scheduled_start for the selected workout.
+  useEffect(() => {
+    if (scheduledStart) return;
+    if (!selectedWorkoutId) return;
+    const workoutHeats = heats
+      .filter((h) => h.workout_id === selectedWorkoutId && h.scheduled_start)
+      .sort(
+        (a, b) =>
+          new Date(b.scheduled_start as string).getTime() -
+          new Date(a.scheduled_start as string).getTime(),
+      );
+    const latest = workoutHeats[0]?.scheduled_start;
+    if (latest) {
+      // Convert ISO → "YYYY-MM-DDTHH:mm" for datetime-local
+      const d = new Date(latest);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      setScheduledStart(local);
+    }
+  }, [selectedWorkoutId, heats, scheduledStart]);
+
   const handleAddHeat = async () => {
     if (!selectedWorkoutId) {
       toast.error("Select a workout first");
@@ -83,7 +107,8 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
         scheduled_start: scheduledStart ? new Date(scheduledStart).toISOString() : undefined,
       });
       toast.success(`Heat #${nextNumber} created`);
-      setScheduledStart("");
+      // Keep the scheduledStart value so the next heat reuses the same time
+      // (the admin can simply bump the time as needed).
     } catch (err) {
       toast.error((err as Error).message);
     }
@@ -158,26 +183,46 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
           )}
         </div>
       ) : (
-        Array.from(heatsByWorkout.entries()).map(([workoutId, workoutHeats]) => (
+        Array.from(heatsByWorkout.entries()).map(([workoutId, workoutHeats]) => {
+          const color = getWorkoutColor(workoutId === "_unassigned" ? null : workoutId);
+          return (
           <div key={workoutId} className="space-y-3">
-            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+            <h3
+              className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 pl-3 border-l-4"
+              style={{ borderColor: color.solid, color: color.text }}
+            >
               {workoutId === "_unassigned" ? "Unassigned" : workoutMap.get(workoutId) || "Unknown Workout"}
-              <Badge variant="outline" className="ml-2 text-[10px]">{workoutHeats.length} heats</Badge>
+              <Badge
+                variant="outline"
+                className="text-[10px] border-transparent"
+                style={{ backgroundColor: color.bg, color: color.text, borderColor: color.border }}
+              >
+                {workoutHeats.length} heats
+              </Badge>
             </h3>
             <div className="grid grid-cols-1 gap-3">
               {workoutHeats.map((heat) => {
                 const sc = getStatusConfig(heat.status);
                 const isExpanded = expandedHeatId === heat.id;
                 return (
-                  <div key={heat.id} className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div
+                    key={heat.id}
+                    className="bg-card border rounded-xl overflow-hidden"
+                    style={{ borderColor: color.border }}
+                  >
                     <button
                       onClick={() => setExpandedHeatId(isExpanded ? null : heat.id)}
-                      className="w-full text-left p-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
+                      className="w-full text-left p-4 flex items-center justify-between hover:bg-muted/30 transition-colors border-l-4"
+                      style={{ borderLeftColor: color.solid }}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`flex items-center justify-center w-8 h-8 rounded-lg font-black text-sm ${
-                          heat.status === "active" ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
-                        }`}>
+                        <div
+                          className="flex items-center justify-center w-8 h-8 rounded-lg font-black text-sm"
+                          style={{
+                            backgroundColor: heat.status === "active" ? color.solid : color.bg,
+                            color: heat.status === "active" ? "#fff" : color.text,
+                          }}
+                        >
                           {heat.heat_number}
                         </div>
                         <div>
@@ -229,7 +274,8 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
               })}
             </div>
           </div>
-        ))
+          );
+        })
       )}
     </div>
   );
