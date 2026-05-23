@@ -45,6 +45,8 @@ export default function CreateProfile() {
   const [gender, setGender] = useState("");
   const [dobString, setDobString] = useState<string | undefined>(undefined);
   const [affiliation, setAffiliation] = useState("");
+  const [affiliateGymId, setAffiliateGymId] = useState<string>("");
+  const [affiliates, setAffiliates] = useState<AffiliateGym[]>([]);
   const [aboutMe, setAboutMe] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -54,6 +56,19 @@ export default function CreateProfile() {
   const [error, setError] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [parentConsent, setParentConsent] = useState(false);
+
+  // Load affiliate gym list once.
+  useEffect(() => {
+    fetchAllAffiliates().then(setAffiliates).catch(() => {});
+  }, []);
+
+  // Pre-select user's existing affiliate membership if any.
+  useEffect(() => {
+    if (!profile?.id || affiliateGymId) return;
+    fetchUserAffiliateGymIds(profile.id).then((ids) => {
+      if (ids.length > 0) setAffiliateGymId(ids[0]);
+    }).catch(() => {});
+  }, [profile?.id, affiliateGymId]);
 
   // Hydrate from existing profile so re-entry is safe.
   useEffect(() => {
