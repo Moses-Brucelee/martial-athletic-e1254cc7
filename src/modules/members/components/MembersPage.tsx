@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Users, Trash2, Mail, X } from "lucide-react";
+import { Plus, Search, Users, Trash2, Mail, X, Check } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import type { GymMember } from "../types";
 import { toast } from "sonner";
