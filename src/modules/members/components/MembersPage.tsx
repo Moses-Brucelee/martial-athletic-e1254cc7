@@ -20,6 +20,7 @@ import { inviteAffiliateEmail, fetchPendingInvites, deleteInvite } from "@/data/
 
 export default function MembersPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: gyms, isLoading: gymsLoading } = useUserGyms();
   const createGym = useCreateGym();
 
