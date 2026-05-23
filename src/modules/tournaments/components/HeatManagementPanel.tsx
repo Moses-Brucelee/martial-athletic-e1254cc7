@@ -35,6 +35,44 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const { data: allAssignments = [] } = useAllHeatAssignments(competitionId);
   const addHeatMutation = useAddHeat();
   const updateStatusMutation = useUpdateHeatStatus();
+  const qc = useQueryClient();
+
+  const { data: judges = [] } = useQuery({
+    queryKey: ["judges", competitionId],
+    queryFn: () => fetchJudges(competitionId),
+  });
+  const { data: heatJudges = [] } = useQuery({
+    queryKey: ["heat-judges", competitionId],
+    queryFn: () => fetchHeatJudges(competitionId),
+  });
+  const heatJudgesByHeat = useMemo(() => {
+    const m = new Map<string, typeof heatJudges>();
+    for (const hj of heatJudges) {
+      if (!m.has(hj.heat_id)) m.set(hj.heat_id, []);
+      m.get(hj.heat_id)!.push(hj);
+    }
+    return m;
+  }, [heatJudges]);
+
+  const judgeLabel = (j: { user_id: string | null; display_name?: string | null }) =>
+    j.display_name?.trim() || (j.user_id ? `${j.user_id.slice(0, 6)}…` : "Unnamed");
+
+  const handleAssignJudge = async (heatId: string, judgeId: string) => {
+    try {
+      await assignHeatJudge(heatId, judgeId);
+      qc.invalidateQueries({ queryKey: ["heat-judges", competitionId] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+  const handleUnassignJudge = async (id: string) => {
+    try {
+      await unassignHeatJudge(id);
+      qc.invalidateQueries({ queryKey: ["heat-judges", competitionId] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
 
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string>("");
   const [laneCount, setLaneCount] = useState("10");
