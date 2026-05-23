@@ -259,6 +259,9 @@ export default function CompetitionCreate() {
               regDeadline={regDeadline} setRegDeadline={setRegDeadline}
               maxTeams={maxTeams} setMaxTeams={setMaxTeams}
               waitlistEnabled={waitlistEnabled} setWaitlistEnabled={setWaitlistEnabled}
+              visibility={visibility} setVisibility={setVisibility}
+              affiliateGymId={affiliateGymId} setAffiliateGymId={setAffiliateGymId}
+              ownedGym={ownedGym}
               disabled={isPending || !!competitionId}
             />
           )}
