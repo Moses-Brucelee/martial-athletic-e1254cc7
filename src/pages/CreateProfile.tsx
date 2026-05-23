@@ -119,7 +119,8 @@ export default function CreateProfile() {
     try {
       // Build a partial update of only the fields the user actually filled.
       const trimmedName = displayName.trim();
-      const trimmedAffiliation = affiliation.trim();
+      const selectedGym = affiliates.find((g) => g.id === affiliateGymId);
+      const trimmedAffiliation = (selectedGym?.name ?? affiliation).trim();
       const trimmedAbout = aboutMe.trim();
 
       const updates: Record<string, unknown> = {};
