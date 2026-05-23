@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.admin_get_user_emails(uuid[]) TO authenticated;
