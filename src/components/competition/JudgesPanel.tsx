@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Gavel, Search } from "lucide-react";
+import { Plus, Trash2, Gavel, Search, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { addJudge, removeJudge, searchRegisteredUsers } from "@/data/judges";
+import { addJudge, addGuestJudge, removeJudge, searchRegisteredUsers } from "@/data/judges";
 import type { Judge } from "@/domain/judges";
+import { supabase } from "@/integrations/supabase/client";
 
 interface JudgesPanelProps {
   competitionId: string;
@@ -27,6 +28,20 @@ export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: Judg
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const [guestName, setGuestName] = useState("");
+  const [affiliateGymId, setAffiliateGymId] = useState<string | null>(null);
+
+  // Resolve competition's affiliate gym (if private) so search filters to its members.
+  useEffect(() => {
+    supabase
+      .from("competitions")
+      .select("gym_id, visibility")
+      .eq("id", competitionId)
+      .maybeSingle()
+      .then(({ data }: any) => {
+        if (data?.visibility === "private" && data?.gym_id) setAffiliateGymId(data.gym_id);
+      });
+  }, [competitionId]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -52,9 +67,16 @@ export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: Judg
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const results = await searchRegisteredUsers(competitionId, q);
-        // Filter out already-added judges
-        const judgeUserIds = new Set(judges.map((j) => j.user_id));
+        const results = await searchRegisteredUsers(competitionId, q, affiliateGymId);
+        const judgeUserIds = new Set(judges.map((j) => j.user_id).filter(Boolean) as string[]);
+        const filtered = results.filter((r) => !judgeUserIds.has(r.user_id));
+        setSuggestions(filtered);
+        setShowDropdown(true);
+      } catch {
+        setSuggestions([]);
+      }
+      setSearching(false);
+    }, 300);
         const filtered = results.filter((r) => !judgeUserIds.has(r.user_id));
         setSuggestions(filtered);
         setShowDropdown(true);
