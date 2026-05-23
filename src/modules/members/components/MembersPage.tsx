@@ -16,7 +16,7 @@ import { AppHeader } from "@/components/AppHeader";
 import type { GymMember } from "../types";
 import { toast } from "sonner";
 import { useAuth } from "@/components/AuthProvider";
-import { inviteAffiliateEmail, fetchPendingInvites, deleteInvite } from "@/data/affiliates";
+import { inviteAffiliateEmail, fetchPendingInvites, deleteInvite, respondToGymRequest } from "@/data/affiliates";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function MembersPage() {
