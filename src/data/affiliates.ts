@@ -53,11 +53,14 @@ export async function inviteAffiliateEmail(
   gymId: string,
   email: string,
   invitedBy: string
-): Promise<void> {
-  const { error } = await (supabase as any)
+): Promise<{ id: string }> {
+  const { data, error } = await (supabase as any)
     .from("gym_member_invitations")
-    .insert({ gym_id: gymId, email: email.trim().toLowerCase(), invited_by: invitedBy });
+    .insert({ gym_id: gymId, email: email.trim().toLowerCase(), invited_by: invitedBy })
+    .select("id")
+    .single();
   if (error) throw error;
+  return { id: data.id as string };
 }
 
 export async function fetchPendingInvites(gymId: string): Promise<{ id: string; email: string; created_at: string }[]> {
