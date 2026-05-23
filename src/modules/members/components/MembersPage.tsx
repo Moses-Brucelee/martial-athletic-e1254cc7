@@ -324,6 +324,8 @@ export default function MembersPage() {
                 )}
                 {(profileResults ?? []).map((p) => {
                   const alreadyMember = members?.some((m) => m.user_id === p.id);
+                  const isOwner = p.id === gym?.owner_id;
+                  if (isOwner) return null;
                   return (
                     <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
                       <div className="flex items-center gap-3">
