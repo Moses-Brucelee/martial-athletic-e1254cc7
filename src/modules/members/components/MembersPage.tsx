@@ -273,8 +273,8 @@ export default function MembersPage() {
                 onChange={(e) => setProfileSearch(e.target.value)}
               />
               <div className="space-y-2 max-h-60 overflow-y-auto">
-                {profileSearch.length < 2 && (
-                  <p className="text-xs text-muted-foreground text-center py-4">Type at least 2 characters to search</p>
+                {(profileResults ?? []).length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-4">No users found</p>
                 )}
                 {(profileResults ?? []).map((p) => {
                   const alreadyMember = members?.some((m) => m.user_id === p.id);

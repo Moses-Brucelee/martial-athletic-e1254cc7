@@ -147,6 +147,5 @@ export function useSearchProfiles(query: string) {
   return useQuery({
     queryKey: ["search-profiles", query],
     queryFn: () => api.searchProfiles(query),
-    enabled: query.length >= 2,
   });
 }

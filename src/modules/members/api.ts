@@ -180,11 +180,17 @@ export async function deleteGymDefaultDiscount(id: string): Promise<void> {
 // ── Profile Search (for adding members) ───────────────
 
 export async function searchProfiles(query: string) {
-  const { data, error } = await supabase
+  const q = query.trim();
+  let req = supabase
     .from("public_profiles")
     .select("id, user_id, display_name, avatar_url, full_name")
-    .or(`display_name.ilike.%${query}%,full_name.ilike.%${query}%`)
-    .limit(10);
+    .order("display_name", { ascending: true })
+    .limit(50);
+  if (q.length > 0) {
+    const safe = q.replace(/[%,]/g, "");
+    req = req.or(`display_name.ilike.%${safe}%,full_name.ilike.%${safe}%`);
+  }
+  const { data, error } = await req;
   if (error) throw error;
   return data ?? [];
 }
