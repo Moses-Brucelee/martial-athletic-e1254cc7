@@ -171,9 +171,14 @@ export default function CreateProfile() {
         .eq("user_id", user.id);
       if (updateError) throw updateError;
 
-      // Join selected affiliate gym (best-effort, ignore errors so save isn't blocked).
-      if (affiliateGymId && profile?.id) {
-        try { await joinAffiliate(profile.id, affiliateGymId); } catch {}
+      // Request affiliation if user picked a new gym (best-effort).
+      if (affiliateGymId && affiliateGymId !== initialGymId) {
+        try {
+          const res = await requestAffiliation(affiliateGymId);
+          if (res?.status === "pending") {
+            toast.info("Affiliation request sent. The gym manager will review it.");
+          }
+        } catch {}
       }
 
       toast.success(updates.profile_completed ? "Profile complete 🎉" : "Saved");
