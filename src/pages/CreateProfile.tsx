@@ -350,43 +350,40 @@ export default function CreateProfile() {
                   )}
                   <div className="space-y-2 sm:col-span-2">
                     <Label className="text-foreground font-medium">Affiliate (Gym / Club)</Label>
-                    {affiliates.length > 0 ? (
-                      <Select
-                        value={affiliateGymId || "__none__"}
-                        onValueChange={(v) => {
-                          if (v === "__none__") {
-                            setAffiliateGymId("");
-                            setAffiliation("");
-                          } else {
-                            setAffiliateGymId(v);
-                            const g = affiliates.find((a) => a.id === v);
-                            if (g) setAffiliation(g.name);
-                          }
-                        }}
-                        disabled={loading}
-                      >
-                        <SelectTrigger className="h-11 bg-background">
-                          <SelectValue placeholder="Select an affiliate" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">No affiliate</SelectItem>
-                          {affiliates.map((g) => (
-                            <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input
-                        placeholder="Gym or club name"
-                        value={affiliation}
-                        onChange={(e) => setAffiliation(e.target.value)}
-                        disabled={loading}
-                        className="h-11 bg-background"
-                        maxLength={100}
-                      />
+                    <Select
+                      value={affiliateGymId || "__none__"}
+                      onValueChange={(v) => {
+                        if (v === "__none__") {
+                          setAffiliateGymId("");
+                          setAffiliation("");
+                        } else {
+                          setAffiliateGymId(v);
+                          const g = affiliates.find((a) => a.id === v);
+                          if (g) setAffiliation(g.name);
+                        }
+                      }}
+                      disabled={loading || affiliates.length === 0}
+                    >
+                      <SelectTrigger className="h-11 bg-background">
+                        <SelectValue placeholder={affiliates.length === 0 ? "No gyms available yet" : "Select an affiliate (optional)"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">No affiliate</SelectItem>
+                        {affiliates.map((g) => (
+                          <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {affiliateGymId && affiliationStatuses[affiliateGymId] === "pending" && (
+                      <p className="text-[11px] text-primary">
+                        Pending approval — the gym manager will review your request.
+                      </p>
+                    )}
+                    {affiliateGymId && affiliationStatuses[affiliateGymId] === "active" && (
+                      <p className="text-[11px] text-accent">You are an active member of this gym.</p>
                     )}
                     <p className="text-[10px] text-muted-foreground">
-                      Choose your gym to see private competitions and member discounts.
+                      Optional. Select your gym to request affiliation — the gym manager must approve.
                     </p>
                   </div>
                 </div>
