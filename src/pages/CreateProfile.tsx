@@ -25,7 +25,7 @@ import {
   missingProfileFields,
 } from "@/lib/profileCompletion";
 import { toast } from "sonner";
-import { fetchAllAffiliates, joinAffiliate, fetchUserAffiliateGymIds, type AffiliateGym } from "@/data/affiliates";
+import { fetchAllAffiliates, requestAffiliation, fetchUserAffiliationStatuses, type AffiliateGym } from "@/data/affiliates";
 
 /**
  * Optional, re-entry safe profile setup screen.
