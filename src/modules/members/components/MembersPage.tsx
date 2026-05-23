@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 export default function MembersPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const qc = useQueryClient();
   const { data: gyms, isLoading: gymsLoading } = useUserGyms();
   const createGym = useCreateGym();
 
