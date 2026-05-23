@@ -1,9 +1,12 @@
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
-import { MapPin, Building2, Calendar, FileText, Users } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MapPin, Building2, Calendar, FileText, Users, Globe, Lock } from "lucide-react";
+import { fetchAllAffiliates, type AffiliateGym } from "@/data/affiliates";
 
 interface StepDetailsProps {
   name: string;
@@ -24,6 +27,11 @@ interface StepDetailsProps {
   setMaxTeams: (v: number | null) => void;
   waitlistEnabled: boolean;
   setWaitlistEnabled: (v: boolean) => void;
+  visibility: "public" | "private";
+  setVisibility: (v: "public" | "private") => void;
+  affiliateGymId: string | null;
+  setAffiliateGymId: (v: string | null) => void;
+  ownedGym: AffiliateGym | null;
   disabled?: boolean;
 }
 
@@ -37,10 +45,25 @@ export function StepDetails({
   regDeadline, setRegDeadline,
   maxTeams, setMaxTeams,
   waitlistEnabled, setWaitlistEnabled,
+  visibility, setVisibility,
+  affiliateGymId, setAffiliateGymId,
+  ownedGym,
   disabled,
 }: StepDetailsProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const [allGyms, setAllGyms] = useState<AffiliateGym[]>([]);
+  useEffect(() => {
+    fetchAllAffiliates().then(setAllGyms).catch(() => setAllGyms([]));
+  }, []);
+
+  // Auto-select the owned gym when switching to private if none chosen
+  useEffect(() => {
+    if (visibility === "private" && !affiliateGymId && ownedGym) {
+      setAffiliateGymId(ownedGym.id);
+    }
+  }, [visibility, affiliateGymId, ownedGym, setAffiliateGymId]);
 
   return (
     <div className="space-y-6">
@@ -75,6 +98,70 @@ export function StepDetails({
             maxLength={500}
           />
         </div>
+      </div>
+
+      {/* Visibility toggle bar */}
+      <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <Globe className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Visibility</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-2 p-1 bg-background rounded-lg border border-border">
+          <button
+            type="button"
+            onClick={() => setVisibility("public")}
+            disabled={disabled}
+            className={`flex items-center justify-center gap-2 py-3 rounded-md text-sm font-bold uppercase tracking-wider transition-all ${
+              visibility === "public"
+                ? "bg-accent text-accent-foreground shadow"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Globe className="h-4 w-4" /> Public
+          </button>
+          <button
+            type="button"
+            onClick={() => setVisibility("private")}
+            disabled={disabled}
+            className={`flex items-center justify-center gap-2 py-3 rounded-md text-sm font-bold uppercase tracking-wider transition-all ${
+              visibility === "private"
+                ? "bg-primary text-primary-foreground shadow"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Lock className="h-4 w-4" /> Private
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {visibility === "public"
+            ? "Anyone can find and view this competition."
+            : "Only members of the selected affiliate can view this competition from their dashboard."}
+        </p>
+
+        {visibility === "private" && (
+          <div className="space-y-2 pt-1">
+            <Label className="text-foreground font-medium text-sm">Affiliate</Label>
+            <Select
+              value={affiliateGymId ?? ""}
+              onValueChange={(v) => setAffiliateGymId(v || null)}
+              disabled={disabled}
+            >
+              <SelectTrigger className="h-11 bg-background">
+                <SelectValue placeholder="Select an affiliate gym…" />
+              </SelectTrigger>
+              <SelectContent>
+                {allGyms.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>
+                    {g.name}{ownedGym?.id === g.id ? " (your gym)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!affiliateGymId && (
+              <p className="text-xs text-destructive">An affiliate is required for private competitions.</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Venue & Host */}

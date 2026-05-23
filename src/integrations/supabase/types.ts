@@ -554,20 +554,23 @@ export type Database = {
         Row: {
           competition_id: string
           created_at: string
+          display_name: string | null
           id: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           competition_id: string
           created_at?: string
+          display_name?: string | null
           id?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           competition_id?: string
           created_at?: string
+          display_name?: string | null
           id?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1124,6 +1127,7 @@ export type Database = {
           description: string | null
           divisions: string | null
           end_date: string | null
+          gym_id: string | null
           host_gym: string | null
           id: string
           max_age: number | null
@@ -1139,6 +1143,7 @@ export type Database = {
           type: string | null
           updated_at: string
           venue: string | null
+          visibility: string
           waitlist_enabled: boolean
         }
         Insert: {
@@ -1150,6 +1155,7 @@ export type Database = {
           description?: string | null
           divisions?: string | null
           end_date?: string | null
+          gym_id?: string | null
           host_gym?: string | null
           id?: string
           max_age?: number | null
@@ -1165,6 +1171,7 @@ export type Database = {
           type?: string | null
           updated_at?: string
           venue?: string | null
+          visibility?: string
           waitlist_enabled?: boolean
         }
         Update: {
@@ -1176,6 +1183,7 @@ export type Database = {
           description?: string | null
           divisions?: string | null
           end_date?: string | null
+          gym_id?: string | null
           host_gym?: string | null
           id?: string
           max_age?: number | null
@@ -1191,9 +1199,17 @@ export type Database = {
           type?: string | null
           updated_at?: string
           venue?: string | null
+          visibility?: string
           waitlist_enabled?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "competitions_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "competitions_season_id_fkey"
             columns: ["season_id"]
@@ -1390,6 +1406,41 @@ export type Database = {
           },
         ]
       }
+      gym_member_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          gym_id: string
+          id: string
+          invited_by: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          gym_id: string
+          id?: string
+          invited_by: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          gym_id?: string
+          id?: string
+          invited_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_member_invitations_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gym_members: {
         Row: {
           belt_rank: string | null
@@ -1537,6 +1588,42 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "competition_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      heat_judges: {
+        Row: {
+          created_at: string
+          heat_id: string
+          id: string
+          judge_id: string
+        }
+        Insert: {
+          created_at?: string
+          heat_id: string
+          id?: string
+          judge_id: string
+        }
+        Update: {
+          created_at?: string
+          heat_id?: string
+          id?: string
+          judge_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "heat_judges_heat_id_fkey"
+            columns: ["heat_id"]
+            isOneToOne: false
+            referencedRelation: "heat_schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "heat_judges_judge_id_fkey"
+            columns: ["judge_id"]
+            isOneToOne: false
+            referencedRelation: "competition_judges"
             referencedColumns: ["id"]
           },
         ]

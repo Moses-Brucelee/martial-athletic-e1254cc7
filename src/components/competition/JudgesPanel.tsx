@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Gavel, Search } from "lucide-react";
+import { Plus, Trash2, Gavel, Search, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { addJudge, removeJudge, searchRegisteredUsers } from "@/data/judges";
+import { addJudge, addGuestJudge, removeJudge, searchRegisteredUsers } from "@/data/judges";
 import type { Judge } from "@/domain/judges";
+import { supabase } from "@/integrations/supabase/client";
 
 interface JudgesPanelProps {
   competitionId: string;
@@ -27,6 +28,20 @@ export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: Judg
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const [guestName, setGuestName] = useState("");
+  const [affiliateGymId, setAffiliateGymId] = useState<string | null>(null);
+
+  // Resolve competition's affiliate gym (if private) so search filters to its members.
+  useEffect(() => {
+    supabase
+      .from("competitions")
+      .select("gym_id, visibility")
+      .eq("id", competitionId)
+      .maybeSingle()
+      .then(({ data }: any) => {
+        if (data?.visibility === "private" && data?.gym_id) setAffiliateGymId(data.gym_id);
+      });
+  }, [competitionId]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -52,9 +67,8 @@ export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: Judg
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const results = await searchRegisteredUsers(competitionId, q);
-        // Filter out already-added judges
-        const judgeUserIds = new Set(judges.map((j) => j.user_id));
+        const results = await searchRegisteredUsers(competitionId, q, affiliateGymId);
+        const judgeUserIds = new Set(judges.map((j) => j.user_id).filter(Boolean) as string[]);
         const filtered = results.filter((r) => !judgeUserIds.has(r.user_id));
         setSuggestions(filtered);
         setShowDropdown(true);
@@ -67,7 +81,7 @@ export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: Judg
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [searchQuery, competitionId, judges]);
+  }, [searchQuery, competitionId, judges, affiliateGymId]);
 
   const handleSelectSuggestion = async (suggestion: Suggestion) => {
     setAdding(true);
@@ -94,6 +108,24 @@ export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: Judg
     }
   };
 
+  const handleAddGuest = async () => {
+    const name = guestName.trim();
+    if (name.length < 2) {
+      toast.error("Enter a name (min 2 characters)");
+      return;
+    }
+    setAdding(true);
+    try {
+      const judge = await addGuestJudge(competitionId, name);
+      setJudges((prev) => [...prev, judge]);
+      setGuestName("");
+      toast.success(`Guest judge added: ${name}`);
+    } catch {
+      toast.error("Failed to add guest judge");
+    }
+    setAdding(false);
+  };
+
   return (
     <div className="bg-card border border-border rounded-xl p-6">
       <div className="flex items-center gap-2 mb-4">
@@ -109,7 +141,10 @@ export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: Judg
         {judges.map((j) => (
           <div key={j.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-border bg-background">
             <span className="font-semibold text-foreground text-sm truncate">
-              {j.display_name || j.user_id.slice(0, 8) + "…"}
+              {j.display_name || (j.user_id ? j.user_id.slice(0, 8) + "…" : "Unknown")}
+              {!j.user_id && (
+                <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground">Guest</span>
+              )}
             </span>
             {canAdmin && (
               <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleRemove(j.id)} aria-label="Remove judge">

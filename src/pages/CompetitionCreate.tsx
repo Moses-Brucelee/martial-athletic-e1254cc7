@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
@@ -11,6 +11,7 @@ import { StepSportType } from "@/modules/tournaments/components/create/StepSport
 import { DivisionsPanel } from "@/modules/tournaments/components/DivisionsPanel";
 import { WorkoutBuilderPro } from "@/modules/tournaments/components/workout-builder/WorkoutBuilderPro";
 import { emptyWorkout, type LocalWorkout } from "@/modules/tournaments/components/workout-builder/types";
+import { fetchUserOwnedGym, type AffiliateGym } from "@/data/affiliates";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,7 +42,16 @@ export default function CompetitionCreate() {
   const [regDeadline, setRegDeadline] = useState<Date | undefined>();
   const [maxTeams, setMaxTeams] = useState<number | null>(null);
   const [waitlistEnabled, setWaitlistEnabled] = useState(true);
+  const [visibility, setVisibility] = useState<"public" | "private">("public");
+  const [affiliateGymId, setAffiliateGymId] = useState<string | null>(null);
+  const [ownedGym, setOwnedGym] = useState<AffiliateGym | null>(null);
   const [error, setError] = useState("");
+
+  // Look up the user's owned affiliate gym (if any) for pre-fill.
+  useEffect(() => {
+    if (!profile?.id) return;
+    fetchUserOwnedGym(profile.id).then(setOwnedGym).catch(() => setOwnedGym(null));
+  }, [profile?.id]);
 
   // Step 2 — Sport type + setup mode
   const [competitionType, setCompetitionType] = useState("");
@@ -65,7 +75,8 @@ export default function CompetitionCreate() {
       ? "Registration deadline must be on or before the start date"
       : null;
   const isStep1Valid =
-    name.trim().length >= 2 && !!startDate && !!endDate && !!regDeadline && !dateOrderError;
+    name.trim().length >= 2 && !!startDate && !!endDate && !!regDeadline && !dateOrderError
+    && (visibility === "public" || !!affiliateGymId);
   const isStep2Valid = !!competitionType;
 
   // ── Create competition (after step 2) ───────────────────────────────
@@ -88,6 +99,8 @@ export default function CompetitionCreate() {
         host_gym: hostGym || null,
         max_teams: maxTeams,
         waitlist_enabled: waitlistEnabled,
+        visibility,
+        gym_id: visibility === "private" ? affiliateGymId : null,
       });
       setCompetitionId(comp.id);
 
@@ -246,6 +259,9 @@ export default function CompetitionCreate() {
               regDeadline={regDeadline} setRegDeadline={setRegDeadline}
               maxTeams={maxTeams} setMaxTeams={setMaxTeams}
               waitlistEnabled={waitlistEnabled} setWaitlistEnabled={setWaitlistEnabled}
+              visibility={visibility} setVisibility={setVisibility}
+              affiliateGymId={affiliateGymId} setAffiliateGymId={setAffiliateGymId}
+              ownedGym={ownedGym}
               disabled={isPending || !!competitionId}
             />
           )}
