@@ -73,12 +73,15 @@ export default function Affiliation() {
       <AppHeader title="Affiliation" />
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6">
         <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid grid-cols-2 w-full mb-4">
+          <TabsList className="grid grid-cols-3 w-full mb-4">
             <TabsTrigger value="details">
               <Building2 className="h-4 w-4 mr-1.5" /> Details
             </TabsTrigger>
             <TabsTrigger value="members">
               <Users className="h-4 w-4 mr-1.5" /> Members
+            </TabsTrigger>
+            <TabsTrigger value="website">
+              <Link2 className="h-4 w-4 mr-1.5" /> Gym Website
             </TabsTrigger>
           </TabsList>
 
