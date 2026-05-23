@@ -349,28 +349,26 @@ export default function CompetitionDashboard() {
   );
 
   const renderViewerTabs = () => {
-    const validViewerTabs = ["about", "leaderboard", "roster", "overview"];
-    const initialTab = tabFromUrl && validViewerTabs.includes(tabFromUrl) ? tabFromUrl : "about";
+    const validViewerTabs = ["leaderboard", "heats", "teams", "workouts"];
+    const initialTab = tabFromUrl && validViewerTabs.includes(tabFromUrl) ? tabFromUrl : "leaderboard";
     return (
       <Tabs defaultValue={initialTab} className="w-full">
-        <TabsList className={`w-full grid ${showRoster ? "grid-cols-4" : "grid-cols-3"} mb-6`}>
-          <TabsTrigger value="about">About</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-4 mb-6">
           <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-          {showRoster && <TabsTrigger value="roster">Roster</TabsTrigger>}
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="heats">Heats</TabsTrigger>
+          <TabsTrigger value="teams">Team Overview</TabsTrigger>
+          <TabsTrigger value="workouts">Workouts</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="about">
-          <div className="-mx-4 sm:-mx-0">
-            <CompetitionPublic embedded />
-          </div>
-        </TabsContent>
         <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
-        {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>}
-        <TabsContent value="overview">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <TeamsPanel competitionId={id!} isOwner={false} />
-          </div>
+        <TabsContent value="heats">
+          <HeatManagementPanel competitionId={id!} canAdmin={false} />
+        </TabsContent>
+        <TabsContent value="teams">
+          <TeamsPanel competitionId={id!} isOwner={false} />
+        </TabsContent>
+        <TabsContent value="workouts">
+          <WorkoutsPanel competitionId={id!} workouts={[]} setWorkouts={() => {}} isOwner={false} />
         </TabsContent>
       </Tabs>
     );
