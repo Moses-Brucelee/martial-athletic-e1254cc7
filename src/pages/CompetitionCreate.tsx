@@ -75,7 +75,8 @@ export default function CompetitionCreate() {
       ? "Registration deadline must be on or before the start date"
       : null;
   const isStep1Valid =
-    name.trim().length >= 2 && !!startDate && !!endDate && !!regDeadline && !dateOrderError;
+    name.trim().length >= 2 && !!startDate && !!endDate && !!regDeadline && !dateOrderError
+    && (visibility === "public" || !!affiliateGymId);
   const isStep2Valid = !!competitionType;
 
   // ── Create competition (after step 2) ───────────────────────────────
@@ -98,6 +99,8 @@ export default function CompetitionCreate() {
         host_gym: hostGym || null,
         max_teams: maxTeams,
         waitlist_enabled: waitlistEnabled,
+        visibility,
+        gym_id: visibility === "private" ? affiliateGymId : null,
       });
       setCompetitionId(comp.id);
 
