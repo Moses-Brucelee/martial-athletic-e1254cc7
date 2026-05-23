@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useUserGyms, useCreateGym, useGymMembers, useAddMember, useRemoveMember, useSearchProfiles } from "../hooks";
 import { MemberDetailSheet } from "./MemberDetailSheet";
 import { Button } from "@/components/ui/button";
@@ -11,17 +12,18 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Users, Trash2, Mail, X } from "lucide-react";
+import { Plus, Search, Users, Trash2, Mail, X, Check } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import type { GymMember } from "../types";
 import { toast } from "sonner";
 import { useAuth } from "@/components/AuthProvider";
-import { inviteAffiliateEmail, fetchPendingInvites, deleteInvite } from "@/data/affiliates";
+import { inviteAffiliateEmail, fetchPendingInvites, deleteInvite, respondToGymRequest } from "@/data/affiliates";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function MembersPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const qc = useQueryClient();
   const { data: gyms, isLoading: gymsLoading } = useUserGyms();
   const createGym = useCreateGym();
 
@@ -94,7 +96,7 @@ export default function MembersPage() {
     }
   };
 
-  const filteredMembers = (members ?? []).filter((m) => {
+  const matchesSearch = (m: GymMember) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -103,7 +105,19 @@ export default function MembersPage() {
       m.belt_rank?.toLowerCase().includes(q) ||
       m.status.toLowerCase().includes(q)
     );
-  });
+  };
+  const pendingMembers = (members ?? []).filter((m) => m.status === "pending").filter(matchesSearch);
+  const filteredMembers = (members ?? []).filter((m) => m.status !== "pending").filter(matchesSearch);
+
+  const handleRespondRequest = async (memberId: string, accept: boolean) => {
+    try {
+      await respondToGymRequest(memberId, accept);
+      toast.success(accept ? "Request approved" : "Request rejected");
+      qc.invalidateQueries({ queryKey: ["gym-members", gym?.id] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
 
   const handleCreateGym = () => {
     if (!gymName.trim()) {
@@ -204,6 +218,38 @@ export default function MembersPage() {
             <Plus className="h-4 w-4 mr-1" /> Add
           </Button>
         </div>
+
+        {/* Pending join requests */}
+        {pendingMembers.length > 0 && (
+          <div className="space-y-2 p-3 rounded-xl border border-primary/30 bg-primary/5">
+            <p className="text-xs font-semibold uppercase text-primary">
+              Pending requests · {pendingMembers.length}
+            </p>
+            {pendingMembers.map((m) => {
+              const initials = (m.display_name || "?").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+              return (
+                <div key={m.id} className="flex items-center gap-3 p-2 rounded-lg bg-card border border-border">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={m.avatar_url ?? undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {m.display_name || m.full_name || "Unknown"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">Requested to join</p>
+                  </div>
+                  <Button size="sm" variant="default" onClick={() => handleRespondRequest(m.id, true)}>
+                    <Check className="h-3.5 w-3.5 mr-1" /> Accept
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => handleRespondRequest(m.id, false)}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Reject
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Member count */}
         <p className="text-xs text-muted-foreground">
