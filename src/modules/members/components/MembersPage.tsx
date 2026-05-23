@@ -219,6 +219,38 @@ export default function MembersPage() {
           </Button>
         </div>
 
+        {/* Pending join requests */}
+        {pendingMembers.length > 0 && (
+          <div className="space-y-2 p-3 rounded-xl border border-primary/30 bg-primary/5">
+            <p className="text-xs font-semibold uppercase text-primary">
+              Pending requests · {pendingMembers.length}
+            </p>
+            {pendingMembers.map((m) => {
+              const initials = (m.display_name || "?").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+              return (
+                <div key={m.id} className="flex items-center gap-3 p-2 rounded-lg bg-card border border-border">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={m.avatar_url ?? undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {m.display_name || m.full_name || "Unknown"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">Requested to join</p>
+                  </div>
+                  <Button size="sm" variant="default" onClick={() => handleRespondRequest(m.id, true)}>
+                    <Check className="h-3.5 w-3.5 mr-1" /> Accept
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => handleRespondRequest(m.id, false)}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Reject
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* Member count */}
         <p className="text-xs text-muted-foreground">
           {filteredMembers.length} member{filteredMembers.length !== 1 ? "s" : ""}
