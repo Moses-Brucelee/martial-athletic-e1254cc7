@@ -96,7 +96,7 @@ export default function MembersPage() {
     }
   };
 
-  const filteredMembers = (members ?? []).filter((m) => {
+  const matchesSearch = (m: GymMember) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -105,7 +105,19 @@ export default function MembersPage() {
       m.belt_rank?.toLowerCase().includes(q) ||
       m.status.toLowerCase().includes(q)
     );
-  });
+  };
+  const pendingMembers = (members ?? []).filter((m) => m.status === "pending").filter(matchesSearch);
+  const filteredMembers = (members ?? []).filter((m) => m.status !== "pending").filter(matchesSearch);
+
+  const handleRespondRequest = async (memberId: string, accept: boolean) => {
+    try {
+      await respondToGymRequest(memberId, accept);
+      toast.success(accept ? "Request approved" : "Request rejected");
+      qc.invalidateQueries({ queryKey: ["gym-members", gym?.id] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
 
   const handleCreateGym = () => {
     if (!gymName.trim()) {
