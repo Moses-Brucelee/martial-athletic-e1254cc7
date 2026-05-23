@@ -17,6 +17,7 @@ import type { GymMember } from "../types";
 import { toast } from "sonner";
 import { useAuth } from "@/components/AuthProvider";
 import { inviteAffiliateEmail, fetchPendingInvites, deleteInvite } from "@/data/affiliates";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function MembersPage() {
   const navigate = useNavigate();
@@ -62,6 +63,18 @@ export default function MembersPage() {
     setInviting(true);
     try {
       await inviteAffiliateEmail(gym.id, email, user.id);
+      // Fire-and-forget invitation email
+      const inviterName = (user.user_metadata as any)?.display_name || user.email || undefined;
+      supabase.functions
+        .invoke("send-transactional-email", {
+          body: {
+            templateName: "gym-invite",
+            recipientEmail: email,
+            idempotencyKey: `gym-invite-${gym.id}-${email}-${Date.now()}`,
+            templateData: { gymName: gym.name, inviterName },
+          },
+        })
+        .catch((e) => console.error("invite email failed", e));
       toast.success(`Invite sent to ${email}`);
       setInviteEmail("");
       const fresh = await fetchPendingInvites(gym.id);
