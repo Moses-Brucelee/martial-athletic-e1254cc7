@@ -40,12 +40,36 @@ export async function fetchUserAffiliateGymIds(profileId: string): Promise<strin
   return (data ?? []).map((r: any) => r.gym_id);
 }
 
-/** Join the user (profile) to a gym as a member. */
-export async function joinAffiliate(profileId: string, gymId: string): Promise<void> {
-  const { error } = await supabase
+/** Returns { gym_id: status } for every membership row this profile has. */
+export async function fetchUserAffiliationStatuses(
+  profileId: string
+): Promise<Record<string, string>> {
+  const { data, error } = await supabase
     .from("gym_members")
-    .insert({ gym_id: gymId, user_id: profileId, role: "member", status: "active" });
-  if (error && (error as any).code !== "23505") throw error; // ignore duplicate
+    .select("gym_id, status")
+    .eq("user_id", profileId);
+  if (error) throw error;
+  const map: Record<string, string> = {};
+  for (const r of (data ?? []) as any[]) map[r.gym_id] = r.status;
+  return map;
+}
+
+/** Request to join a gym (creates a pending membership for the current user). */
+export async function requestAffiliation(gymId: string): Promise<{ status: string; id: string }> {
+  const { data, error } = await (supabase as any).rpc("request_gym_affiliation", {
+    p_gym_id: gymId,
+  });
+  if (error) throw error;
+  return data as { status: string; id: string };
+}
+
+/** Owner accepts/rejects a pending gym member request. */
+export async function respondToGymRequest(memberId: string, accept: boolean): Promise<void> {
+  const { error } = await (supabase as any).rpc("respond_to_gym_request", {
+    p_member_id: memberId,
+    p_accept: accept,
+  });
+  if (error) throw error;
 }
 
 /** Invite an email to a gym. Auto-joins when that email signs up. */
