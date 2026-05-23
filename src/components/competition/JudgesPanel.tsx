@@ -77,19 +77,11 @@ export function JudgesPanel({ competitionId, judges, setJudges, canAdmin }: Judg
       }
       setSearching(false);
     }, 300);
-        const filtered = results.filter((r) => !judgeUserIds.has(r.user_id));
-        setSuggestions(filtered);
-        setShowDropdown(true);
-      } catch {
-        setSuggestions([]);
-      }
-      setSearching(false);
-    }, 300);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [searchQuery, competitionId, judges]);
+  }, [searchQuery, competitionId, judges, affiliateGymId]);
 
   const handleSelectSuggestion = async (suggestion: Suggestion) => {
     setAdding(true);
