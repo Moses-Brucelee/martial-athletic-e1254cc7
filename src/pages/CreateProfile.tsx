@@ -62,13 +62,21 @@ export default function CreateProfile() {
     fetchAllAffiliates().then(setAffiliates).catch(() => {});
   }, []);
 
-  // Pre-select user's existing affiliate membership if any.
+  const [affiliationStatuses, setAffiliationStatuses] = useState<Record<string, string>>({});
+  const [initialGymId, setInitialGymId] = useState<string>("");
+
+  // Pre-select user's existing affiliate (active or pending) if any.
   useEffect(() => {
-    if (!profile?.id || affiliateGymId) return;
-    fetchUserAffiliateGymIds(profile.id).then((ids) => {
-      if (ids.length > 0) setAffiliateGymId(ids[0]);
+    if (!profile?.id) return;
+    fetchUserAffiliationStatuses(profile.id).then((map) => {
+      setAffiliationStatuses(map);
+      const first = Object.keys(map)[0];
+      if (first && !affiliateGymId) {
+        setAffiliateGymId(first);
+        setInitialGymId(first);
+      }
     }).catch(() => {});
-  }, [profile?.id, affiliateGymId]);
+  }, [profile?.id]);
 
   // Hydrate from existing profile so re-entry is safe.
   useEffect(() => {
