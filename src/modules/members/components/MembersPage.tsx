@@ -42,6 +42,45 @@ export default function MembersPage() {
   const [profileSearch, setProfileSearch] = useState("");
   const { data: profileResults } = useSearchProfiles(profileSearch);
 
+  // Invite by email state
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [pendingInvites, setPendingInvites] = useState<{ id: string; email: string; created_at: string }[]>([]);
+
+  useEffect(() => {
+    if (!gym?.id || !addOpen) return;
+    fetchPendingInvites(gym.id).then(setPendingInvites).catch(() => {});
+  }, [gym?.id, addOpen]);
+
+  const handleInviteEmail = async () => {
+    const email = inviteEmail.trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Enter a valid email");
+      return;
+    }
+    if (!gym?.id || !user?.id) return;
+    setInviting(true);
+    try {
+      await inviteAffiliateEmail(gym.id, email, user.id);
+      toast.success(`Invite sent to ${email}`);
+      setInviteEmail("");
+      const fresh = await fetchPendingInvites(gym.id);
+      setPendingInvites(fresh);
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+    setInviting(false);
+  };
+
+  const handleDeleteInvite = async (id: string) => {
+    try {
+      await deleteInvite(id);
+      setPendingInvites((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
   const filteredMembers = (members ?? []).filter((m) => {
     if (!search) return true;
     const q = search.toLowerCase();
