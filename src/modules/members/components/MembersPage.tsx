@@ -245,39 +245,88 @@ export default function MembersPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add Member</DialogTitle>
-            <DialogDescription>Search for an existing user to add to your gym.</DialogDescription>
+            <DialogDescription>Search existing users or invite someone by email.</DialogDescription>
           </DialogHeader>
-          <Input
-            placeholder="Search by name..."
-            value={profileSearch}
-            onChange={(e) => setProfileSearch(e.target.value)}
-          />
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {profileSearch.length < 2 && (
-              <p className="text-xs text-muted-foreground text-center py-4">Type at least 2 characters to search</p>
-            )}
-            {(profileResults ?? []).map((p) => {
-              const alreadyMember = members?.some((m) => m.user_id === p.id);
-              return (
-                <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={p.avatar_url ?? undefined} />
-                      <AvatarFallback className="text-xs bg-muted">{(p.display_name || "?")[0]}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium text-foreground">{p.display_name || p.full_name || "Unknown"}</span>
+          <Tabs defaultValue="search" className="w-full">
+            <TabsList className="grid grid-cols-2 w-full">
+              <TabsTrigger value="search"><Search className="h-3.5 w-3.5 mr-1" /> Search users</TabsTrigger>
+              <TabsTrigger value="invite"><Mail className="h-3.5 w-3.5 mr-1" /> Invite by email</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="search" className="space-y-3">
+              <Input
+                placeholder="Search by name..."
+                value={profileSearch}
+                onChange={(e) => setProfileSearch(e.target.value)}
+              />
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {profileSearch.length < 2 && (
+                  <p className="text-xs text-muted-foreground text-center py-4">Type at least 2 characters to search</p>
+                )}
+                {(profileResults ?? []).map((p) => {
+                  const alreadyMember = members?.some((m) => m.user_id === p.id);
+                  return (
+                    <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={p.avatar_url ?? undefined} />
+                          <AvatarFallback className="text-xs bg-muted">{(p.display_name || "?")[0]}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium text-foreground">{p.display_name || p.full_name || "Unknown"}</span>
+                      </div>
+                      {alreadyMember ? (
+                        <Badge variant="secondary" className="text-xs">Already added</Badge>
+                      ) : (
+                        <Button size="sm" variant="outline" onClick={() => handleAddMember(p.id)} disabled={addMember.isPending}>
+                          Add
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="invite" className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                We'll auto-add them to your affiliate when they sign up with this email.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="member@example.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleInviteEmail()}
+                />
+                <Button onClick={handleInviteEmail} disabled={inviting}>
+                  {inviting ? "Sending..." : "Invite"}
+                </Button>
+              </div>
+
+              {pendingInvites.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-foreground uppercase">Pending invites</p>
+                  <div className="max-h-40 overflow-y-auto space-y-1.5">
+                    {pendingInvites.map((inv) => (
+                      <div key={inv.id} className="flex items-center justify-between p-2 rounded-lg border border-border text-sm">
+                        <span className="truncate">{inv.email}</span>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDeleteInvite(inv.id)}
+                          aria-label="Cancel invite"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                  {alreadyMember ? (
-                    <Badge variant="secondary" className="text-xs">Already added</Badge>
-                  ) : (
-                    <Button size="sm" variant="outline" onClick={() => handleAddMember(p.id)} disabled={addMember.isPending}>
-                      Add
-                    </Button>
-                  )}
                 </div>
-              );
-            })}
-          </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
 
