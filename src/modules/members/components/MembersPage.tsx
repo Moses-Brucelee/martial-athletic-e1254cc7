@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserGyms, useCreateGym, useGymMembers, useAddMember, useRemoveMember, useSearchProfiles } from "../hooks";
 import { MemberDetailSheet } from "./MemberDetailSheet";
@@ -9,11 +9,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Users, Trash2 } from "lucide-react";
+import { Plus, Search, Users, Trash2, Mail, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import type { GymMember } from "../types";
 import { toast } from "sonner";
+import { useAuth } from "@/components/AuthProvider";
+import { inviteAffiliateEmail, fetchPendingInvites, deleteInvite } from "@/data/affiliates";
 
 export default function MembersPage() {
   const navigate = useNavigate();
