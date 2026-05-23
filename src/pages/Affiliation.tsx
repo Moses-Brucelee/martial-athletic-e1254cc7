@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Building2, Users } from "lucide-react";
+import { Building2, Users, Link2 } from "lucide-react";
+import GymWebsite from "@/pages/GymWebsite";
 import { useUserGyms, useUpdateGym } from "@/modules/members/hooks";
 import { toast } from "sonner";
 
