@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useUserGyms, useCreateGym, useGymMembers, useAddMember, useRemoveMember, useSearchProfiles } from "../hooks";
 import { MemberDetailSheet } from "./MemberDetailSheet";
 import { Button } from "@/components/ui/button";
