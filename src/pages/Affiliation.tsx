@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Building2, Users } from "lucide-react";
+import { Building2, Users, Link2 } from "lucide-react";
+import GymWebsite from "@/pages/GymWebsite";
 import { useUserGyms, useUpdateGym } from "@/modules/members/hooks";
 import { toast } from "sonner";
 
@@ -72,12 +73,15 @@ export default function Affiliation() {
       <AppHeader title="Affiliation" />
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6">
         <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid grid-cols-2 w-full mb-4">
+          <TabsList className="grid grid-cols-3 w-full mb-4">
             <TabsTrigger value="details">
               <Building2 className="h-4 w-4 mr-1.5" /> Details
             </TabsTrigger>
             <TabsTrigger value="members">
               <Users className="h-4 w-4 mr-1.5" /> Members
+            </TabsTrigger>
+            <TabsTrigger value="website">
+              <Link2 className="h-4 w-4 mr-1.5" /> Gym Website
             </TabsTrigger>
           </TabsList>
 
@@ -132,6 +136,10 @@ export default function Affiliation() {
 
           <TabsContent value="members" className="-mx-4">
             <MembersPage />
+          </TabsContent>
+
+          <TabsContent value="website" className="-mx-4">
+            <GymWebsite />
           </TabsContent>
         </Tabs>
       </main>

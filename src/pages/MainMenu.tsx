@@ -114,9 +114,11 @@ export default function MainMenu() {
   };
 
   // Flatten all accessible menu items (no tier grouping)
+  // manage_members + link_gym_website are now sub-tabs inside manage_affiliation
+  const HIDDEN_FEATURES = new Set(["manage_members", "link_gym_website", "track_performances"]);
   const accessibleItems = useMemo(() => {
     return menuItems
-      .filter((m) => m.feature_key !== "track_performances")
+      .filter((m) => !HIDDEN_FEATURES.has(m.feature_key))
       .map((m) =>
         m.feature_key === "view_leaderboards"
           ? { ...m, label: "View Competitions", description: null }
