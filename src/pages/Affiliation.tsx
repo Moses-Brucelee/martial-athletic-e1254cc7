@@ -136,6 +136,8 @@ export default function Affiliation() {
 
           <TabsContent value="members" className="-mx-4">
             <MembersPage />
+          <TabsContent value="website" className="-mx-4">
+            <GymWebsite />
           </TabsContent>
         </Tabs>
       </main>
