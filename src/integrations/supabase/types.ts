@@ -1410,6 +1410,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           created_at: string
+          declined_at: string | null
           email: string
           gym_id: string
           id: string
@@ -1418,6 +1419,7 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           created_at?: string
+          declined_at?: string | null
           email: string
           gym_id: string
           id?: string
@@ -1426,6 +1428,7 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           created_at?: string
+          declined_at?: string | null
           email?: string
           gym_id?: string
           id?: string
@@ -2720,6 +2723,10 @@ export type Database = {
       recompute_workout_rankings: {
         Args: { p_competition_id: string; p_workout_id: string }
         Returns: undefined
+      }
+      respond_to_gym_invitation: {
+        Args: { p_accept: boolean; p_invitation_id: string }
+        Returns: Json
       }
       user_tier_at_least: { Args: { min_tier: string }; Returns: boolean }
     }

@@ -62,7 +62,7 @@ export default function MembersPage() {
     if (!gym?.id || !user?.id) return;
     setInviting(true);
     try {
-      await inviteAffiliateEmail(gym.id, email, user.id);
+      const { id: invitationId } = await inviteAffiliateEmail(gym.id, email, user.id);
       // Fire-and-forget invitation email
       const inviterName = (user.user_metadata as any)?.display_name || user.email || undefined;
       supabase.functions
@@ -70,8 +70,8 @@ export default function MembersPage() {
           body: {
             templateName: "gym-invite",
             recipientEmail: email,
-            idempotencyKey: `gym-invite-${gym.id}-${email}-${Date.now()}`,
-            templateData: { gymName: gym.name, inviterName },
+            idempotencyKey: `gym-invite-${invitationId}`,
+            templateData: { gymName: gym.name, inviterName, invitationId },
           },
         })
         .catch((e) => console.error("invite email failed", e));

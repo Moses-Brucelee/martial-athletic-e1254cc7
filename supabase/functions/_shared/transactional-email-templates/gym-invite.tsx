@@ -10,39 +10,44 @@ const APP_URL = 'https://martialathletic.fitness'
 interface GymInviteProps {
   gymName?: string
   inviterName?: string
+  invitationId?: string
 }
 
-const GymInviteEmail = ({ gymName, inviterName }: GymInviteProps) => (
-  <Html lang="en" dir="ltr">
-    <Head />
-    <Preview>{`You've been invited to join ${gymName ?? 'a gym'} on ${SITE_NAME}`}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Heading style={h1}>You're invited!</Heading>
-        <Text style={text}>
-          {inviterName ? `${inviterName} has invited you` : 'You have been invited'}
-          {gymName ? ` to join ${gymName}` : ' to join a gym'} on {SITE_NAME}.
-        </Text>
-        <Text style={text}>
-          Create an account or sign in with this email and you'll be added to the gym automatically.
-        </Text>
-        <Section style={{ textAlign: 'center', margin: '32px 0' }}>
-          <Button href={`${APP_URL}/register`} style={button}>
-            Accept invitation
-          </Button>
-        </Section>
-        <Text style={footer}>Train harder. Compete smarter. — The {SITE_NAME} Team</Text>
-      </Container>
-    </Body>
-  </Html>
-)
+const GymInviteEmail = ({ gymName, inviterName, invitationId }: GymInviteProps) => {
+  const respondUrl = invitationId ? `${APP_URL}/invite/${invitationId}` : `${APP_URL}/register`
+  return (
+    <Html lang="en" dir="ltr">
+      <Head />
+      <Preview>{`You've been invited to join ${gymName ?? 'a gym'} on ${SITE_NAME}`}</Preview>
+      <Body style={main}>
+        <Container style={container}>
+          <Heading style={h1}>You're invited!</Heading>
+          <Text style={text}>
+            {inviterName ? `${inviterName} has invited you` : 'You have been invited'}
+            {gymName ? ` to join ${gymName}` : ' to join a gym'} on {SITE_NAME}.
+          </Text>
+          <Text style={text}>
+            Click below to accept or decline this invitation. If you don't have an account yet,
+            you'll be able to create one with this email first.
+          </Text>
+          <Section style={{ textAlign: 'center', margin: '32px 0' }}>
+            <Button href={respondUrl} style={button}>
+              Respond to invitation
+            </Button>
+          </Section>
+          <Text style={footer}>Train harder. Compete smarter. — The {SITE_NAME} Team</Text>
+        </Container>
+      </Body>
+    </Html>
+  )
+}
 
 export const template = {
   component: GymInviteEmail,
   subject: (d: Record<string, any>) =>
     `You've been invited to join ${d?.gymName ?? 'a gym'} on ${SITE_NAME}`,
   displayName: 'Gym member invitation',
-  previewData: { gymName: 'CrossFit Cape Town', inviterName: 'Jane' },
+  previewData: { gymName: 'CrossFit Cape Town', inviterName: 'Jane', invitationId: '00000000-0000-0000-0000-000000000000' },
 } satisfies TemplateEntry
 
 const main = { backgroundColor: '#ffffff', fontFamily: 'Inter, Arial, sans-serif' }

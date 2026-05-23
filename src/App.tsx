@@ -36,6 +36,7 @@ import CompetitionPublic from "./pages/CompetitionPublic";
 import CompetitionDetail from "./pages/CompetitionDetail";
 import SponsorRedirect from "./pages/SponsorRedirect";
 import Unsubscribe from "./pages/Unsubscribe";
+import InviteResponse from "./pages/InviteResponse";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ const App = () => (
               <Route path="/event/:id" element={<CompetitionPublic />} />
               <Route path="/sponsor-redirect" element={<SponsorRedirect />} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
+              <Route path="/invite/:id" element={<InviteResponse />} />
               <Route path="/event/:id/results" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
