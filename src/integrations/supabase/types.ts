@@ -2725,8 +2725,13 @@ export type Database = {
         Args: { p_competition_id: string; p_workout_id: string }
         Returns: undefined
       }
+      request_gym_affiliation: { Args: { p_gym_id: string }; Returns: Json }
       respond_to_gym_invitation: {
         Args: { p_accept: boolean; p_invitation_id: string }
+        Returns: Json
+      }
+      respond_to_gym_request: {
+        Args: { p_accept: boolean; p_member_id: string }
         Returns: Json
       }
       user_tier_at_least: { Args: { min_tier: string }; Returns: boolean }
