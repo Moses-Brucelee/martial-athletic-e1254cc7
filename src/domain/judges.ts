@@ -3,8 +3,8 @@
 export interface Judge {
   id: string;
   competition_id: string;
-  user_id: string;
-  display_name?: string;
+  user_id: string | null;
+  display_name?: string | null;
   created_at: string;
 }
 

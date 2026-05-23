@@ -55,7 +55,9 @@ export async function createCompetition(input: CreateCompetitionInput): Promise<
       age_category_type: input.age_category_type || "open",
       min_age: input.min_age ?? null,
       max_age: input.max_age ?? null,
-    })
+      visibility: input.visibility ?? "public",
+      gym_id: input.gym_id ?? null,
+    } as any)
     .select("*")
     .single();
   if (error) throw error;

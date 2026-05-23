@@ -36,6 +36,8 @@ export interface CreateCompetitionInput {
   max_age?: number | null;
   max_teams?: number | null;
   waitlist_enabled?: boolean;
+  visibility?: "public" | "private";
+  gym_id?: string | null;
   created_by: string;
 }
 
