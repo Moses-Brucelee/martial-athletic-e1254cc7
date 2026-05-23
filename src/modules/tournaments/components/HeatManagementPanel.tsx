@@ -6,11 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Play, CheckCircle2, Clock, Users, Flame, Lock } from "lucide-react";
+import { Plus, Play, CheckCircle2, Clock, Users, Flame, Lock, Gavel, X } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { HeatLaneAssigner } from "./HeatLaneAssigner";
 import { AutoHeatGenerator } from "./AutoHeatGenerator";
 import { getWorkoutColor } from "@/lib/workoutColors";
+import { fetchJudges } from "@/data/judges";
+import { fetchHeatJudges, assignHeatJudge, unassignHeatJudge } from "@/data/heatJudges";
 
 interface HeatManagementPanelProps {
   competitionId: string;
@@ -32,6 +35,44 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const { data: allAssignments = [] } = useAllHeatAssignments(competitionId);
   const addHeatMutation = useAddHeat();
   const updateStatusMutation = useUpdateHeatStatus();
+  const qc = useQueryClient();
+
+  const { data: judges = [] } = useQuery({
+    queryKey: ["judges", competitionId],
+    queryFn: () => fetchJudges(competitionId),
+  });
+  const { data: heatJudges = [] } = useQuery({
+    queryKey: ["heat-judges", competitionId],
+    queryFn: () => fetchHeatJudges(competitionId),
+  });
+  const heatJudgesByHeat = useMemo(() => {
+    const m = new Map<string, typeof heatJudges>();
+    for (const hj of heatJudges) {
+      if (!m.has(hj.heat_id)) m.set(hj.heat_id, []);
+      m.get(hj.heat_id)!.push(hj);
+    }
+    return m;
+  }, [heatJudges]);
+
+  const judgeLabel = (j: { user_id: string | null; display_name?: string | null }) =>
+    j.display_name?.trim() || (j.user_id ? `${j.user_id.slice(0, 6)}…` : "Unnamed");
+
+  const handleAssignJudge = async (heatId: string, judgeId: string) => {
+    try {
+      await assignHeatJudge(heatId, judgeId);
+      qc.invalidateQueries({ queryKey: ["heat-judges", competitionId] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+  const handleUnassignJudge = async (id: string) => {
+    try {
+      await unassignHeatJudge(id);
+      qc.invalidateQueries({ queryKey: ["heat-judges", competitionId] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
 
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string>("");
   const [laneCount, setLaneCount] = useState("10");
@@ -227,7 +268,7 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                         </div>
                         <div>
                           <p className="font-bold text-foreground text-sm">Heat #{heat.heat_number}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                             <Users className="h-3 w-3" />
                             <span>{heat.lane_count} lanes</span>
                             {heat.scheduled_start && (
@@ -235,6 +276,12 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                                 <Clock className="h-3 w-3 ml-1" />
                                 <span>{new Date(heat.scheduled_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                               </>
+                            )}
+                            {(heatJudgesByHeat.get(heat.id)?.length ?? 0) > 0 && (
+                              <span className="flex items-center gap-1 ml-1">
+                                <Gavel className="h-3 w-3" />
+                                {heatJudgesByHeat.get(heat.id)!.length} judge{heatJudgesByHeat.get(heat.id)!.length === 1 ? "" : "s"}
+                              </span>
                             )}
                           </div>
                         </div>
@@ -258,7 +305,60 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                     </button>
 
                     {isExpanded && (
-                      <div className="border-t border-border p-4">
+                      <div className="border-t border-border p-4 space-y-4">
+                        {/* Heat judges */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Gavel className="h-4 w-4 text-primary" />
+                            <span className="text-xs font-bold text-foreground uppercase">Judges on this heat</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {(heatJudgesByHeat.get(heat.id) ?? []).length === 0 && (
+                              <span className="text-xs text-muted-foreground italic">No judges assigned</span>
+                            )}
+                            {(heatJudgesByHeat.get(heat.id) ?? []).map((hj) => {
+                              const j = judges.find((x) => x.id === hj.judge_id);
+                              return (
+                                <Badge key={hj.id} variant="outline" className="text-[11px] gap-1 pr-1">
+                                  {j ? judgeLabel(j) : hj.display_name || "Judge"}
+                                  {canAdmin && (
+                                    <button
+                                      onClick={() => handleUnassignJudge(hj.id)}
+                                      className="rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+                                      aria-label="Remove judge"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                          {canAdmin && (() => {
+                            const assignedIds = new Set((heatJudgesByHeat.get(heat.id) ?? []).map((x) => x.judge_id));
+                            const available = judges.filter((j) => !assignedIds.has(j.id));
+                            return (
+                              <Select onValueChange={(v) => handleAssignJudge(heat.id, v)}>
+                                <SelectTrigger className="h-8 text-xs bg-background w-56">
+                                  <SelectValue placeholder="Assign judge…" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {available.length === 0 ? (
+                                    <SelectItem value="_none" disabled>No judges available</SelectItem>
+                                  ) : (
+                                    available.map((j) => (
+                                      <SelectItem key={j.id} value={j.id}>
+                                        {judgeLabel(j)}
+                                        {!j.user_id && <span className="ml-1 text-[9px] text-muted-foreground uppercase">guest</span>}
+                                      </SelectItem>
+                                    ))
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            );
+                          })()}
+                        </div>
+
                         <HeatLaneAssigner
                           heatId={heat.id}
                           competitionId={competitionId}

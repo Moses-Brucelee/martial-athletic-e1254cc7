@@ -25,6 +25,7 @@ import {
   missingProfileFields,
 } from "@/lib/profileCompletion";
 import { toast } from "sonner";
+import { fetchAllAffiliates, joinAffiliate, fetchUserAffiliateGymIds, type AffiliateGym } from "@/data/affiliates";
 
 /**
  * Optional, re-entry safe profile setup screen.
@@ -44,6 +45,8 @@ export default function CreateProfile() {
   const [gender, setGender] = useState("");
   const [dobString, setDobString] = useState<string | undefined>(undefined);
   const [affiliation, setAffiliation] = useState("");
+  const [affiliateGymId, setAffiliateGymId] = useState<string>("");
+  const [affiliates, setAffiliates] = useState<AffiliateGym[]>([]);
   const [aboutMe, setAboutMe] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -53,6 +56,19 @@ export default function CreateProfile() {
   const [error, setError] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [parentConsent, setParentConsent] = useState(false);
+
+  // Load affiliate gym list once.
+  useEffect(() => {
+    fetchAllAffiliates().then(setAffiliates).catch(() => {});
+  }, []);
+
+  // Pre-select user's existing affiliate membership if any.
+  useEffect(() => {
+    if (!profile?.id || affiliateGymId) return;
+    fetchUserAffiliateGymIds(profile.id).then((ids) => {
+      if (ids.length > 0) setAffiliateGymId(ids[0]);
+    }).catch(() => {});
+  }, [profile?.id, affiliateGymId]);
 
   // Hydrate from existing profile so re-entry is safe.
   useEffect(() => {
@@ -103,7 +119,8 @@ export default function CreateProfile() {
     try {
       // Build a partial update of only the fields the user actually filled.
       const trimmedName = displayName.trim();
-      const trimmedAffiliation = affiliation.trim();
+      const selectedGym = affiliates.find((g) => g.id === affiliateGymId);
+      const trimmedAffiliation = (selectedGym?.name ?? affiliation).trim();
       const trimmedAbout = aboutMe.trim();
 
       const updates: Record<string, unknown> = {};
@@ -145,6 +162,11 @@ export default function CreateProfile() {
         .update(updates)
         .eq("user_id", user.id);
       if (updateError) throw updateError;
+
+      // Join selected affiliate gym (best-effort, ignore errors so save isn't blocked).
+      if (affiliateGymId && profile?.id) {
+        try { await joinAffiliate(profile.id, affiliateGymId); } catch {}
+      }
 
       toast.success(updates.profile_completed ? "Profile complete 🎉" : "Saved");
       setAvatarFile(null);
@@ -314,15 +336,45 @@ export default function CreateProfile() {
                     </div>
                   )}
                   <div className="space-y-2 sm:col-span-2">
-                    <Label className="text-foreground font-medium">Gym / Club</Label>
-                    <Input
-                      placeholder="Gym or club name"
-                      value={affiliation}
-                      onChange={(e) => setAffiliation(e.target.value)}
-                      disabled={loading}
-                      className="h-11 bg-background"
-                      maxLength={100}
-                    />
+                    <Label className="text-foreground font-medium">Affiliate (Gym / Club)</Label>
+                    {affiliates.length > 0 ? (
+                      <Select
+                        value={affiliateGymId || "__none__"}
+                        onValueChange={(v) => {
+                          if (v === "__none__") {
+                            setAffiliateGymId("");
+                            setAffiliation("");
+                          } else {
+                            setAffiliateGymId(v);
+                            const g = affiliates.find((a) => a.id === v);
+                            if (g) setAffiliation(g.name);
+                          }
+                        }}
+                        disabled={loading}
+                      >
+                        <SelectTrigger className="h-11 bg-background">
+                          <SelectValue placeholder="Select an affiliate" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">No affiliate</SelectItem>
+                          {affiliates.map((g) => (
+                            <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        placeholder="Gym or club name"
+                        value={affiliation}
+                        onChange={(e) => setAffiliation(e.target.value)}
+                        disabled={loading}
+                        className="h-11 bg-background"
+                        maxLength={100}
+                      />
+                    )}
+                    <p className="text-[10px] text-muted-foreground">
+                      Choose your gym to see private competitions and member discounts.
+                    </p>
                   </div>
                 </div>
               </div>
