@@ -2671,11 +2671,19 @@ export type Database = {
         }
         Returns: undefined
       }
+      is_competition_gym_member: {
+        Args: { p_competition_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_competition_judge: {
         Args: { p_competition_id: string; p_user_id: string }
         Returns: boolean
       }
       is_competition_owner: {
+        Args: { p_competition_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_competition_registrant: {
         Args: { p_competition_id: string; p_user_id: string }
         Returns: boolean
       }
