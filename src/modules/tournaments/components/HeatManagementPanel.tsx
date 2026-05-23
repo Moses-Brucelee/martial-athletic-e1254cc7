@@ -299,7 +299,60 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                     </button>
 
                     {isExpanded && (
-                      <div className="border-t border-border p-4">
+                      <div className="border-t border-border p-4 space-y-4">
+                        {/* Heat judges */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Gavel className="h-4 w-4 text-primary" />
+                            <span className="text-xs font-bold text-foreground uppercase">Judges on this heat</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {(heatJudgesByHeat.get(heat.id) ?? []).length === 0 && (
+                              <span className="text-xs text-muted-foreground italic">No judges assigned</span>
+                            )}
+                            {(heatJudgesByHeat.get(heat.id) ?? []).map((hj) => {
+                              const j = judges.find((x) => x.id === hj.judge_id);
+                              return (
+                                <Badge key={hj.id} variant="outline" className="text-[11px] gap-1 pr-1">
+                                  {j ? judgeLabel(j) : hj.display_name || "Judge"}
+                                  {canAdmin && (
+                                    <button
+                                      onClick={() => handleUnassignJudge(hj.id)}
+                                      className="rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+                                      aria-label="Remove judge"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                          {canAdmin && (() => {
+                            const assignedIds = new Set((heatJudgesByHeat.get(heat.id) ?? []).map((x) => x.judge_id));
+                            const available = judges.filter((j) => !assignedIds.has(j.id));
+                            return (
+                              <Select onValueChange={(v) => handleAssignJudge(heat.id, v)}>
+                                <SelectTrigger className="h-8 text-xs bg-background w-56">
+                                  <SelectValue placeholder="Assign judge…" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {available.length === 0 ? (
+                                    <SelectItem value="_none" disabled>No judges available</SelectItem>
+                                  ) : (
+                                    available.map((j) => (
+                                      <SelectItem key={j.id} value={j.id}>
+                                        {judgeLabel(j)}
+                                        {!j.user_id && <span className="ml-1 text-[9px] text-muted-foreground uppercase">guest</span>}
+                                      </SelectItem>
+                                    ))
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            );
+                          })()}
+                        </div>
+
                         <HeatLaneAssigner
                           heatId={heat.id}
                           competitionId={competitionId}
