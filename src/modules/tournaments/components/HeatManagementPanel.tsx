@@ -268,7 +268,7 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                         </div>
                         <div>
                           <p className="font-bold text-foreground text-sm">Heat #{heat.heat_number}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                             <Users className="h-3 w-3" />
                             <span>{heat.lane_count} lanes</span>
                             {heat.scheduled_start && (
@@ -276,6 +276,12 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                                 <Clock className="h-3 w-3 ml-1" />
                                 <span>{new Date(heat.scheduled_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                               </>
+                            )}
+                            {(heatJudgesByHeat.get(heat.id)?.length ?? 0) > 0 && (
+                              <span className="flex items-center gap-1 ml-1">
+                                <Gavel className="h-3 w-3" />
+                                {heatJudgesByHeat.get(heat.id)!.length} judge{heatJudgesByHeat.get(heat.id)!.length === 1 ? "" : "s"}
+                              </span>
                             )}
                           </div>
                         </div>
