@@ -35,6 +35,7 @@ import Browse from "./pages/Browse";
 import CompetitionPublic from "./pages/CompetitionPublic";
 import CompetitionDetail from "./pages/CompetitionDetail";
 import SponsorRedirect from "./pages/SponsorRedirect";
+import Unsubscribe from "./pages/Unsubscribe";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="/browse" element={<FeatureRouteGuard flag="browse_marketplace" redirectTo="/"><Browse /></FeatureRouteGuard>} />
               <Route path="/event/:id" element={<CompetitionPublic />} />
               <Route path="/sponsor-redirect" element={<SponsorRedirect />} />
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/event/:id/results" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
