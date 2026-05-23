@@ -46,6 +46,17 @@ export async function createGym(profileId: string, input: CreateGymInput): Promi
   return data as unknown as Gym;
 }
 
+export async function updateGym(
+  gymId: string,
+  updates: Partial<Pick<Gym, "name" | "description" | "website_url" | "logo_url">>
+): Promise<void> {
+  const { error } = await supabase
+    .from("gyms")
+    .update(updates as Record<string, unknown>)
+    .eq("id", gymId);
+  if (error) throw error;
+}
+
 // ── Gym Members ───────────────────────────────────────
 
 export async function fetchGymMembers(gymId: string): Promise<GymMember[]> {

@@ -26,6 +26,15 @@ export function useCreateGym() {
   });
 }
 
+export function useUpdateGym() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ gymId, updates }: { gymId: string; updates: Parameters<typeof api.updateGym>[1] }) =>
+      api.updateGym(gymId, updates),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["gyms"] }),
+  });
+}
+
 // ── Gym Members ───────────────────────────────────────
 
 export function useGymMembers(gymId: string | undefined) {
