@@ -163,6 +163,11 @@ export default function CreateProfile() {
         .eq("user_id", user.id);
       if (updateError) throw updateError;
 
+      // Join selected affiliate gym (best-effort, ignore errors so save isn't blocked).
+      if (affiliateGymId && profile?.id) {
+        try { await joinAffiliate(profile.id, affiliateGymId); } catch {}
+      }
+
       toast.success(updates.profile_completed ? "Profile complete 🎉" : "Saved");
       setAvatarFile(null);
       await refetch();
