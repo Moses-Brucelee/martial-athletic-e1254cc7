@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
 import { formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
-import { TimeWheelPicker } from "@/modules/scoring/components/TimeWheelPicker";
+import { TimeCaptureField } from "@/modules/scoring/components/TimeCaptureField";
 
 interface ScoresPanelProps {
   competitionId: string;
