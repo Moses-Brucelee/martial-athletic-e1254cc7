@@ -9,7 +9,7 @@ import { useWorkouts, useTeams } from "@/modules/tournaments/hooks";
 import { useHeats, useHeatAssignments, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
-import { TimeWheelPicker } from "@/modules/scoring/components/TimeWheelPicker";
+import { TimeCaptureField } from "@/modules/scoring/components/TimeCaptureField";
 import { getWorkoutColor } from "@/lib/workoutColors";
 
 interface QuickScoreEntryProps {
