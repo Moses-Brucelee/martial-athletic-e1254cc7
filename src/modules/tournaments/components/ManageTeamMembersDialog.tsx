@@ -9,10 +9,17 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Search, UserPlus, X, ArrowRightLeft, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useRegistrations, useUpdateRegistrationTeam } from "@/modules/athletes/hooks";
-import { useTeams } from "@/modules/tournaments/hooks";
+import { useTeams, useDivisions, useUpdateTeam } from "@/modules/tournaments/hooks";
 import type { Team } from "@/domain/competition";
 
 interface ManageTeamMembersDialogProps {
