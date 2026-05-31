@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { useWorkouts, useTeams } from "@/modules/tournaments/hooks";
 import { useHeats, useHeatAssignments, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
-import { TimeInput, formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
+import { formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
+import { TimeWheelPicker } from "@/modules/scoring/components/TimeWheelPicker";
 import { getWorkoutColor } from "@/lib/workoutColors";
 
 interface QuickScoreEntryProps {
@@ -265,12 +266,11 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
                 </div>
                 {canScore ? (
                   scoringType === "time" ? (
-                    <TimeInput
+                    <TimeWheelPicker
                       value={localScores[team.id] || "0"}
                       onChange={(v) => updateScore(team.id, v)}
-                      size="sm"
-                      showLabels
                     />
+
                   ) : (
                     <div className="flex items-center gap-1">
                       <Input
