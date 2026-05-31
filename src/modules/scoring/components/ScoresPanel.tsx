@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
 import { TimeInput, formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
+import { TimeWheelPicker } from "@/modules/scoring/components/TimeWheelPicker";
 
 interface ScoresPanelProps {
   competitionId: string;
@@ -210,12 +211,10 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
                       {canScore && !isLocked ? (
                         st === "time" ? (
                           <div className="flex justify-center">
-                            <TimeInput
+                            <TimeWheelPicker
                               value={localScores[key] || "0"}
                               onChange={(v) => updateScore(team.id, w.id, v)}
-                              size="sm"
-                              showLabels
-                              inputClassName="w-10 px-0.5 text-xs"
+                              showHours={false}
                             />
                           </div>
                         ) : (

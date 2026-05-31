@@ -266,12 +266,11 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
                 </div>
                 {canScore ? (
                   scoringType === "time" ? (
-                    <TimeInput
+                    <TimeWheelPicker
                       value={localScores[team.id] || "0"}
                       onChange={(v) => updateScore(team.id, v)}
-                      size="sm"
-                      showLabels
                     />
+
                   ) : (
                     <div className="flex items-center gap-1">
                       <Input

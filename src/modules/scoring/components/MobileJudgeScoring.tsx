@@ -6,7 +6,8 @@ import { ChevronLeft, ChevronRight, Lock, Save, Clock, Dumbbell, Repeat, Award, 
 import { toast } from "sonner";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
-import { TimeInput, formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
+import { formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
+import { TimeWheelPicker } from "@/modules/scoring/components/TimeWheelPicker";
 
 interface MobileJudgeScoringProps {
   competitionId: string;
@@ -237,17 +238,11 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
           ) : (
             <div className="space-y-3">
               {currentScoringType === "time" ? (
-                <div className="space-y-2">
-                  <TimeInput
+                <div className="flex justify-center">
+                  <TimeWheelPicker
                     value={currentScore}
                     onChange={(v) => updateScore(v)}
-                    size="lg"
                   />
-                  <div className="flex items-center justify-center gap-3 text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
-                    <span className="w-14 text-center">Hours</span>
-                    <span className="w-14 text-center">Min</span>
-                    <span className="w-14 text-center">Sec</span>
-                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
