@@ -69,6 +69,24 @@ export function useRemoveTeam() {
   });
 }
 
+export function useUpdateTeam() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      teamId,
+      competitionId,
+      updates,
+    }: {
+      teamId: string;
+      competitionId: string;
+      updates: { team_name?: string; division_id?: string | null; division?: string | null };
+    }) => api.updateTeam(teamId, competitionId, updates),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["teams", variables.competitionId] });
+    },
+  });
+}
+
 // ── Workouts ──────────────────────────────────────────────────────────
 
 export function useWorkouts(competitionId: string | undefined) {
