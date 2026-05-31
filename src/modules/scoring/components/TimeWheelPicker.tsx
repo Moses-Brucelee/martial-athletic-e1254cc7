@@ -104,7 +104,7 @@ function WheelColumn({ label, max, value, onChange, disabled }: WheelColumnProps
           ref={ref}
           onScroll={handleScroll}
           className={cn(
-            "h-full overflow-y-scroll no-scrollbar",
+            "h-full overflow-y-scroll scrollbar-hide",
             disabled && "pointer-events-none opacity-60",
           )}
           style={{
