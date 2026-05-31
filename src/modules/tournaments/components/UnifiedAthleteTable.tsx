@@ -666,19 +666,8 @@ function DesktopRow({
         </Badge>
       )}
 
-      {/* Heat/Lane */}
-      <div className="flex flex-wrap gap-1">
-        {heatInfo && heatInfo.length > 0 ? (
-          heatInfo.slice(0, 2).map((h, i) => (
-            <Badge key={i} variant="outline" className="text-[9px] h-5 gap-0.5 bg-primary/5 border-primary/20">
-              <Flame className="h-2.5 w-2.5" />
-              H{h.heatNumber}{h.lane != null ? ` L${h.lane}` : ""}
-            </Badge>
-          ))
-        ) : (
-          <span className="text-[10px] text-muted-foreground italic">—</span>
-        )}
-      </div>
+
+
 
       {/* Actions */}
       {canAdmin && (
