@@ -91,8 +91,19 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
         (r.email && r.email.toLowerCase().includes(q))
       );
     }
-    return list;
-  }, [registrations, filterStatus, filterDivision, search]);
+    // Group: sort by team name (unassigned last), then by athlete name
+    const teamNameById: Record<string, string> = {};
+    teams.forEach((t) => { teamNameById[t.id] = t.team_name; });
+    return [...list].sort((a, b) => {
+      const aT = a.team_id ? teamNameById[a.team_id] ?? "" : "";
+      const bT = b.team_id ? teamNameById[b.team_id] ?? "" : "";
+      // unassigned (empty) sorts last
+      if (!aT && bT) return 1;
+      if (aT && !bT) return -1;
+      if (aT !== bT) return aT.localeCompare(bT);
+      return a.athlete_name.localeCompare(b.athlete_name);
+    });
+  }, [registrations, filterStatus, filterDivision, search, teams]);
 
   const statusCounts = useMemo(() => {
     const c: Record<string, number> = {};
