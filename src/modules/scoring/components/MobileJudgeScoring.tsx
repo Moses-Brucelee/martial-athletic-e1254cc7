@@ -195,7 +195,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
               <p className="text-xs text-muted-foreground uppercase tracking-wider">
                 {currentTeamIndex + 1} / {teams.length}
               </p>
-              <h3 className="text-xl font-black text-foreground mt-1">{currentTeam?.team_name}</h3>
+              <h3 className="text-lg sm:text-xl font-black text-foreground mt-1 break-words leading-tight">{currentTeam?.team_name}</h3>
               {currentTeam?.division && (
                 <p className="text-sm text-primary font-medium mt-0.5">{currentTeam.division}</p>
               )}
