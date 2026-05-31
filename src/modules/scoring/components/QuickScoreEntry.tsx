@@ -61,19 +61,30 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
   }, [workouts, selectedWorkoutId]);
 
   const { data: heatAssignments = [] } = useHeatAssignments(selectedHeatId || undefined);
+  const { data: allAssignments = [] } = useAllHeatAssignments(competitionId);
+
+  // Teams that have NEVER been assigned to any heat — show them so newly added
+  // teams (e.g. last-minute additions during a live event) can still be scored.
+  const unassignedTeams = useMemo(() => {
+    const assignedIds = new Set(allAssignments.map((a: any) => a.team_id));
+    return teams.filter((t) => !assignedIds.has(t.id));
+  }, [allAssignments, teams]);
 
   const displayTeams = useMemo(() => {
-    if (selectedHeatId && heatAssignments.length > 0) {
-      return heatAssignments
+    if (selectedHeatId && selectedHeatId !== "__all__") {
+      const heatTeams = heatAssignments
         .map((ha) => {
           const team = teams.find((t) => t.id === ha.team_id);
           return team ? { ...team, lane: ha.lane_number } : null;
         })
         .filter(Boolean)
         .sort((a, b) => (a!.lane || 0) - (b!.lane || 0)) as (typeof teams[0] & { lane?: number | null })[];
+      // Append unassigned teams so they are always scorable
+      const extras = unassignedTeams.map((t) => ({ ...t, lane: null as number | null }));
+      return [...heatTeams, ...extras];
     }
-    return teams.map((t) => ({ ...t, lane: null }));
-  }, [selectedHeatId, heatAssignments, teams]);
+    return teams.map((t) => ({ ...t, lane: null as number | null }));
+  }, [selectedHeatId, heatAssignments, teams, unassignedTeams]);
 
   const selectedWorkout = workouts.find((w) => w.id === selectedWorkoutId);
   const scoringType = ((selectedWorkout?.scoring_type as ScoringType) || "points") as ScoringType;
