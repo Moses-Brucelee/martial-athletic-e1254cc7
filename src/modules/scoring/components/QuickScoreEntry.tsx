@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { useWorkouts, useTeams } from "@/modules/tournaments/hooks";
 import { useHeats, useHeatAssignments, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
-import { TimeInput, formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
+import { formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
+import { TimeWheelPicker } from "@/modules/scoring/components/TimeWheelPicker";
 import { getWorkoutColor } from "@/lib/workoutColors";
 
 interface QuickScoreEntryProps {
