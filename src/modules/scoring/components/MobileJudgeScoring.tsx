@@ -239,9 +239,10 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
             <div className="space-y-3">
               {currentScoringType === "time" ? (
                 <div className="flex justify-center">
-                  <TimeWheelPicker
+                  <TimeCaptureField
                     value={currentScore}
                     onChange={(v) => updateScore(v)}
+                    size="lg"
                   />
                 </div>
               ) : (
