@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ClipboardList, Save, Award, Flame, Users, Clock, Dumbbell, Repeat } from "lucide-react";
 import { toast } from "sonner";
 import { useWorkouts, useTeams } from "@/modules/tournaments/hooks";
-import { useHeats, useHeatAssignments } from "@/modules/tournaments/hooks-engine";
+import { useHeats, useHeatAssignments, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { TimeInput, formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
 import { getWorkoutColor } from "@/lib/workoutColors";
