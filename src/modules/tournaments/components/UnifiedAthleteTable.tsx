@@ -601,7 +601,7 @@ function DesktopRow({
   const heatInfo = reg.team_id ? teamHeatMap[reg.team_id] : undefined;
 
   return (
-    <div className={`grid grid-cols-[1fr_130px_130px_110px_100px_40px] gap-3 items-center px-5 py-3 transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-muted/30"}`}>
+    <div className={`grid grid-cols-[1fr_130px_130px_110px_40px] gap-3 items-center px-5 py-3 transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-muted/30"}`}>
       {/* Name */}
       <div className="flex items-center gap-2 min-w-0">
         {canAdmin && <Checkbox checked={isSelected} onCheckedChange={onToggle} />}
