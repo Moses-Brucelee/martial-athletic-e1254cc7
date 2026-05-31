@@ -423,27 +423,51 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
               <span className="text-xs text-muted-foreground font-medium uppercase">{selectedIds.size > 0 ? `${selectedIds.size} selected` : `${filtered.length} athletes`}</span>
             </div>
           )}
-          <div className="grid grid-cols-[1fr_130px_130px_110px_100px_40px] gap-3 px-5 py-2.5 text-[11px] text-muted-foreground font-semibold uppercase tracking-wider border-b border-border bg-muted/20">
+          <div className="grid grid-cols-[1fr_130px_130px_110px_40px] gap-3 px-5 py-2.5 text-[11px] text-muted-foreground font-semibold uppercase tracking-wider border-b border-border bg-muted/20">
             <span>Athlete</span>
             <span>Division</span>
             <span>Team</span>
             <span>Status</span>
-            <span>Heat / Lane</span>
             <span></span>
           </div>
           <div className="divide-y divide-border">
-            {filtered.map((r) => (
-              <DesktopRow
-                key={r.id} reg={r} divisions={divisions} teams={teams}
-                teamHeatMap={teamHeatMap} canAdmin={canAdmin}
-                isSelected={selectedIds.has(r.id)} onToggle={() => toggleSelect(r.id)}
-                onStatusChange={(s) => handleStatusChange(r.id, s, r)}
-                onDivisionChange={(divId) => updateDivision.mutate({ id: r.id, divisionId: divId, competitionId }, { onSuccess: () => toast.success("Division updated"), onError: () => toast.error("Failed") })}
-                onTeamChange={(tId) => updateTeam.mutate({ id: r.id, teamId: tId, competitionId }, { onSuccess: () => toast.success("Team updated"), onError: () => toast.error("Failed") })}
-                onCreateTeam={() => setShowCreateTeam(true)}
-                onEdit={() => setEditingReg(r)}
-              />
-            ))}
+            {filtered.map((r, idx) => {
+              const prev = idx > 0 ? filtered[idx - 1] : null;
+              const isNewGroup = !prev || prev.team_id !== r.team_id;
+              const teamName = r.team_id ? (teams.find((t) => t.id === r.team_id)?.team_name ?? "Unknown team") : "Unassigned";
+              const color = r.team_id ? getWorkoutColor(r.team_id) : getWorkoutColor(null);
+              return (
+                <div key={r.id}>
+                  {isNewGroup && (
+                    <div
+                      className="flex items-center gap-2 px-5 py-1.5 text-[10px] font-bold uppercase tracking-wider border-l-4"
+                      style={{ backgroundColor: color.bg, borderLeftColor: color.solid, color: color.text }}
+                    >
+                      <Users2 className="h-3 w-3" />
+                      <span>{teamName}</span>
+                      <span className="opacity-60 font-normal">
+                        ({filtered.filter((x) => x.team_id === r.team_id).length})
+                      </span>
+                    </div>
+                  )}
+                  <div
+                    className="border-l-4"
+                    style={{ borderLeftColor: color.solid }}
+                  >
+                    <DesktopRow
+                      reg={r} divisions={divisions} teams={teams}
+                      teamHeatMap={teamHeatMap} canAdmin={canAdmin}
+                      isSelected={selectedIds.has(r.id)} onToggle={() => toggleSelect(r.id)}
+                      onStatusChange={(s) => handleStatusChange(r.id, s, r)}
+                      onDivisionChange={(divId) => updateDivision.mutate({ id: r.id, divisionId: divId, competitionId }, { onSuccess: () => toast.success("Division updated"), onError: () => toast.error("Failed") })}
+                      onTeamChange={(tId) => updateTeam.mutate({ id: r.id, teamId: tId, competitionId }, { onSuccess: () => toast.success("Team updated"), onError: () => toast.error("Failed") })}
+                      onCreateTeam={() => setShowCreateTeam(true)}
+                      onEdit={() => setEditingReg(r)}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
