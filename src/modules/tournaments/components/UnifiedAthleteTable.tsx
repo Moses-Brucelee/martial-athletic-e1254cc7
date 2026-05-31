@@ -759,15 +759,8 @@ function MobileCard({
             </div>
           )}
 
-          {heatInfo && heatInfo.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {heatInfo.map((h, i) => (
-                <Badge key={i} variant="outline" className="text-[9px] h-4 gap-0.5 bg-primary/5 border-primary/20">
-                  <Flame className="h-2.5 w-2.5" /> H{h.heatNumber}{h.lane != null ? ` L${h.lane}` : ""}
-                </Badge>
-              ))}
-            </div>
-          )}
+
+
         </div>
       </div>
 
