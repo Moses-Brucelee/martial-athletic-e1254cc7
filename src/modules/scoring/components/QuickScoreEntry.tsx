@@ -9,7 +9,7 @@ import { useWorkouts, useTeams } from "@/modules/tournaments/hooks";
 import { useHeats, useHeatAssignments, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
-import { TimeWheelPicker } from "@/modules/scoring/components/TimeWheelPicker";
+import { TimeCaptureField } from "@/modules/scoring/components/TimeCaptureField";
 import { getWorkoutColor } from "@/lib/workoutColors";
 
 interface QuickScoreEntryProps {
@@ -266,10 +266,12 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
                 </div>
                 {canScore ? (
                   scoringType === "time" ? (
-                    <TimeWheelPicker
+                    <TimeCaptureField
                       value={localScores[team.id] || "0"}
                       onChange={(v) => updateScore(team.id, v)}
+                      size="sm"
                     />
+
 
                   ) : (
                     <div className="flex items-center gap-1">
