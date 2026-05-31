@@ -6,7 +6,7 @@ import { ClipboardList, Save, Lock, Clock, Dumbbell, Repeat, Award } from "lucid
 import { toast } from "sonner";
 import { useScores, useUpsertScores } from "@/modules/scoring/hooks";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
-import { TimeInput, formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
+import { formatSecondsDisplay } from "@/modules/scoring/components/TimeInput";
 import { TimeWheelPicker } from "@/modules/scoring/components/TimeWheelPicker";
 
 interface ScoresPanelProps {
