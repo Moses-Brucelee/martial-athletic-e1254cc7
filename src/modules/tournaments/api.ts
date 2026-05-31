@@ -116,6 +116,22 @@ export async function removeTeam(teamId: string, competitionId: string): Promise
   if (error) throw error;
 }
 
+export async function updateTeam(
+  teamId: string,
+  competitionId: string,
+  updates: { team_name?: string; division_id?: string | null; division?: string | null },
+): Promise<void> {
+  await assertCompetitionMutable(competitionId);
+  const { error } = await supabase
+    .from("competition_teams")
+    .update(updates)
+    .eq("id", teamId);
+  if (error) {
+    if ((error as any).code === "23505") throw new Error("TEAM_NAME_TAKEN");
+    throw error;
+  }
+}
+
 // ── Workouts ──────────────────────────────────────────────────────────
 
 export async function fetchWorkouts(competitionId: string): Promise<Workout[]> {

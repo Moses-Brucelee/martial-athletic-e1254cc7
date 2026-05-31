@@ -9,10 +9,17 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Search, UserPlus, X, ArrowRightLeft, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useRegistrations, useUpdateRegistrationTeam } from "@/modules/athletes/hooks";
-import { useTeams } from "@/modules/tournaments/hooks";
+import { useTeams, useDivisions, useUpdateTeam } from "@/modules/tournaments/hooks";
 import type { Team } from "@/domain/competition";
 
 interface ManageTeamMembersDialogProps {
@@ -30,7 +37,9 @@ export function ManageTeamMembersDialog({
 }: ManageTeamMembersDialogProps) {
   const { data: registrations = [] } = useRegistrations(competitionId);
   const { data: teams = [] } = useTeams(competitionId);
+  const { data: divisions = [] } = useDivisions(competitionId);
   const updateTeam = useUpdateRegistrationTeam();
+  const updateTeamMeta = useUpdateTeam();
   const [search, setSearch] = useState("");
 
   const teamNameById = useMemo(() => {
@@ -114,6 +123,45 @@ export function ManageTeamMembersDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-4 flex-1 overflow-hidden">
+          {/* Division assignment */}
+          {divisions.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Division
+              </p>
+              <Select
+                value={team.division_id || "__none__"}
+                onValueChange={async (v) => {
+                  const newDivId = v === "__none__" ? null : v;
+                  const divName = divisions.find((d) => d.id === newDivId)?.name || null;
+                  try {
+                    await updateTeamMeta.mutateAsync({
+                      teamId: team.id,
+                      competitionId,
+                      updates: { division_id: newDivId, division: divName },
+                    });
+                    toast.success(newDivId ? `Division set to ${divName}` : "Division removed");
+                  } catch {
+                    toast.error("Failed to update division");
+                  }
+                }}
+                disabled={updateTeamMeta.isPending}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="No Division" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No Division</SelectItem>
+                  {divisions.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Current members */}
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
