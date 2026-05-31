@@ -211,10 +211,10 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
                       {canScore && !isLocked ? (
                         st === "time" ? (
                           <div className="flex justify-center">
-                            <TimeWheelPicker
+                            <TimeCaptureField
                               value={localScores[key] || "0"}
                               onChange={(v) => updateScore(team.id, w.id, v)}
-                              showHours={false}
+                              size="sm"
                             />
                           </div>
                         ) : (
