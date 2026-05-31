@@ -37,7 +37,9 @@ export function ManageTeamMembersDialog({
 }: ManageTeamMembersDialogProps) {
   const { data: registrations = [] } = useRegistrations(competitionId);
   const { data: teams = [] } = useTeams(competitionId);
+  const { data: divisions = [] } = useDivisions(competitionId);
   const updateTeam = useUpdateRegistrationTeam();
+  const updateTeamMeta = useUpdateTeam();
   const [search, setSearch] = useState("");
 
   const teamNameById = useMemo(() => {
