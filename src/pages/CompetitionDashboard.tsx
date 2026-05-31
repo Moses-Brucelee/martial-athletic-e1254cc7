@@ -353,12 +353,17 @@ export default function CompetitionDashboard() {
     const initialTab = tabFromUrl && validViewerTabs.includes(tabFromUrl) ? tabFromUrl : "leaderboard";
     return (
       <Tabs defaultValue={initialTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-4 mb-6">
-          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-          <TabsTrigger value="heats">Heats</TabsTrigger>
-          <TabsTrigger value="teams">Team Overview</TabsTrigger>
-          <TabsTrigger value="workouts">Workouts</TabsTrigger>
-        </TabsList>
+        <div className="relative mb-6">
+          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
+            <TabsList className="inline-flex w-auto min-w-full md:w-full md:grid md:grid-cols-4 gap-1">
+              <TabsTrigger value="leaderboard" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Leaderboard</TabsTrigger>
+              <TabsTrigger value="heats" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Heats</TabsTrigger>
+              <TabsTrigger value="teams" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Teams</TabsTrigger>
+              <TabsTrigger value="workouts" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Workouts</TabsTrigger>
+            </TabsList>
+          </div>
+          <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none md:hidden" />
+        </div>
 
         <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
         <TabsContent value="heats">
@@ -368,7 +373,7 @@ export default function CompetitionDashboard() {
           <TeamsPanel competitionId={id!} isOwner={false} />
         </TabsContent>
         <TabsContent value="workouts">
-          <WorkoutsPanel competitionId={id!} workouts={[]} setWorkouts={() => {}} isOwner={false} />
+          <QuickWorkoutsPanel competitionId={id!} isOwner={false} scoringMode={settings?.scoring_method === "auto" ? "auto" : "points"} />
         </TabsContent>
       </Tabs>
     );
