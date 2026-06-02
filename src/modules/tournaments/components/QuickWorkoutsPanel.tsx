@@ -336,6 +336,62 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
 
   const hiddenCount = workouts.filter((w) => (w as any).visibility !== "visible").length;
 
+  // ── Viewer-only mode: show single Athlete View column (no duplicate edit pane) ──
+  if (!isOwner) {
+    const visibleWorkouts = workouts.filter((w) => {
+      const vis = (w as any).visibility || "visible";
+      if (vis === "visible") return true;
+      if (vis === "scheduled" && (w as any).scheduled_reveal_at) {
+        return new Date() >= new Date((w as any).scheduled_reveal_at);
+      }
+      return false;
+    });
+
+    return (
+      <div className="bg-card border border-border rounded-xl p-5 sm:p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Eye className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-bold text-foreground uppercase">Athlete View</h3>
+        </div>
+        {visibleWorkouts.length === 0 ? (
+          <div className="text-center py-10">
+            <Dumbbell className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">
+              No workouts have been disclosed yet. Check back later.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {visibleWorkouts.map((w) => {
+              const sc = getScoringConfig((w as any).scoring_type || "points");
+              const ScIcon = sc.icon;
+              const timeCap = (w as any).time_cap_seconds;
+              return (
+                <div key={w.id} className={`border-l-4 ${sc.accent} pl-4 py-2 animate-fade-in`}>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-primary uppercase">WOD {w.workout_number}</span>
+                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 ${sc.color}`}>
+                      <ScIcon className="h-2.5 w-2.5 mr-0.5" />{sc.shortLabel}
+                    </Badge>
+                    {timeCap && (
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                        <Clock className="h-2.5 w-2.5" /> {Math.floor(timeCap / 60)}min
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="font-bold text-foreground text-sm mt-1">{w.name || `Workout ${w.workout_number}`}</h4>
+                  {w.description && (
+                    <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{w.description}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Left: Workout tiles */}

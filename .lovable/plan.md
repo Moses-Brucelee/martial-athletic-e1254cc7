@@ -1,74 +1,95 @@
-# Big PR — 4 features in one pass
+This is a large multi-area change set. I've grouped the 12 items into 4 logical phases so you can confirm scope, order, and any trade-offs before I start. Nothing is built yet.
 
-## 1. Free / public viewer dashboard (4 tabs only)
+## Phase 1 — Permissions & Visibility (items 1, 8, 9, 11)
 
-**Where:** `src/pages/CompetitionDashboard.tsx`
+**Affiliate competition creation (1)**
 
-- Compute `isViewer = !isOwner && !isJudge && !isSuperUser`.
-- When `isViewer`, render only 4 tabs: **Leaderboard · Heats · Team Overview · Workouts** (workouts respect existing `visibility` rule: `visible` or `scheduled` past reveal time).
-- "Team Overview" = read-only list of teams + their athletes per division (reuse `TeamsListView` in read-only mode).
-- Owners / judges / super-users keep the full tabset they have today.
+- In `CompetitionCreate.tsx` (StepDetails), auto-select and lock `gym_id` to the affiliate's active gym membership. Hide gym picker for non-super-users.
+- Add DB-level guard: RLS policy on `competitions` INSERT requires `gym_id` matches a gym the user owns OR an active `gym_members` row OR `is_super_user`.
+- Super-users keep full picker.
 
-## 2. Affiliates + Public/Private competitions
+**Unpublished competition visibility (8)**
 
-**Model decision:** "Affiliate" = a `gyms` row owned by an Affiliate-Pro tier user. No new table needed.
+- Update `competitions` SELECT RLS so non-owner / non-super viewers only see rows where `status != 'draft'` AND `status != 'unpublished'`. Same-affiliate members without management role get no special bypass.
+- Filter `CompetitionList`, `Browse`, public landing, dashboard spotlights accordingly.
 
-**Migration:**
+**Leaderboard & Heats before live (9)**
 
-- `competitions.visibility` text default `'public'` check in (`public`,`private`).
-- `competitions.gym_id` uuid null (which affiliate "owns" the competition for private mode).
-- Update `competitions_select` RLS so a `private` comp is visible only to: owner, super-user, judges, registered athletes, **or** members of that gym (`gym_members` where `gym_id = competitions.gym_id AND user_id = auth.uid()`).
-- `gyms` already has an "invite member by email" surface via members management — extend `MembersPage` with an **Invite by email** dialog that inserts a `gym_member_invitations` row (new tiny table: `gym_id, email, invited_by, accepted_at`). On signup, if email matches an open invite, auto-add to `gym_members`. For now: create the table + invite form + accept-on-login hook.
+- In `CompetitionDashboard.tsx` tab list, hide Leaderboard + Heats tabs unless `derivedStatus === 'live' || 'completed'`. Owners/judges keep access via a "Preview" toggle.
+- Public landing (`CompetitionPublic.tsx`) hides the same sections pre-live.
 
-**UI:**
+**Workout visibility (11)**
 
-- Profile / signup: a new dropdown "Affiliate (optional)" populated from `gyms` (public list). Saves to `gym_members` on selection.
-- Competition create wizard StepDetails: add a **toggle bar** "Public ↔ Private" (matches sample style). When Private, show a small caption "Only your affiliate members will see this competition." Owner's `gym_id` auto-fills (first owned gym).
-- Competition dashboard header: small badge "Private — {Gym name}" when private.
+- Viewer/public side: render only workouts with `visibility = 'visible'` (drop "hidden" + un-revealed "scheduled").
+- Remove the duplicate "WORKOUTS" admin panel from the Viewer experience — keep only the "ATHLETE VIEW" card. Tighten spacing.
 
-## 3. Guest judges + heat assignment
+## Phase 2 — Date/Time Validation & UX (items 3, 4, 5)
 
-**Migration:**
+**Same-day & 1-month rule (3)**
 
-- `competition_judges.user_id` → nullable.
-- `competition_judges.display_name` text null.
-- CHECK: `(user_id is not null) OR (display_name is not null)`.
-- New join table `heat_judges (id, heat_id, judge_id, created_at)` with RLS: owner/super can manage, all auth can select.
-- when user is typing search through the userbase and list suggestions specifically belong to same affliciate  
+- Replace current Zod date schema in `lib/validation.ts` with full datetime comparison:
+  - `end_datetime > start_datetime`
+  - `end_datetime <= start_datetime + 1 month`
+- Allow same calendar day when end time > start time.
+
+**Registration deadline (4)**
+
+- Add `registration_deadline < start_datetime` check.
+- In wizard: disable the deadline picker until start datetime is set; restrict its max to `start_datetime - 1 min`. Recompute when start changes.
+
+**Inline validation messaging (5)**
+
+- Move all wizard errors from top banner to per-field `<FormMessage>` slots using `react-hook-form` + zod resolver (already in deps).
+- Trigger on blur, not on keystroke. Disable Next button while form invalid.
+- Where possible (date pickers), restrict selectable range instead of post-hoc error.
+
+## Phase 3 — Registration Lifecycle & Pre-population (items 2, 10)
+
+**Pre-populate private competition venue (2)**
+
+- On wizard mount, if `visibility === 'private'` and creator has gym/profile address, pre-fill `venue`, `host_gym`, location fields. Keep editable.
+
+**Registration availability (10)**
+
+- Compute `registrationOpen = now < registration_deadline`.
+- Dashboard tabs (athlete/viewer mode):
+  - Open: show Registration (with team create/manage/members), Workouts, Teams.
+  - Closed: hide Registration tab; show banner "Registrations for this competition have closed. Please contact the competition administrator for assistance."
+- Disable team create/edit/member add/remove mutations on the client and add RLS check: `competition_teams` write policies require `now() < registration_deadline` (owner/super bypass).
+- This change should also apply to the public shared url like even there they should not be able to make changes once deadline is passed, they should see registration deadline passed or closed something like that, once competition is completed on the public url should redirect to login and ask them to login to view the leaderboard teams etc basically they will be directed to the competition page event page should redirect to competition page and competition page is under login right  
 
 
-**UI:** `JudgesPanel`
+## Phase 4 — Sponsor Links & Teams UI (items 6, 7, 12)
 
-- New "Add by name" input next to existing search → creates row with only `display_name`.
-- Judge row gains a heats multi-select dropdown (similar to team→heat/lane assignment) to write `heat_judges`.
+**Sponsor click + external warning (6, 7)**
 
-## 4. Heats — more descriptive UI
+- Restore `<a>` wrapper / onClick on sponsor logos in `CompetitionPublic.tsx`.
+- Add `ExternalLinkConfirmDialog` component: shows destination URL, Cancel / Continue buttons. Continue opens `target="_blank" rel="noopener noreferrer"`.
+- Still calls `increment_sponsor_click` RPC for analytics.
 
-**Where:** `src/modules/tournaments/components/HeatManagementPanel.tsx` (+ `HeatLaneAssigner`).
+**Teams & Members redesign (12)**
 
-Redesign per attached sample, but cleaner:
+- New `TeamsLeaderboardView` in public/viewer dashboard:
+  - Card per team, leaderboard-style ranking (current standing if live, else by registration order).
+  - Team name header, division badge, captain marker, member avatars + names listed below.
+  - Responsive: 1 col mobile, 2 col tablet, 3 col desktop.
+  - Smooth hover, expandable member list on mobile.
 
-- Group by **workout** with a left red accent bar + workout name + heat count chip.
-- Each heat = collapsible card: heat #, time, status chip (Scheduled / Live / Done).
-- Lanes shown as 2-col grid of "Team chip · captain name · assigned judge chip".
-- Judge chip uses the new `heat_judges` data; inline dropdown to change.
-- Side rail: small clickable list of other heats (compact summary).
+## Technical notes
 
-## Tech details
+- DB migrations needed: competitions RLS (visibility), competition_teams RLS (deadline lock), gyms/competitions INSERT policy (affiliate scoping).
+- Validation centralised in `src/lib/validation.ts` so wizard + edit-panel share rules.
+- No business-logic change to scoring or leaderboard computation.
+- Will keep super-user override on every new restriction.
 
-- Hooks: extend `useCompetitionRole` to expose `isViewer`.
-- Visibility computation: server-side via RLS; client just filters tabs.
-- Affiliates dropdown source: `select id, name from gyms order by name`.
-- Invite-on-signup: edge call in `Register.tsx` after successful sign-in, or DB trigger on `auth.users` insert that scans `gym_member_invitations` by email. Use trigger (cleaner).
-- All new validation via Zod in `src/lib/validation.ts`.
+## Suggested execution order
 
-## Order of execution
+I'd ship in this phase order so each step is testable independently. Estimated effort is largest in Phase 1 (RLS + tab logic) and Phase 4 (Teams redesign).
 
-1. Migration (schema + RLS + invite trigger)
-2. Data hooks for visibility/affiliate/heat_judges
-3. `CompetitionDashboard` viewer tab gate
-4. Create wizard public/private toggle + competition badge
-5. Profile/signup affiliate dropdown + members invite UI
-6. `JudgesPanel` guest + heat dropdown
-7. `HeatManagementPanel` redesign
-8. Update memory
+**Questions before I start:**
+
+1. For affiliate-scoping (item 1): if a user belongs to multiple gyms, should the wizard let them pick from their gyms only, or always lock to their "primary" gym? allow to pick from their gyms
+2. For item 9, should competition **owners** (when previewing their own draft) still see Leaderboard/Heats tabs, or fully hidden until live? nothing changes for competition owners that stays same
+3. For item 12, do you want team ranking by current leaderboard points (when live), or alphabetical / registration order pre-live?   
+When live, it should be in sync with the current leaderboard.   
+pre-live registration order

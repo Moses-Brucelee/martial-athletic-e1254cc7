@@ -16,7 +16,7 @@ import { fetchUserOwnedGym, type AffiliateGym } from "@/data/affiliates";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, AlertCircle, Check } from "lucide-react";
-import { sanitizeError } from "@/lib/validation";
+import { sanitizeError, validateCompetitionDates, hasErrors } from "@/lib/validation";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -68,14 +68,10 @@ export default function CompetitionCreate() {
     ? ["Details", "Sport & Mode"]
     : ["Details", "Sport & Mode", "Divisions", "Workouts"];
 
-  const dateOrderError =
-    startDate && endDate && endDate <= startDate
-      ? "End date must be after the start date"
-      : startDate && regDeadline && regDeadline > startDate
-      ? "Registration deadline must be on or before the start date"
-      : null;
+  const dateErrors = validateCompetitionDates(startDate, endDate, regDeadline);
+  const datesValid = !hasErrors(dateErrors);
   const isStep1Valid =
-    name.trim().length >= 2 && !!startDate && !!endDate && !!regDeadline && !dateOrderError
+    name.trim().length >= 2 && datesValid
     && (visibility === "public" || !!affiliateGymId);
   const isStep2Valid = !!competitionType;
 
@@ -240,12 +236,7 @@ export default function CompetitionCreate() {
           </div>
         )}
 
-        {step === 0 && dateOrderError && (
-          <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-destructive/10 border border-destructive/20">
-            <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-            <p className="text-sm text-destructive">{dateOrderError}</p>
-          </div>
-        )}
+        {/* Per-field date errors are rendered inside StepDetails */}
 
         <div className="pb-20 sm:pb-0">
           {step === 0 && (

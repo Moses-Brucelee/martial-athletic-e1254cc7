@@ -29,6 +29,30 @@ export async function fetchUserOwnedGym(profileId: string): Promise<AffiliateGym
   return (data as AffiliateGym | null) ?? null;
 }
 
+/**
+ * All gyms a profile can create a competition for:
+ * the gyms they own + the gyms they are an active member of.
+ * Used by the competition wizard's affiliate picker.
+ */
+export async function fetchUserAccessibleGyms(profileId: string): Promise<AffiliateGym[]> {
+  const [{ data: owned }, { data: memberships }] = await Promise.all([
+    supabase.from("gyms").select("id, name, slug, owner_id").eq("owner_id", profileId),
+    supabase
+      .from("gym_members")
+      .select("gym_id, gyms:gym_id (id, name, slug, owner_id)")
+      .eq("user_id", profileId)
+      .eq("status", "active"),
+  ]);
+
+  const byId = new Map<string, AffiliateGym>();
+  for (const g of (owned ?? []) as AffiliateGym[]) byId.set(g.id, g);
+  for (const row of (memberships ?? []) as any[]) {
+    const g = row.gyms as AffiliateGym | null;
+    if (g && !byId.has(g.id)) byId.set(g.id, g);
+  }
+  return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
 /** Gym IDs the given profile is an active member of. */
 export async function fetchUserAffiliateGymIds(profileId: string): Promise<string[]> {
   const { data, error } = await supabase

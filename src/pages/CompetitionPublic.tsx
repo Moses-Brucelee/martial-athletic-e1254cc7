@@ -28,9 +28,11 @@ import { athleteNameSchema, emailSchema } from "@/lib/validation";
 import { STATUS_LABELS, STATUS_COLORS } from "@/modules/athletes/types";
 import { AdaptivePoster } from "@/components/competition/AdaptivePoster";
 import { formatTimeMMSS } from "@/utils/format";
-import { listSponsors, type SponsorAsset } from "@/lib/posterAssets";
+import { listSponsors, type SponsorAsset, trackSponsorClick } from "@/lib/posterAssets";
 import { useEffect } from "react";
 import { SEO } from "@/components/SEO";
+import { ExternalLinkDialog } from "@/components/ExternalLinkDialog";
+import { PublicTeamsView } from "@/components/competition/PublicTeamsView";
 
 export default function CompetitionPublic({ embedded = false }: { embedded?: boolean } = {}) {
   const { id } = useParams<{ id: string }>();
@@ -85,6 +87,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
   const [sponsors, setSponsors] = useState<SponsorAsset[]>([]);
   const [sponsorsLoading, setSponsorsLoading] = useState(true);
   const [brokenSponsors, setBrokenSponsors] = useState<Set<string>>(new Set());
+  const [pendingSponsor, setPendingSponsor] = useState<SponsorAsset | null>(null);
   useEffect(() => {
     if (!id) return;
     setSponsorsLoading(true);
@@ -94,6 +97,11 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
       .finally(() => setSponsorsLoading(false));
   }, [id]);
   const visibleSponsors = sponsors.filter((s) => !brokenSponsors.has(s.path));
+
+  const openSponsor = (s: SponsorAsset) => {
+    if (!s.websiteUrl) return;
+    setPendingSponsor(s);
+  };
 
   // Auto-open registration wizard if URL has ?register=1
   useEffect(() => {
@@ -829,7 +837,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
                 <div className="flex sm:hidden gap-3 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
                   {visibleSponsors.map((s) => {
                     const inner = (
-                      <div className="h-32 w-40 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start p-2 shrink-0">
+                      <div className="h-36 w-44 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start p-2 shrink-0">
                         <img
                           src={s.url}
                           alt="sponsor"
@@ -842,13 +850,15 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
                       </div>
                     );
                     return s.websiteUrl ? (
-                      <a
+                      <button
                         key={s.path}
-                        href={`/sponsor-redirect?url=${encodeURIComponent(s.websiteUrl)}&c=${id}&p=${encodeURIComponent(s.path)}`}
-                        className="shrink-0 hover:opacity-80 transition"
+                        type="button"
+                        onClick={() => openSponsor(s)}
+                        className="shrink-0 hover:opacity-80 transition cursor-pointer"
+                        aria-label="Visit sponsor website"
                       >
                         {inner}
-                      </a>
+                      </button>
                     ) : (
                       <div key={s.path} className="shrink-0">{inner}</div>
                     );
@@ -870,13 +880,15 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
                       </div>
                     );
                     return s.websiteUrl ? (
-                      <a
+                      <button
                         key={s.path}
-                        href={`/sponsor-redirect?url=${encodeURIComponent(s.websiteUrl)}&c=${id}&p=${encodeURIComponent(s.path)}`}
-                        className="hover:opacity-80 transition"
+                        type="button"
+                        onClick={() => openSponsor(s)}
+                        className="hover:opacity-80 transition cursor-pointer text-left"
+                        aria-label="Visit sponsor website"
                       >
                         {inner}
-                      </a>
+                      </button>
                     ) : (
                       <div key={s.path}>{inner}</div>
                     );
@@ -982,8 +994,10 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
           ) : !registrationOpen ? (
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border">
               <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-              <p className="text-sm text-muted-foreground">
-                {isDeadlinePassed ? "Registration deadline has passed." : "Registration is not open."}
+              <p className="text-sm text-foreground">
+                {isDeadlinePassed
+                  ? "Registrations for this competition have closed. Please contact the competition administrator for assistance."
+                  : "Registration is not yet open."}
               </p>
             </div>
           ) : alreadyRegistered && !showRegWizard ? (
@@ -1079,117 +1093,13 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
           )}
         </div>
 
-        {/* Teams */}
+        {/* Teams — leaderboard-style cards */}
         {teams.length > 0 && (
-          <div className="bg-card border border-border rounded-xl p-6">
-            <h2 className="text-lg font-bold text-foreground uppercase mb-3 flex items-center gap-2">
+          <div className="space-y-3">
+            <h2 className="text-lg font-bold text-foreground uppercase flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" /> Teams ({teams.length})
             </h2>
-            <div className="space-y-2">
-              {teams.map((t) => {
-                const members = registrations.filter(
-                  (r) => r.team_id === t.id && r.status !== "removed" && r.status !== "withdrawn" && r.status !== "rejected"
-                );
-                const isOpen = expandedTeamId === t.id;
-                return (
-                  <div key={t.id} className="rounded-lg border border-border overflow-hidden bg-background">
-                    <button
-                      type="button"
-                      onClick={() => setExpandedTeamId(isOpen ? null : t.id)}
-                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-90" : ""}`} />
-                        <span className="font-semibold text-foreground text-sm truncate">{t.team_name}</span>
-                        {t.division && (
-                          <Badge variant="outline" className="text-xs shrink-0">{t.division}</Badge>
-                        )}
-                      </div>
-                      <span className="text-xs text-muted-foreground shrink-0">{members.length} member{members.length === 1 ? "" : "s"}</span>
-                    </button>
-                    {isOpen && (
-                      <div className="border-t border-border">
-                        {members.length === 0 ? (
-                          <p className="text-xs text-muted-foreground px-3 py-2">No members yet</p>
-                        ) : (
-                          members.map((m) => {
-                            const canManage = !!user && (
-                              t.captain_user_id === user.id ||
-                              competition.created_by === user.id
-                            );
-                            return (
-                              <div key={m.id} className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border last:border-b-0">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  {canManage ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => setEditingReg(m)}
-                                      className="text-sm font-medium text-primary underline-offset-2 hover:underline truncate"
-                                    >
-                                      {m.athlete_name}
-                                    </button>
-                                  ) : (
-                                    <span className="text-sm text-foreground truncate">{m.athlete_name}</span>
-                                  )}
-                                  {m.registration_type === "team_captain" && (
-                                    <span className="text-[10px] uppercase font-bold text-primary shrink-0">Captain</span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                  <Badge variant="outline" className={`text-xs ${STATUS_COLORS[m.status] ?? ""}`}>
-                                    {STATUS_LABELS[m.status] ?? m.status}
-                                  </Badge>
-                                  {canManage && (
-                                    <>
-                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingReg(m)} aria-label="Edit">
-                                        <Pencil className="h-3.5 w-3.5" />
-                                      </Button>
-                                      {m.registration_type !== "team_captain" && (
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setRemovingReg(m)} aria-label="Remove">
-                                          <Trash2 className="h-3.5 w-3.5" />
-                                        </Button>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Registered athletes */}
-        {registrations.length > 0 && (
-          <div className="bg-card border border-border rounded-xl p-6">
-            <h2 className="text-lg font-bold text-foreground uppercase mb-3">
-              Registered Athletes ({totalCount})
-            </h2>
-            <div className="space-y-1.5">
-              {registrations
-                .filter((r) => r.status !== "removed" && r.status !== "withdrawn")
-                .map((r) => (
-                <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm font-medium text-foreground truncate">{r.athlete_name}</span>
-                    {r.division_id && divisions.length > 0 && (
-                      <Badge variant="outline" className="text-xs shrink-0">
-                        {divisions.find((d) => d.id === r.division_id)?.name}
-                      </Badge>
-                    )}
-                  </div>
-                  <Badge variant="outline" className={`text-xs shrink-0 ${STATUS_COLORS[r.status] ?? ""}`}>
-                    {STATUS_LABELS[r.status] ?? r.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
+            <PublicTeamsView competitionId={id!} competition={competition} />
           </div>
         )}
       </main>
@@ -1236,6 +1146,16 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ExternalLinkDialog
+        url={pendingSponsor?.websiteUrl ?? null}
+        onClose={() => setPendingSponsor(null)}
+        onConfirm={() => {
+          if (pendingSponsor && id) {
+            trackSponsorClick(id, pendingSponsor.path, pendingSponsor.websiteUrl ?? "").catch(() => {});
+          }
+        }}
+      />
     </div>
   );
 }
