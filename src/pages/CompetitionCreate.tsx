@@ -68,14 +68,10 @@ export default function CompetitionCreate() {
     ? ["Details", "Sport & Mode"]
     : ["Details", "Sport & Mode", "Divisions", "Workouts"];
 
-  const dateOrderError =
-    startDate && endDate && endDate <= startDate
-      ? "End date must be after the start date"
-      : startDate && regDeadline && regDeadline > startDate
-      ? "Registration deadline must be on or before the start date"
-      : null;
+  const dateErrors = validateCompetitionDates(startDate, endDate, regDeadline);
+  const datesValid = !hasErrors(dateErrors);
   const isStep1Valid =
-    name.trim().length >= 2 && !!startDate && !!endDate && !!regDeadline && !dateOrderError
+    name.trim().length >= 2 && datesValid
     && (visibility === "public" || !!affiliateGymId);
   const isStep2Valid = !!competitionType;
 
