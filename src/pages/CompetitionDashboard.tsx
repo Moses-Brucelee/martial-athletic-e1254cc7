@@ -362,8 +362,7 @@ export default function CompetitionDashboard() {
     const registrationOpen = !deadlinePassed && !isCompleted;
 
     const viewerTabs: { value: string; label: string }[] = [];
-    if (registrationOpen) viewerTabs.push({ value: "register", label: "Registration" });
-    viewerTabs.push({ value: "teams", label: "Teams" });
+    viewerTabs.push({ value: "registration", label: "Registration & Teams" });
     viewerTabs.push({ value: "workouts", label: "Workouts" });
     if (isLive) {
       viewerTabs.push({ value: "leaderboard", label: "Leaderboard" });
@@ -373,7 +372,7 @@ export default function CompetitionDashboard() {
     const initialTab =
       tabFromUrl && viewerTabs.some((t) => t.value === tabFromUrl)
         ? tabFromUrl
-        : viewerTabs[0]?.value ?? "teams";
+        : viewerTabs[0]?.value ?? "registration";
 
     return (
       <Tabs defaultValue={initialTab} className="w-full">
@@ -394,22 +393,13 @@ export default function CompetitionDashboard() {
           <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none md:hidden" />
         </div>
 
-        {!registrationOpen && (
-          <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-muted/40 border border-border">
-            <Lock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-            <p className="text-sm text-foreground">
-              Registrations for this competition have closed. Please contact the competition administrator for assistance.
-            </p>
-          </div>
-        )}
-
-        {registrationOpen && (
-          <TabsContent value="register">
-            <RegistrationManager competitionId={id!} canAdmin={false} />
-          </TabsContent>
-        )}
-        <TabsContent value="teams">
-          <TeamsPanel competitionId={id!} isOwner={false} />
+        <TabsContent value="registration">
+          <RegistrationTeamsView
+            competitionId={id!}
+            competition={competition}
+            canAdmin={false}
+            registrationOpen={registrationOpen}
+          />
         </TabsContent>
         <TabsContent value="workouts">
           <QuickWorkoutsPanel competitionId={id!} isOwner={false} scoringMode={settings?.scoring_method === "auto" ? "auto" : "points"} />
