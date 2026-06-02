@@ -236,12 +236,7 @@ export default function CompetitionCreate() {
           </div>
         )}
 
-        {step === 0 && dateOrderError && (
-          <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-destructive/10 border border-destructive/20">
-            <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-            <p className="text-sm text-destructive">{dateOrderError}</p>
-          </div>
-        )}
+        {/* Per-field date errors are rendered inside StepDetails */}
 
         <div className="pb-20 sm:pb-0">
           {step === 0 && (
