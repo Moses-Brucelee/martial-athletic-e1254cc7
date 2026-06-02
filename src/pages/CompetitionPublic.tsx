@@ -83,10 +83,17 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
   const [removingReg, setRemovingReg] = useState<AthleteRegistration | null>(null);
   const deleteReg = useDeleteRegistration();
   const [sponsors, setSponsors] = useState<SponsorAsset[]>([]);
+  const [sponsorsLoading, setSponsorsLoading] = useState(true);
+  const [brokenSponsors, setBrokenSponsors] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!id) return;
-    listSponsors(id).then(setSponsors).catch(() => {});
+    setSponsorsLoading(true);
+    listSponsors(id)
+      .then((s) => setSponsors(s))
+      .catch(() => setSponsors([]))
+      .finally(() => setSponsorsLoading(false));
   }, [id]);
+  const visibleSponsors = sponsors.filter((s) => !brokenSponsors.has(s.path));
 
   // Auto-open registration wizard if URL has ?register=1
   useEffect(() => {
