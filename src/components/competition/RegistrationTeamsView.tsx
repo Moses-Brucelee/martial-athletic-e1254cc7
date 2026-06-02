@@ -153,30 +153,6 @@ export function RegistrationTeamsView({
 
   return (
     <div className="space-y-6">
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard
-          icon={<UsersRound className="h-4 w-4 text-primary" />}
-          label="Total"
-          value={counts.total}
-        />
-        <StatCard
-          icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
-          label="Approved"
-          value={counts.approved}
-        />
-        <StatCard
-          icon={<Clock className="h-4 w-4 text-blue-500" />}
-          label="Waitlist"
-          value={counts.waitlist}
-        />
-        <StatCard
-          icon={<Timer className="h-4 w-4 text-amber-500" />}
-          label="Pending"
-          value={counts.pending}
-        />
-      </div>
-
       {/* Closed banner */}
       {!registrationOpen && (
         <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border border-border">
