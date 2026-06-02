@@ -20,11 +20,17 @@ function publicUrl(path: string) {
 export async function listSponsors(competitionId: string): Promise<SponsorAsset[]> {
   const { data, error } = await supabase.storage
     .from(BUCKET)
-    .list(`${competitionId}/sponsors`, { limit: 100 });
+    .list(`${competitionId}/sponsors`, {
+      limit: 100,
+      sortBy: { column: "name", order: "asc" },
+    });
   if (error || !data) return [];
 
   const items = data
     .filter((f) => f.name && !f.name.startsWith("."))
+    // Deterministic order so mobile and desktop render identically across
+    // browsers/CDN caches. Storage `sortBy` is best-effort — re-sort client-side.
+    .sort((a, b) => a.name.localeCompare(b.name))
     .map((f) => {
       const path = `${competitionId}/sponsors/${f.name}`;
       return { name: f.name, path, url: publicUrl(path) };

@@ -83,10 +83,17 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
   const [removingReg, setRemovingReg] = useState<AthleteRegistration | null>(null);
   const deleteReg = useDeleteRegistration();
   const [sponsors, setSponsors] = useState<SponsorAsset[]>([]);
+  const [sponsorsLoading, setSponsorsLoading] = useState(true);
+  const [brokenSponsors, setBrokenSponsors] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!id) return;
-    listSponsors(id).then(setSponsors).catch(() => {});
+    setSponsorsLoading(true);
+    listSponsors(id)
+      .then((s) => setSponsors(s))
+      .catch(() => setSponsors([]))
+      .finally(() => setSponsorsLoading(false));
   }, [id]);
+  const visibleSponsors = sponsors.filter((s) => !brokenSponsors.has(s.path));
 
   // Auto-open registration wizard if URL has ?register=1
   useEffect(() => {
@@ -799,51 +806,84 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
 
       <main className="max-w-3xl mx-auto px-4 pt-4 sm:pt-0 pb-8 space-y-4 sm:space-y-8">
         {/* Sponsor logos — strip on mobile, grid on desktop */}
-        {sponsors.length > 0 && (
+        {(sponsorsLoading || visibleSponsors.length > 0) && (
           <div className="bg-card border border-border rounded-xl p-4">
             <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-bold mb-3 text-center">
               Proudly Sponsored By
             </p>
-            <div className="flex sm:hidden gap-3 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
-              {sponsors.map((s) => {
-                const inner = (
-                  <div className="h-32 w-40 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start p-2 shrink-0">
-                    <img src={s.url} alt="sponsor" className="max-h-full max-w-full object-contain" />
-                  </div>
-                );
-                return s.websiteUrl ? (
-                  <a
-                    key={s.path}
-                    href={`/sponsor-redirect?url=${encodeURIComponent(s.websiteUrl)}&c=${id}&p=${encodeURIComponent(s.path)}`}
-                    className="shrink-0 hover:opacity-80 transition"
-                  >
-                    {inner}
-                  </a>
-                ) : (
-                  <div key={s.path} className="shrink-0">{inner}</div>
-                );
-              })}
-            </div>
-            <div className="hidden sm:grid grid-cols-3 md:grid-cols-6 gap-3">
-              {sponsors.map((s) => {
-                const inner = (
-                  <div className="aspect-square rounded-lg bg-background/50 border border-border/50 flex items-center justify-center p-2">
-                    <img src={s.url} alt="sponsor" className="max-h-full max-w-full object-contain" />
-                  </div>
-                );
-                return s.websiteUrl ? (
-                  <a
-                    key={s.path}
-                    href={`/sponsor-redirect?url=${encodeURIComponent(s.websiteUrl)}&c=${id}&p=${encodeURIComponent(s.path)}`}
-                    className="hover:opacity-80 transition"
-                  >
-                    {inner}
-                  </a>
-                ) : (
-                  <div key={s.path}>{inner}</div>
-                );
-              })}
-            </div>
+            {sponsorsLoading ? (
+              <>
+                <div className="flex sm:hidden gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-32 w-40 shrink-0 rounded-md" />
+                  ))}
+                </div>
+                <div className="hidden sm:grid grid-cols-3 md:grid-cols-6 gap-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Skeleton key={i} className="aspect-square rounded-lg" />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex sm:hidden gap-3 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
+                  {visibleSponsors.map((s) => {
+                    const inner = (
+                      <div className="h-32 w-40 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start p-2 shrink-0">
+                        <img
+                          src={s.url}
+                          alt="sponsor"
+                          loading="lazy"
+                          className="max-h-full max-w-full object-contain"
+                          onError={() =>
+                            setBrokenSponsors((prev) => new Set(prev).add(s.path))
+                          }
+                        />
+                      </div>
+                    );
+                    return s.websiteUrl ? (
+                      <a
+                        key={s.path}
+                        href={`/sponsor-redirect?url=${encodeURIComponent(s.websiteUrl)}&c=${id}&p=${encodeURIComponent(s.path)}`}
+                        className="shrink-0 hover:opacity-80 transition"
+                      >
+                        {inner}
+                      </a>
+                    ) : (
+                      <div key={s.path} className="shrink-0">{inner}</div>
+                    );
+                  })}
+                </div>
+                <div className="hidden sm:grid grid-cols-3 md:grid-cols-6 gap-3">
+                  {visibleSponsors.map((s) => {
+                    const inner = (
+                      <div className="aspect-square rounded-lg bg-background/50 border border-border/50 flex items-center justify-center p-2">
+                        <img
+                          src={s.url}
+                          alt="sponsor"
+                          loading="lazy"
+                          className="max-h-full max-w-full object-contain"
+                          onError={() =>
+                            setBrokenSponsors((prev) => new Set(prev).add(s.path))
+                          }
+                        />
+                      </div>
+                    );
+                    return s.websiteUrl ? (
+                      <a
+                        key={s.path}
+                        href={`/sponsor-redirect?url=${encodeURIComponent(s.websiteUrl)}&c=${id}&p=${encodeURIComponent(s.path)}`}
+                        className="hover:opacity-80 transition"
+                      >
+                        {inner}
+                      </a>
+                    ) : (
+                      <div key={s.path}>{inner}</div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
         )}
 
