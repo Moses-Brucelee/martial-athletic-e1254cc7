@@ -1,12 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Building2, Calendar, FileText, Users, Globe, Lock } from "lucide-react";
-import { fetchAllAffiliates, type AffiliateGym } from "@/data/affiliates";
+import { MapPin, Building2, Calendar, FileText, Users, Globe, Lock, AlertCircle } from "lucide-react";
+import { fetchUserAccessibleGyms, type AffiliateGym } from "@/data/affiliates";
+import { useSuperUserAccess } from "@/hooks/useSuperUserAccess";
+import { useProfile } from "@/hooks/useProfile";
+import { fetchAllAffiliates } from "@/data/affiliates";
+import { supabase } from "@/integrations/supabase/client";
+import { validateCompetitionDates, type CompetitionDatesErrors } from "@/lib/validation";
 
 interface StepDetailsProps {
   name: string;
@@ -35,6 +40,15 @@ interface StepDetailsProps {
   disabled?: boolean;
 }
 
+function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null;
+  return (
+    <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+      <AlertCircle className="h-3 w-3 shrink-0" /> {msg}
+    </p>
+  );
+}
+
 export function StepDetails({
   name, setName,
   description, setDescription,
@@ -53,10 +67,16 @@ export function StepDetails({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [allGyms, setAllGyms] = useState<AffiliateGym[]>([]);
+  const { profile } = useProfile();
+  const { isSuperUser } = useSuperUserAccess();
+
+  // Super users see every gym; everyone else sees only their accessible gyms (owned + active member)
+  const [pickerGyms, setPickerGyms] = useState<AffiliateGym[]>([]);
   useEffect(() => {
-    fetchAllAffiliates().then(setAllGyms).catch(() => setAllGyms([]));
-  }, []);
+    if (!profile?.id) return;
+    const fetcher = isSuperUser ? fetchAllAffiliates() : fetchUserAccessibleGyms(profile.id);
+    fetcher.then(setPickerGyms).catch(() => setPickerGyms([]));
+  }, [profile?.id, isSuperUser]);
 
   // Auto-select the owned gym when switching to private if none chosen
   useEffect(() => {
@@ -64,6 +84,50 @@ export function StepDetails({
       setAffiliateGymId(ownedGym.id);
     }
   }, [visibility, affiliateGymId, ownedGym, setAffiliateGymId]);
+
+  // Pre-populate venue + host gym from the selected affiliate gym (private comps only).
+  // Only fills empty fields and tracks the gym we already prefilled from so the user
+  // can still edit freely without it being overwritten on re-render.
+  const prefilledFromGym = useRef<string | null>(null);
+  useEffect(() => {
+    if (visibility !== "private" || !affiliateGymId) return;
+    if (prefilledFromGym.current === affiliateGymId) return;
+    const gym = pickerGyms.find((g) => g.id === affiliateGymId);
+    if (!gym) return;
+    prefilledFromGym.current = affiliateGymId;
+
+    // Pull gym_profiles for venue/address if available
+    (async () => {
+      const { data: gp } = await (supabase as any)
+        .from("gym_profiles")
+        .select("address, city")
+        .eq("gym_id", affiliateGymId)
+        .maybeSingle();
+      if (!hostGym) setHostGym(gym.name);
+      if (!venue && gp) {
+        const addr = [gp.address, gp.city].filter(Boolean).join(", ");
+        if (addr) setVenue(addr);
+      } else if (!venue) {
+        setVenue(gym.name);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibility, affiliateGymId, pickerGyms]);
+
+  // Inline date errors
+  const dateErrors: CompetitionDatesErrors = validateCompetitionDates(startDate, endDate, regDeadline);
+  // Suppress "required" errors until the user has touched each field
+  const [touched, setTouched] = useState({ start: false, end: false, reg: false });
+  const shownStartErr = touched.start ? dateErrors.startDate : undefined;
+  const shownEndErr = (touched.end || (startDate && endDate)) ? dateErrors.endDate : undefined;
+  const shownRegErr = (touched.reg || (startDate && regDeadline)) ? dateErrors.regDeadline : undefined;
+
+  // Constrain pickers so invalid selections cannot be made in the first place
+  const endMin = startDate ?? today;
+  const endMax = startDate
+    ? new Date(startDate.getTime() + 31 * 24 * 60 * 60 * 1000)
+    : undefined;
+  const regMax = startDate ? new Date(startDate.getTime() - 60_000) : undefined;
 
   return (
     <div className="space-y-6">
@@ -140,25 +204,39 @@ export function StepDetails({
 
         {visibility === "private" && (
           <div className="space-y-2 pt-1">
-            <Label className="text-foreground font-medium text-sm">Affiliate</Label>
+            <Label className="text-foreground font-medium text-sm">Affiliate *</Label>
             <Select
               value={affiliateGymId ?? ""}
               onValueChange={(v) => setAffiliateGymId(v || null)}
-              disabled={disabled}
+              disabled={disabled || pickerGyms.length === 0}
             >
               <SelectTrigger className="h-11 bg-background">
-                <SelectValue placeholder="Select an affiliate gym…" />
+                <SelectValue
+                  placeholder={
+                    pickerGyms.length === 0
+                      ? "No accessible affiliates — join one to host"
+                      : "Select your affiliate gym…"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                {allGyms.map((g) => (
+                {pickerGyms.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
                     {g.name}{ownedGym?.id === g.id ? " (your gym)" : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {!affiliateGymId && (
+            {pickerGyms.length === 0 ? (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" /> You must own or be an active member of an affiliate to create a private competition.
+              </p>
+            ) : !affiliateGymId ? (
               <p className="text-xs text-destructive">An affiliate is required for private competitions.</p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                You can only create competitions for affiliates you belong to.
+              </p>
             )}
           </div>
         )}
@@ -182,6 +260,9 @@ export function StepDetails({
               disabled={disabled}
               maxLength={200}
             />
+            {visibility === "private" && affiliateGymId && (
+              <p className="text-[11px] text-muted-foreground">Pre-filled from your affiliate — edit as needed.</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label className="text-foreground font-medium flex items-center gap-1.5">
@@ -207,39 +288,57 @@ export function StepDetails({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label className="text-foreground font-medium">Start Date & Time *</Label>
             <DateTimePicker
               value={startDate}
-              onChange={setStartDate}
+              onChange={(d) => {
+                setStartDate(d);
+                setTouched((t) => ({ ...t, start: true }));
+              }}
               placeholder="Select start"
               disabled={disabled}
               minDate={today}
             />
+            <FieldError msg={shownStartErr} />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label className="text-foreground font-medium">End Date & Time *</Label>
             <DateTimePicker
               value={endDate}
-              onChange={setEndDate}
-              placeholder="Select end"
-              disabled={disabled}
-              minDate={startDate || today}
+              onChange={(d) => {
+                setEndDate(d);
+                setTouched((t) => ({ ...t, end: true }));
+              }}
+              placeholder={startDate ? "Same day or later" : "Pick start first"}
+              disabled={disabled || !startDate}
+              minDate={endMin}
+              maxDate={endMax}
             />
+            <p className="text-[11px] text-muted-foreground">
+              May end on the same day if the end time is later. Max duration: 1 month.
+            </p>
+            <FieldError msg={shownEndErr} />
           </div>
-          <div className="space-y-2 sm:col-span-2">
+          <div className="space-y-1 sm:col-span-2">
             <Label className="text-foreground font-medium">Registration Deadline *</Label>
             <DateTimePicker
               value={regDeadline}
-              onChange={setRegDeadline}
-              placeholder="Last day to register"
-              disabled={disabled}
+              onChange={(d) => {
+                setRegDeadline(d);
+                setTouched((t) => ({ ...t, reg: true }));
+              }}
+              placeholder={startDate ? "Last day to register" : "Pick competition start first"}
+              disabled={disabled || !startDate}
               minDate={today}
-              maxDate={startDate}
+              maxDate={regMax}
             />
-            <p className="text-xs text-muted-foreground">
-              {startDate ? "Must be before competition start date" : "Athletes won't be able to register after this date"}
+            <p className="text-[11px] text-muted-foreground">
+              {startDate
+                ? "Must be strictly before the competition start date & time."
+                : "Enabled once start date & time is set."}
             </p>
+            <FieldError msg={shownRegErr} />
           </div>
         </div>
       </div>
