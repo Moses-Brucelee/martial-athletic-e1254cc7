@@ -1,27 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock the Supabase client BEFORE importing the module under test
-const listMock = vi.fn();
-const getPublicUrlMock = vi.fn((path: string) => ({
-  data: { publicUrl: `https://cdn.test/${path}` },
-}));
-const fromMock = vi.fn(() => ({
-  list: listMock,
-  getPublicUrl: getPublicUrlMock,
-}));
-
-const inMock = vi.fn(() => Promise.resolve({ data: [] }));
-const selectMock = vi.fn(() => ({ in: inMock }));
-const tableMock = vi.fn(() => ({ select: selectMock }));
-
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    storage: { from: fromMock },
-    from: tableMock,
-  },
-}));
+vi.mock("@/integrations/supabase/client", () => {
+  const listMock = vi.fn();
+  const getPublicUrlMock = vi.fn((path: string) => ({
+    data: { publicUrl: `https://cdn.test/${path}` },
+  }));
+  const inMock = vi.fn(() => Promise.resolve({ data: [] }));
+  const selectMock = vi.fn(() => ({ in: inMock }));
+  const fromMock = vi.fn(() => ({ list: listMock, getPublicUrl: getPublicUrlMock }));
+  const tableMock = vi.fn(() => ({ select: selectMock }));
+  return {
+    supabase: { storage: { from: fromMock }, from: tableMock },
+    __mocks: { listMock, fromMock },
+  };
+});
 
 import { listSponsors } from "./posterAssets";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const { __mocks } = (await import("@/integrations/supabase/client")) as any;
+const { listMock, fromMock } = __mocks;
 
 describe("listSponsors", () => {
   beforeEach(() => {
