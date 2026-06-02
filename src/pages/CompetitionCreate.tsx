@@ -16,7 +16,7 @@ import { fetchUserOwnedGym, type AffiliateGym } from "@/data/affiliates";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, AlertCircle, Check } from "lucide-react";
-import { sanitizeError } from "@/lib/validation";
+import { sanitizeError, validateCompetitionDates, hasErrors } from "@/lib/validation";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
