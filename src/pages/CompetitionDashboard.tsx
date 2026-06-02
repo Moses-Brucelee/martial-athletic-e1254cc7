@@ -32,6 +32,7 @@ import { ScoreLockControls } from "@/modules/scoring/components/ScoreLockControl
 import { LeaderboardPanel } from "@/modules/leaderboard/components/LeaderboardPanel";
 import { ParticipantsPanel } from "@/modules/athletes/components/ParticipantsPanel";
 import { RegistrationManager } from "@/modules/athletes/components/RegistrationManager";
+import { RegistrationTeamsView } from "@/components/competition/RegistrationTeamsView";
 import { BracketsPanel } from "@/modules/tournaments/components/BracketsPanel";
 import { PeopleTab } from "@/modules/tournaments/components/PeopleTab";
 import { CompetitionStatusBar } from "@/modules/tournaments/components/CompetitionStatusBar";
