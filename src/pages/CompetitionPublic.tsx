@@ -28,9 +28,11 @@ import { athleteNameSchema, emailSchema } from "@/lib/validation";
 import { STATUS_LABELS, STATUS_COLORS } from "@/modules/athletes/types";
 import { AdaptivePoster } from "@/components/competition/AdaptivePoster";
 import { formatTimeMMSS } from "@/utils/format";
-import { listSponsors, type SponsorAsset } from "@/lib/posterAssets";
+import { listSponsors, type SponsorAsset, trackSponsorClick } from "@/lib/posterAssets";
 import { useEffect } from "react";
 import { SEO } from "@/components/SEO";
+import { ExternalLinkDialog } from "@/components/ExternalLinkDialog";
+import { PublicTeamsView } from "@/components/competition/PublicTeamsView";
 
 export default function CompetitionPublic({ embedded = false }: { embedded?: boolean } = {}) {
   const { id } = useParams<{ id: string }>();
