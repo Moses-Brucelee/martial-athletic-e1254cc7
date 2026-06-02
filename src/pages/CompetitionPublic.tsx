@@ -994,8 +994,10 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
           ) : !registrationOpen ? (
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border">
               <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-              <p className="text-sm text-muted-foreground">
-                {isDeadlinePassed ? "Registration deadline has passed." : "Registration is not open."}
+              <p className="text-sm text-foreground">
+                {isDeadlinePassed
+                  ? "Registrations for this competition have closed. Please contact the competition administrator for assistance."
+                  : "Registration is not yet open."}
               </p>
             </div>
           ) : alreadyRegistered && !showRegWizard ? (
