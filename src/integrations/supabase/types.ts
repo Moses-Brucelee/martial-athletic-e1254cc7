@@ -2699,6 +2699,10 @@ export type Database = {
         Args: { p_gym_id: string; p_user_id: string }
         Returns: boolean
       }
+      is_registration_open: {
+        Args: { p_competition_id: string }
+        Returns: boolean
+      }
       is_super_user: { Args: { p_user_id: string }; Returns: boolean }
       move_to_dlq: {
         Args: {
