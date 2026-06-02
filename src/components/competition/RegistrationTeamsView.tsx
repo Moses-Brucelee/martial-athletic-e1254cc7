@@ -314,8 +314,8 @@ export function RegistrationTeamsView({
         )}
       </div>
 
-      {/* Manage panel (collapsible) — only when registration is open */}
-      {registrationOpen && (
+      {/* Manage panel (collapsible) — only for admins while registration is open */}
+      {registrationOpen && canAdmin && (
         <div className="bg-card border border-border rounded-xl">
           <button
             type="button"
