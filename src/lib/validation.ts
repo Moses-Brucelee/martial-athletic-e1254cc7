@@ -29,6 +29,43 @@ export const competitionSchema = z.object({
   divisions: z.string().max(200, "Divisions must be under 200 characters").optional().or(z.literal("")),
 });
 
+// ── Date / time business rules ────────────────────────────────────────
+// Returns null if dates are valid, otherwise a per-field error map.
+export interface CompetitionDatesErrors {
+  startDate?: string;
+  endDate?: string;
+  regDeadline?: string;
+}
+
+const ONE_MONTH_MS = 31 * 24 * 60 * 60 * 1000;
+
+export function validateCompetitionDates(
+  startDate: Date | undefined,
+  endDate: Date | undefined,
+  regDeadline: Date | undefined,
+): CompetitionDatesErrors {
+  const errors: CompetitionDatesErrors = {};
+  if (!startDate) errors.startDate = "Start date & time is required";
+  if (!endDate) errors.endDate = "End date & time is required";
+  if (!regDeadline) errors.regDeadline = "Registration deadline is required";
+
+  if (startDate && endDate) {
+    if (endDate.getTime() <= startDate.getTime()) {
+      errors.endDate = "End must be after start (same day is allowed if end time is later)";
+    } else if (endDate.getTime() - startDate.getTime() > ONE_MONTH_MS) {
+      errors.endDate = "Competition cannot last longer than one month";
+    }
+  }
+  if (startDate && regDeadline && regDeadline.getTime() >= startDate.getTime()) {
+    errors.regDeadline = "Registration deadline must be before the competition start";
+  }
+  return errors;
+}
+
+export function hasErrors(e: CompetitionDatesErrors): boolean {
+  return !!(e.startDate || e.endDate || e.regDeadline);
+}
+
 export const teamNameSchema = z
   .string()
   .trim()
