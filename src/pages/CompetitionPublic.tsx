@@ -837,7 +837,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
                 <div className="flex sm:hidden gap-3 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
                   {visibleSponsors.map((s) => {
                     const inner = (
-                      <div className="h-32 w-40 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start p-2 shrink-0">
+                      <div className="h-36 w-44 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start p-2 shrink-0">
                         <img
                           src={s.url}
                           alt="sponsor"
@@ -850,13 +850,15 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
                       </div>
                     );
                     return s.websiteUrl ? (
-                      <a
+                      <button
                         key={s.path}
-                        href={`/sponsor-redirect?url=${encodeURIComponent(s.websiteUrl)}&c=${id}&p=${encodeURIComponent(s.path)}`}
-                        className="shrink-0 hover:opacity-80 transition"
+                        type="button"
+                        onClick={() => openSponsor(s)}
+                        className="shrink-0 hover:opacity-80 transition cursor-pointer"
+                        aria-label="Visit sponsor website"
                       >
                         {inner}
-                      </a>
+                      </button>
                     ) : (
                       <div key={s.path} className="shrink-0">{inner}</div>
                     );
@@ -878,13 +880,15 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
                       </div>
                     );
                     return s.websiteUrl ? (
-                      <a
+                      <button
                         key={s.path}
-                        href={`/sponsor-redirect?url=${encodeURIComponent(s.websiteUrl)}&c=${id}&p=${encodeURIComponent(s.path)}`}
-                        className="hover:opacity-80 transition"
+                        type="button"
+                        onClick={() => openSponsor(s)}
+                        className="hover:opacity-80 transition cursor-pointer text-left"
+                        aria-label="Visit sponsor website"
                       >
                         {inner}
-                      </a>
+                      </button>
                     ) : (
                       <div key={s.path}>{inner}</div>
                     );
