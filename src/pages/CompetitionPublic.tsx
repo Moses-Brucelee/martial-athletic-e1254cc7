@@ -1146,6 +1146,16 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ExternalLinkDialog
+        url={pendingSponsor?.websiteUrl ?? null}
+        onClose={() => setPendingSponsor(null)}
+        onConfirm={() => {
+          if (pendingSponsor && id) {
+            trackSponsorClick(id, pendingSponsor.path, pendingSponsor.websiteUrl ?? "").catch(() => {});
+          }
+        }}
+      />
     </div>
   );
 }
