@@ -17,6 +17,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { profileSchema, validateImageFile, sanitizeError } from "@/lib/validation";
 import { calculateAge } from "@/utils/calculateAge";
 import { AthleteClaimBanner } from "@/modules/athletes/components/AthleteClaimBanner";
+import { fetchAllAffiliates, requestAffiliation, fetchUserAffiliationStatuses, type AffiliateGym } from "@/data/affiliates";
+import { toast } from "sonner";
 
 export default function ViewProfile() {
   const navigate = useNavigate();
@@ -29,6 +31,10 @@ export default function ViewProfile() {
   const [dobString, setDobString] = useState<string | undefined>(undefined);
   const [affiliation, setAffiliation] = useState("");
   const [aboutMe, setAboutMe] = useState("");
+  const [affiliateGymId, setAffiliateGymId] = useState<string>("");
+  const [affiliates, setAffiliates] = useState<AffiliateGym[]>([]);
+  const [affiliationStatuses, setAffiliationStatuses] = useState<Record<string, string>>({});
+  const [initialGymId, setInitialGymId] = useState<string>("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -59,6 +65,26 @@ export default function ViewProfile() {
       setAvatarPreview(profile.avatar_url || null);
     }
   }, [profile]);
+
+  // Load gyms list for the dropdown
+  useEffect(() => {
+    fetchAllAffiliates()
+      .then(setAffiliates)
+      .catch((err) => console.error("[ViewProfile] failed to load affiliates", err));
+  }, []);
+
+  // Pre-select user's existing affiliate gym (active or pending)
+  useEffect(() => {
+    if (!profile?.id) return;
+    fetchUserAffiliationStatuses(profile.id).then((map) => {
+      setAffiliationStatuses(map);
+      const first = Object.keys(map)[0];
+      if (first && !affiliateGymId) {
+        setAffiliateGymId(first);
+        setInitialGymId(first);
+      }
+    }).catch((err) => console.error("[ViewProfile] failed to load statuses", err));
+  }, [profile?.id]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -104,6 +130,19 @@ export default function ViewProfile() {
         .eq("user_id", user.id);
 
       if (updateError) throw updateError;
+
+      // Request affiliation if user picked a new gym (best-effort).
+      if (affiliateGymId && affiliateGymId !== initialGymId) {
+        try {
+          const res = await requestAffiliation(affiliateGymId);
+          if (res?.status === "pending") {
+            toast.info("Affiliation request sent. The gym manager will review it.");
+          }
+        } catch (err) {
+          console.error("[ViewProfile] affiliation request failed", err);
+        }
+      }
+
       setSuccess(true);
       setAvatarFile(null);
       await refetch();
@@ -216,9 +255,43 @@ export default function ViewProfile() {
                     {computedAge !== null ? computedAge : <span className="text-muted-foreground">Select DOB</span>}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-foreground font-medium">Affiliation</Label>
-                  <Input placeholder="Gym / Club name" value={affiliation} onChange={(e) => setAffiliation(e.target.value)} disabled={saving} className="h-11 bg-background" maxLength={100} />
+                <div className="space-y-2 sm:col-span-2">
+                  <Label className="text-foreground font-medium">Affiliate (Gym / Club)</Label>
+                  <Select
+                    value={affiliateGymId || "__none__"}
+                    onValueChange={(v) => {
+                      if (v === "__none__") {
+                        setAffiliateGymId("");
+                        setAffiliation("");
+                      } else {
+                        setAffiliateGymId(v);
+                        const g = affiliates.find((a) => a.id === v);
+                        if (g) setAffiliation(g.name);
+                      }
+                    }}
+                    disabled={saving}
+                  >
+                    <SelectTrigger className="h-11 bg-background">
+                      <SelectValue placeholder={affiliates.length === 0 ? "No gyms available yet" : "Select an affiliate (optional)"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">No affiliate</SelectItem>
+                      {affiliates.map((g) => (
+                        <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {affiliateGymId && affiliationStatuses[affiliateGymId] === "pending" && (
+                    <p className="text-[11px] text-primary">
+                      Pending approval — the gym manager will review your request.
+                    </p>
+                  )}
+                  {affiliateGymId && affiliationStatuses[affiliateGymId] === "active" && (
+                    <p className="text-[11px] text-accent">You are an active member of this gym.</p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground">
+                    Optional. Select your gym to request affiliation — the gym manager must approve.
+                  </p>
                 </div>
               </div>
             </div>
