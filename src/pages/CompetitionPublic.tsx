@@ -689,7 +689,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
         />
       )}
       {/* Hero */}
-      <div className={`relative ${embedded ? "pb-8" : "pb-20 sm:pb-24"}`}>
+      <div className={`relative ${embedded ? "pb-8" : "pb-6 sm:pb-24"}`}>
 
         {competition.poster_url ? (
           <div className="relative w-full bg-muted">
