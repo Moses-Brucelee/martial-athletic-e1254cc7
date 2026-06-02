@@ -62,13 +62,32 @@ export async function updateGym(
 export async function fetchGymMembers(gymId: string): Promise<GymMember[]> {
   const { data, error } = await supabase
     .from("gym_members")
-    .select("*, profiles!gym_members_user_id_fkey(display_name, avatar_url, full_name)")
+    .select("*")
     .eq("gym_id", gymId)
     .order("created_at", { ascending: false });
   if (error) throw error;
 
-  return ((data ?? []) as unknown as Array<Record<string, unknown>>).map((row) => {
-    const profile = row.profiles as Record<string, unknown> | null;
+  const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
+  const profileIds = Array.from(new Set(rows.map((r) => r.user_id as string).filter(Boolean)));
+
+  let profileMap: Record<string, { display_name: string | null; full_name: string | null; avatar_url: string | null }> = {};
+  if (profileIds.length > 0) {
+    const { data: profs, error: pErr } = await supabase
+      .from("public_profiles")
+      .select("id, display_name, full_name, avatar_url")
+      .in("id", profileIds);
+    if (pErr) throw pErr;
+    for (const p of (profs ?? []) as any[]) {
+      profileMap[p.id] = {
+        display_name: p.display_name ?? null,
+        full_name: p.full_name ?? null,
+        avatar_url: p.avatar_url ?? null,
+      };
+    }
+  }
+
+  return rows.map((row) => {
+    const profile = profileMap[row.user_id as string];
     return {
       id: row.id as string,
       gym_id: row.gym_id as string,
@@ -80,9 +99,9 @@ export async function fetchGymMembers(gymId: string): Promise<GymMember[]> {
       team_assignment: row.team_assignment as string | null,
       metadata: row.metadata as Record<string, unknown> | null,
       created_at: row.created_at as string,
-      display_name: (profile?.display_name as string) ?? null,
-      avatar_url: (profile?.avatar_url as string) ?? null,
-      full_name: (profile?.full_name as string) ?? null,
+      display_name: profile?.display_name ?? null,
+      avatar_url: profile?.avatar_url ?? null,
+      full_name: profile?.full_name ?? null,
     };
   });
 }
