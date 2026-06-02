@@ -23,7 +23,6 @@ const { listMock, fromMock } = __mocks;
 describe("listSponsors", () => {
   beforeEach(() => {
     listMock.mockReset();
-    inMock.mockClear();
   });
 
   it("returns sponsors in deterministic alphabetical order", async () => {
