@@ -153,30 +153,6 @@ export function RegistrationTeamsView({
 
   return (
     <div className="space-y-6">
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard
-          icon={<UsersRound className="h-4 w-4 text-primary" />}
-          label="Total"
-          value={counts.total}
-        />
-        <StatCard
-          icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
-          label="Approved"
-          value={counts.approved}
-        />
-        <StatCard
-          icon={<Clock className="h-4 w-4 text-blue-500" />}
-          label="Waitlist"
-          value={counts.waitlist}
-        />
-        <StatCard
-          icon={<Timer className="h-4 w-4 text-amber-500" />}
-          label="Pending"
-          value={counts.pending}
-        />
-      </div>
-
       {/* Closed banner */}
       {!registrationOpen && (
         <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border border-border">
@@ -363,6 +339,26 @@ export function RegistrationTeamsView({
           )}
         </div>
       )}
+
+      {/* Inline summary metrics */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-3 border-t border-border text-sm">
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <UsersRound className="h-4 w-4 text-primary" />
+          <span className="font-bold text-foreground">{counts.total}</span> Total
+        </span>
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          <span className="font-bold text-foreground">{counts.approved}</span> Approved
+        </span>
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <Clock className="h-4 w-4 text-blue-500" />
+          <span className="font-bold text-foreground">{counts.waitlist}</span> Waitlist
+        </span>
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <Timer className="h-4 w-4 text-amber-500" />
+          <span className="font-bold text-foreground">{counts.pending}</span> Pending
+        </span>
+      </div>
     </div>
   );
 }
