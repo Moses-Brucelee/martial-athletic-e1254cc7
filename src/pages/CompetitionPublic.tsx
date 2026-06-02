@@ -797,7 +797,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
         </div>
       </div>
 
-      <main className="max-w-3xl mx-auto px-4 pb-8 space-y-6 sm:space-y-8">
+      <main className="max-w-3xl mx-auto px-4 pt-4 sm:pt-0 pb-8 space-y-4 sm:space-y-8">
         {/* Sponsor logos — strip on mobile, grid on desktop */}
         {sponsors.length > 0 && (
           <div className="bg-card border border-border rounded-xl p-4">
@@ -807,7 +807,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
             <div className="flex sm:hidden gap-3 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
               {sponsors.map((s) => {
                 const inner = (
-                  <div className="h-24 w-32 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start p-2 shrink-0">
+                  <div className="h-32 w-40 rounded-md bg-background/50 border border-border/50 flex items-center justify-center snap-start p-2 shrink-0">
                     <img src={s.url} alt="sponsor" className="max-h-full max-w-full object-contain" />
                   </div>
                 );
