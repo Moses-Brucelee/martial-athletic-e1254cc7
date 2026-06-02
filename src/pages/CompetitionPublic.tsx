@@ -87,6 +87,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
   const [sponsors, setSponsors] = useState<SponsorAsset[]>([]);
   const [sponsorsLoading, setSponsorsLoading] = useState(true);
   const [brokenSponsors, setBrokenSponsors] = useState<Set<string>>(new Set());
+  const [pendingSponsor, setPendingSponsor] = useState<SponsorAsset | null>(null);
   useEffect(() => {
     if (!id) return;
     setSponsorsLoading(true);
@@ -96,6 +97,11 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
       .finally(() => setSponsorsLoading(false));
   }, [id]);
   const visibleSponsors = sponsors.filter((s) => !brokenSponsors.has(s.path));
+
+  const openSponsor = (s: SponsorAsset) => {
+    if (!s.websiteUrl) return;
+    setPendingSponsor(s);
+  };
 
   // Auto-open registration wizard if URL has ?register=1
   useEffect(() => {
