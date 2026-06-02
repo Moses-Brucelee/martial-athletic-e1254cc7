@@ -349,32 +349,78 @@ export default function CompetitionDashboard() {
   );
 
   const renderViewerTabs = () => {
-    const validViewerTabs = ["leaderboard", "heats", "teams", "workouts"];
-    const initialTab = tabFromUrl && validViewerTabs.includes(tabFromUrl) ? tabFromUrl : "leaderboard";
+    // Visibility rules:
+    // - Leaderboard & Heats: only when live or completed
+    // - Registration tab: only while registration is open (deadline not passed)
+    // - Once deadline passes, hide Registration and show "closed" banner on Teams tab
+    const isLive = derivedStatus === "live" || derivedStatus === "completed";
+    const isCompleted = derivedStatus === "completed" || derivedStatus === "expired";
+    const deadlinePassed = competition?.registration_deadline
+      ? new Date() > new Date(competition.registration_deadline)
+      : false;
+    const registrationOpen = !deadlinePassed && !isCompleted;
+
+    const viewerTabs: { value: string; label: string }[] = [];
+    if (registrationOpen) viewerTabs.push({ value: "register", label: "Registration" });
+    viewerTabs.push({ value: "teams", label: "Teams" });
+    viewerTabs.push({ value: "workouts", label: "Workouts" });
+    if (isLive) {
+      viewerTabs.push({ value: "leaderboard", label: "Leaderboard" });
+      viewerTabs.push({ value: "heats", label: "Heats" });
+    }
+
+    const initialTab =
+      tabFromUrl && viewerTabs.some((t) => t.value === tabFromUrl)
+        ? tabFromUrl
+        : viewerTabs[0]?.value ?? "teams";
+
     return (
       <Tabs defaultValue={initialTab} className="w-full">
         <div className="relative mb-6">
           <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
-            <TabsList className="inline-flex w-auto min-w-full md:w-full md:grid md:grid-cols-4 gap-1">
-              <TabsTrigger value="leaderboard" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Leaderboard</TabsTrigger>
-              <TabsTrigger value="heats" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Heats</TabsTrigger>
-              <TabsTrigger value="teams" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Teams</TabsTrigger>
-              <TabsTrigger value="workouts" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Workouts</TabsTrigger>
+            <TabsList className={`inline-flex w-auto min-w-full md:w-full md:grid gap-1`} style={{ gridTemplateColumns: `repeat(${viewerTabs.length}, minmax(0, 1fr))` }}>
+              {viewerTabs.map((t) => (
+                <TabsTrigger
+                  key={t.value}
+                  value={t.value}
+                  className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm"
+                >
+                  {t.label}
+                </TabsTrigger>
+              ))}
             </TabsList>
           </div>
           <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none md:hidden" />
         </div>
 
-        <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
-        <TabsContent value="heats">
-          <HeatManagementPanel competitionId={id!} canAdmin={false} />
-        </TabsContent>
+        {!registrationOpen && (
+          <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-muted/40 border border-border">
+            <Lock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+            <p className="text-sm text-foreground">
+              Registrations for this competition have closed. Please contact the competition administrator for assistance.
+            </p>
+          </div>
+        )}
+
+        {registrationOpen && (
+          <TabsContent value="register">
+            <RegistrationManager competitionId={id!} canAdmin={false} />
+          </TabsContent>
+        )}
         <TabsContent value="teams">
           <TeamsPanel competitionId={id!} isOwner={false} />
         </TabsContent>
         <TabsContent value="workouts">
           <QuickWorkoutsPanel competitionId={id!} isOwner={false} scoringMode={settings?.scoring_method === "auto" ? "auto" : "points"} />
         </TabsContent>
+        {isLive && (
+          <>
+            <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
+            <TabsContent value="heats">
+              <HeatManagementPanel competitionId={id!} canAdmin={false} />
+            </TabsContent>
+          </>
+        )}
       </Tabs>
     );
   };
