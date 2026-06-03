@@ -100,7 +100,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
 
   const currentTeam = teams[currentTeamIndex];
   const selectedWorkout = workouts.find((w) => w.id === selectedWorkoutId);
-  const currentScoringType: ScoringType = selectedWorkoutId ? (workoutScoringMap[selectedWorkoutId] || "reps") : "reps";
+  const currentScoringType: ScoringType = selectedWorkoutId ? (workoutScoringMap[selectedWorkoutId] || "points") : "points";
   const CurrentIcon = SCORING_ICONS[currentScoringType];
 
   const updateScore = (value: string) => {
