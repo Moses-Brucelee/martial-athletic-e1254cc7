@@ -31,6 +31,28 @@ function rawFieldFor(t: ScoringType): "time_seconds" | "reps_completed" | "load_
   return t === "time" ? "time_seconds" : t === "reps" ? "reps_completed" : t === "load" ? "load_value" : "points_awarded";
 }
 
+/**
+ * Normalize any DB-stored scoring_type value (incl. "max_reps", legacy values,
+ * or null) into one of the four UI scoring types. Returning a guaranteed key
+ * prevents `TYPE_META[unknown]` from being undefined and crashing the tab.
+ */
+function normalizeScoringType(raw: unknown): ScoringType {
+  switch (raw) {
+    case "time":
+    case "reps":
+    case "load":
+    case "points":
+      return raw;
+    case "max_reps":
+    case "amrap":
+      return "reps";
+    case "weight":
+      return "load";
+    default:
+      return "points";
+  }
+}
+
 export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScoreEntryProps) {
   const { data: workouts = [] } = useWorkouts(competitionId);
   const { data: teams = [] } = useTeams(competitionId);
