@@ -39,6 +39,24 @@ function getRawFieldKey(scoringType: ScoringType): "time_seconds" | "reps_comple
   }
 }
 
+/** Normalize any DB scoring_type (incl. "max_reps", legacy values, null) to a known key. */
+function normalizeScoringType(raw: unknown): ScoringType {
+  switch (raw) {
+    case "time":
+    case "reps":
+    case "load":
+    case "points":
+      return raw;
+    case "max_reps":
+    case "amrap":
+      return "reps";
+    case "weight":
+      return "load";
+    default:
+      return "points";
+  }
+}
+
 function getDisplayValue(scoreRow: any, scoringType: ScoringType): string {
   const fieldKey = getRawFieldKey(scoringType);
   const raw = scoreRow?.[fieldKey];
@@ -60,7 +78,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
 
   const workoutScoringMap = useMemo(() => {
     const map: Record<string, ScoringType> = {};
-    workouts.forEach((w) => { map[w.id] = (w.scoring_type as ScoringType) || "reps"; });
+    workouts.forEach((w) => { map[w.id] = normalizeScoringType(w.scoring_type); });
     return map;
   }, [workouts]);
 
@@ -74,7 +92,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
   useEffect(() => {
     const map: Record<string, string> = {};
     scoreRows.forEach((s) => {
-      const st = workoutScoringMap[s.workout_id] || "reps";
+      const st = workoutScoringMap[s.workout_id] || "points";
       map[`${s.team_id}::${s.workout_id}`] = getDisplayValue(s, st);
     });
     setLocalScores(map);
@@ -82,7 +100,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
 
   const currentTeam = teams[currentTeamIndex];
   const selectedWorkout = workouts.find((w) => w.id === selectedWorkoutId);
-  const currentScoringType: ScoringType = selectedWorkoutId ? (workoutScoringMap[selectedWorkoutId] || "reps") : "reps";
+  const currentScoringType: ScoringType = selectedWorkoutId ? (workoutScoringMap[selectedWorkoutId] || "points") : "points";
   const CurrentIcon = SCORING_ICONS[currentScoringType];
 
   const updateScore = (value: string) => {
@@ -121,7 +139,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
       .filter(([, val]) => val !== "" && !isNaN(Number(val)))
       .map(([key, val]) => {
         const [team_id, workout_id] = key.split("::");
-        const st = workoutScoringMap[workout_id] || "reps";
+        const st = workoutScoringMap[workout_id] || "points";
         const numVal = Number(val);
         const rawField = getRawFieldKey(st);
         return {
@@ -162,7 +180,7 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
       {/* Workout selector pills */}
       <div className="flex gap-2 overflow-x-auto pb-3 px-1">
         {workouts.map((w) => {
-          const st = (w.scoring_type as ScoringType) || "reps";
+          const st = normalizeScoringType(w.scoring_type);
           const Icon = SCORING_ICONS[st];
           return (
             <button

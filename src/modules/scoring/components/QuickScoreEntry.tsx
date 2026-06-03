@@ -31,6 +31,28 @@ function rawFieldFor(t: ScoringType): "time_seconds" | "reps_completed" | "load_
   return t === "time" ? "time_seconds" : t === "reps" ? "reps_completed" : t === "load" ? "load_value" : "points_awarded";
 }
 
+/**
+ * Normalize any DB-stored scoring_type value (incl. "max_reps", legacy values,
+ * or null) into one of the four UI scoring types. Returning a guaranteed key
+ * prevents `TYPE_META[unknown]` from being undefined and crashing the tab.
+ */
+function normalizeScoringType(raw: unknown): ScoringType {
+  switch (raw) {
+    case "time":
+    case "reps":
+    case "load":
+    case "points":
+      return raw;
+    case "max_reps":
+    case "amrap":
+      return "reps";
+    case "weight":
+      return "load";
+    default:
+      return "points";
+  }
+}
+
 export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScoreEntryProps) {
   const { data: workouts = [] } = useWorkouts(competitionId);
   const { data: teams = [] } = useTeams(competitionId);
@@ -61,7 +83,11 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
     }
   }, [workouts, selectedWorkoutId]);
 
-  const { data: heatAssignments = [] } = useHeatAssignments(selectedHeatId || undefined);
+  // Only query heat assignments when a real heat is selected (not "__all__"
+  // and not an empty string — both would produce invalid-UUID queries).
+  const heatAssignmentsId =
+    selectedHeatId && selectedHeatId !== "__all__" ? selectedHeatId : undefined;
+  const { data: heatAssignments = [] } = useHeatAssignments(heatAssignmentsId);
   const { data: allAssignments = [] } = useAllHeatAssignments(competitionId);
 
   // Teams that have NEVER been assigned to any heat — show them so newly added
@@ -72,7 +98,7 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
   }, [allAssignments, teams]);
 
   const displayTeams = useMemo(() => {
-    if (selectedHeatId && selectedHeatId !== "__all__") {
+    if (heatAssignmentsId) {
       const heatTeams = heatAssignments
         .map((ha) => {
           const team = teams.find((t) => t.id === ha.team_id);
@@ -80,15 +106,14 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
         })
         .filter(Boolean)
         .sort((a, b) => (a!.lane || 0) - (b!.lane || 0)) as (typeof teams[0] & { lane?: number | null })[];
-      // Append unassigned teams so they are always scorable
       const extras = unassignedTeams.map((t) => ({ ...t, lane: null as number | null }));
       return [...heatTeams, ...extras];
     }
     return teams.map((t) => ({ ...t, lane: null as number | null }));
-  }, [selectedHeatId, heatAssignments, teams, unassignedTeams]);
+  }, [heatAssignmentsId, heatAssignments, teams, unassignedTeams]);
 
   const selectedWorkout = workouts.find((w) => w.id === selectedWorkoutId);
-  const scoringType = ((selectedWorkout?.scoring_type as ScoringType) || "points") as ScoringType;
+  const scoringType: ScoringType = normalizeScoringType(selectedWorkout?.scoring_type);
   const meta = TYPE_META[scoringType];
 
   // Sync existing scores into local state (read the right raw field)

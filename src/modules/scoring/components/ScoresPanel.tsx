@@ -46,6 +46,24 @@ function getRawFieldKey(scoringType: ScoringType): "time_seconds" | "reps_comple
   }
 }
 
+/** Normalize any DB scoring_type (incl. "max_reps", legacy, null) to a known key. */
+function normalizeScoringType(raw: unknown): ScoringType {
+  switch (raw) {
+    case "time":
+    case "reps":
+    case "load":
+    case "points":
+      return raw;
+    case "max_reps":
+    case "amrap":
+      return "reps";
+    case "weight":
+      return "load";
+    default:
+      return "points";
+  }
+}
+
 /** Extract display value from a score row based on workout scoring type */
 function getDisplayValue(scoreRow: any, scoringType: ScoringType): string {
   const fieldKey = getRawFieldKey(scoringType);
@@ -68,7 +86,7 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
   const workoutScoringMap = useMemo(() => {
     const map: Record<string, ScoringType> = {};
     workouts.forEach((w) => {
-      map[w.id] = (w.scoring_type as ScoringType) || "reps";
+      map[w.id] = normalizeScoringType(w.scoring_type);
     });
     return map;
   }, [workouts]);
@@ -77,7 +95,7 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
   useEffect(() => {
     const map: Record<string, string> = {};
     scoreRows.forEach((s) => {
-      const scoringType = workoutScoringMap[s.workout_id] || "reps";
+      const scoringType = workoutScoringMap[s.workout_id] || "points";
       map[`${s.team_id}::${s.workout_id}`] = getDisplayValue(s, scoringType);
     });
     setLocalScores(map);
@@ -103,7 +121,7 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
       .filter(([, val]) => val !== "" && !isNaN(Number(val)))
       .map(([key, val]) => {
         const [team_id, workout_id] = key.split("::");
-        const scoringType = workoutScoringMap[workout_id] || "reps";
+        const scoringType = workoutScoringMap[workout_id] || "points";
         const numVal = Number(val);
         const rawField = getRawFieldKey(scoringType);
 
@@ -174,7 +192,7 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
             <tr className="border-b border-border">
               <th className="text-left py-2 px-2 font-bold text-foreground uppercase text-xs">Team</th>
               {workouts.map((w) => {
-                const st = (w.scoring_type as ScoringType) || "reps";
+                const st = normalizeScoringType(w.scoring_type);
                 const Icon = SCORING_ICONS[st];
                 return (
                   <th key={w.id} className="text-center py-2 px-2 font-bold text-foreground uppercase text-xs whitespace-nowrap">
@@ -205,7 +223,7 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
                 {workouts.map((w) => {
                   const key = `${team.id}::${w.id}`;
                   const isLocked = w.is_locked;
-                  const st = (w.scoring_type as ScoringType) || "reps";
+                  const st = normalizeScoringType(w.scoring_type);
                   return (
                     <td key={w.id} className="py-2 px-1 text-center">
                       {canScore && !isLocked ? (

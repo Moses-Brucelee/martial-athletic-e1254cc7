@@ -29,6 +29,7 @@ import { ScoresPanel } from "@/modules/scoring/components/ScoresPanel";
 import { QuickScoreEntry } from "@/modules/scoring/components/QuickScoreEntry";
 import { MobileJudgeScoring } from "@/modules/scoring/components/MobileJudgeScoring";
 import { ScoreLockControls } from "@/modules/scoring/components/ScoreLockControls";
+import { ScoreTabErrorBoundary } from "@/components/ScoreTabErrorBoundary";
 import { LeaderboardPanel } from "@/modules/leaderboard/components/LeaderboardPanel";
 import { ParticipantsPanel } from "@/modules/athletes/components/ParticipantsPanel";
 import { RegistrationManager } from "@/modules/athletes/components/RegistrationManager";
@@ -147,14 +148,14 @@ export default function CompetitionDashboard() {
   const isReadOnly = !competitionMutable;
 
   const ScoreTab = () => {
-    if (isQuickMode) {
-      return <QuickScoreEntry competitionId={id!} canScore={effectiveCanScore} judgeId={user?.id} />;
-    }
-    return isMobile && effectiveCanScore ? (
+    const inner = isQuickMode ? (
+      <QuickScoreEntry competitionId={id!} canScore={effectiveCanScore} judgeId={user?.id} />
+    ) : isMobile && effectiveCanScore ? (
       <MobileJudgeScoring competitionId={id!} judgeId={user?.id} />
     ) : (
       <ScoresPanel competitionId={id!} canScore={effectiveCanScore} judgeId={user?.id} />
     );
+    return <ScoreTabErrorBoundary>{inner}</ScoreTabErrorBoundary>;
   };
 
 
