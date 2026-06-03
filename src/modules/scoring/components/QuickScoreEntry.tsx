@@ -113,7 +113,7 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
   }, [heatAssignmentsId, heatAssignments, teams, unassignedTeams]);
 
   const selectedWorkout = workouts.find((w) => w.id === selectedWorkoutId);
-  const scoringType = ((selectedWorkout?.scoring_type as ScoringType) || "points") as ScoringType;
+  const scoringType: ScoringType = normalizeScoringType(selectedWorkout?.scoring_type);
   const meta = TYPE_META[scoringType];
 
   // Sync existing scores into local state (read the right raw field)
