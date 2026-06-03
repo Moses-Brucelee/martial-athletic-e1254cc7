@@ -39,6 +39,24 @@ function getRawFieldKey(scoringType: ScoringType): "time_seconds" | "reps_comple
   }
 }
 
+/** Normalize any DB scoring_type (incl. "max_reps", legacy values, null) to a known key. */
+function normalizeScoringType(raw: unknown): ScoringType {
+  switch (raw) {
+    case "time":
+    case "reps":
+    case "load":
+    case "points":
+      return raw;
+    case "max_reps":
+    case "amrap":
+      return "reps";
+    case "weight":
+      return "load";
+    default:
+      return "points";
+  }
+}
+
 function getDisplayValue(scoreRow: any, scoringType: ScoringType): string {
   const fieldKey = getRawFieldKey(scoringType);
   const raw = scoreRow?.[fieldKey];
