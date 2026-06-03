@@ -65,20 +65,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => mq.removeEventListener("change", handler);
   }, [theme]);
 
-  // Time-based auto-switch when not system mode
-  useEffect(() => {
-    if (theme === "system") return;
-    // Check every minute for time-based switching
-    const interval = setInterval(() => {
-      const timeBased = getTimeBasedTheme();
-      if (timeBased !== resolvedTheme) {
-        setResolvedTheme(timeBased);
-        document.documentElement.classList.remove("light", "dark");
-        document.documentElement.classList.add(timeBased);
-      }
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [theme, resolvedTheme]);
+  // Note: previously a time-based interval here overrode the user's
+  // explicit Light/Dark selection every minute, causing random theme flips.
+  // Explicit choices must be respected; "system" already follows OS preference.
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
