@@ -156,14 +156,11 @@ export function RegistrationTeamsView({
 
   return (
     <div className="space-y-6">
-      {/* Inline registration — no need to leave the dashboard */}
+      {/* CTA — route to public event page to complete registration */}
       {registrationOpen && (
-        <RegisterForCompetitionCard
-          competitionId={competitionId}
-          competition={competition}
-          registrationOpen={registrationOpen}
-        />
+        <RegisterCta competitionId={competitionId} />
       )}
+
 
       {/* Closed banner */}
       {!registrationOpen && (
