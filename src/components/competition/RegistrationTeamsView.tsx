@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,13 +15,14 @@ import {
   CheckCircle2,
   Clock,
   Timer,
+  UserPlus,
+  ExternalLink,
 } from "lucide-react";
 import { useTeams, useDivisions } from "@/modules/tournaments/hooks";
 import { useRegistrations } from "@/modules/athletes/hooks";
 import { useLeaderboard } from "@/modules/leaderboard/hooks";
 import { deriveStatus } from "@/modules/tournaments/stateMachine";
 import { RegistrationManager } from "@/modules/athletes/components/RegistrationManager";
-import { RegisterForCompetitionCard } from "@/components/competition/RegisterForCompetitionCard";
 
 interface RegistrationTeamsViewProps {
   competitionId: string;
