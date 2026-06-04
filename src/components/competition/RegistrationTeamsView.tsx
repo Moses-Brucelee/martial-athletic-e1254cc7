@@ -20,6 +20,7 @@ import { useRegistrations } from "@/modules/athletes/hooks";
 import { useLeaderboard } from "@/modules/leaderboard/hooks";
 import { deriveStatus } from "@/modules/tournaments/stateMachine";
 import { RegistrationManager } from "@/modules/athletes/components/RegistrationManager";
+import { RegisterForCompetitionCard } from "@/components/competition/RegisterForCompetitionCard";
 
 interface RegistrationTeamsViewProps {
   competitionId: string;
@@ -153,6 +154,15 @@ export function RegistrationTeamsView({
 
   return (
     <div className="space-y-6">
+      {/* Inline registration — no need to leave the dashboard */}
+      {registrationOpen && (
+        <RegisterForCompetitionCard
+          competitionId={competitionId}
+          competition={competition}
+          registrationOpen={registrationOpen}
+        />
+      )}
+
       {/* Closed banner */}
       {!registrationOpen && (
         <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border border-border">
