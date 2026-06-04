@@ -372,6 +372,36 @@ export function RegistrationTeamsView({
   );
 }
 
+function RegisterCta({ competitionId }: { competitionId: string }) {
+  const navigate = useNavigate();
+  return (
+    <div className="bg-card border border-border rounded-xl p-4 sm:p-5">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <UserPlus className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="font-bold text-foreground text-sm uppercase tracking-tight">
+              Register for this competition
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Complete your registration on the event page.
+            </p>
+          </div>
+        </div>
+        <Button
+          onClick={() => navigate(`/event/${competitionId}`)}
+          className="w-full sm:w-auto shrink-0"
+        >
+          Register now
+          <ExternalLink className="h-4 w-4 ml-2" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function StatCard({
   icon,
   label,
