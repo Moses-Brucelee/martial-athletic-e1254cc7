@@ -1,95 +1,150 @@
-This is a large multi-area change set. I've grouped the 12 items into 4 logical phases so you can confirm scope, order, and any trade-offs before I start. Nothing is built yet.
+## Goal
+Make the competition flow work the way users expect:
 
-## Phase 1 — Permissions & Visibility (items 1, 8, 9, 11)
+- A shared `/event/:id` link should load for anyone, even if they are not logged in and even if the competition is affiliate-only.
+- If the viewer wants to enter the competition, they sign up / log in and register from the same competition experience.
+- The Competition Dashboard's **Registration & Teams** tab should also allow registration directly, so users do not need to jump to another link.
+- If a competition belongs to an affiliate, the public page can be seen by everyone, but actual registration should require the user to become part of that affiliate.
+- Profile information already provided during signup/registration should be reused instead of asking for the same name again unnecessarily.
 
-**Affiliate competition creation (1)**
+## What is currently happening
+The public event page uses the same normal competition query as the private dashboard:
 
-- In `CompetitionCreate.tsx` (StepDetails), auto-select and lock `gym_id` to the affiliate's active gym membership. Hide gym picker for non-super-users.
-- Add DB-level guard: RLS policy on `competitions` INSERT requires `gym_id` matches a gym the user owns OR an active `gym_members` row OR `is_super_user`.
-- Super-users keep full picker.
+- `CompetitionPublic.tsx` calls `useCompetition(id)`.
+- `useCompetition` calls `fetchCompetition` from `src/modules/tournaments/api.ts`.
+- That reads directly from `competitions`.
 
-**Unpublished competition visibility (8)**
+The database access rule for `competitions` currently allows public viewing only when:
 
-- Update `competitions` SELECT RLS so non-owner / non-super viewers only see rows where `status != 'draft'` AND `status != 'unpublished'`. Same-affiliate members without management role get no special bypass.
-- Filter `CompetitionList`, `Browse`, public landing, dashboard spotlights accordingly.
+- the competition is marked `visibility = 'public'`, or
+- the logged-in user is owner / judge / registrant / active gym member.
 
-**Leaderboard & Heats before live (9)**
+So an affiliate/private competition link can fail before login with **Unable to load competition**, because anonymous users are not allowed to read that competition row. That is why the shared link behaves like it only works after the person is registered or has affiliate access.
 
-- In `CompetitionDashboard.tsx` tab list, hide Leaderboard + Heats tabs unless `derivedStatus === 'live' || 'completed'`. Owners/judges keep access via a "Preview" toggle.
-- Public landing (`CompetitionPublic.tsx`) hides the same sections pre-live.
+## Required behavior after the fix
+### Public shared link
+- `/event/:id` loads for anonymous users for any non-draft competition that has been published/shared.
+- The public page displays safe public information only: name, dates, venue, host gym, poster, description, divisions, visible/revealed workouts, public roster/teams where applicable.
+- Draft/unpublished competitions stay hidden.
 
-**Workout visibility (11)**
+### Affiliate restriction
+- Public viewing is not the same as competition access.
+- If the competition has `visibility = 'private'` and a `gym_id`, the public page still opens.
+- When the user tries to register, the app checks their affiliate membership:
+  - Not logged in: send to signup/login and return to this competition.
+  - Logged in but not affiliated: show a clear **Request affiliate access** action for that gym.
+  - Pending membership: show **Pending approval** and disable competition registration until approved.
+  - Active member: allow registration.
 
-- Viewer/public side: render only workouts with `visibility = 'visible'` (drop "hidden" + un-revealed "scheduled").
-- Remove the duplicate "WORKOUTS" admin panel from the Viewer experience — keep only the "ATHLETE VIEW" card. Tighten spacing.
+### Dashboard registration
+- On `/competition/:id`, inside **Registration & Teams**, users can register directly from the tab.
+- No need to click Share or go to `/event/:id` just to register.
+- Existing roster remains below the registration card and updates after registration.
 
-## Phase 2 — Date/Time Validation & UX (items 3, 4, 5)
+### Reuse user/profile information
+- Signup currently stores `display_name` into the profile through the signup trigger, so that information is not lost.
+- The registration flow should prefill and use existing profile data:
+  - Use profile display/full name for self-registration.
+  - Do not ask for name again for self-registration if profile already has it.
+  - Only ask for missing competition-required fields, e.g. date of birth if age eligibility requires it, division, team/teammate details.
+- If registration captures useful self-profile fields that are missing on the profile, update the profile after successful self-registration where safe.
 
-**Same-day & 1-month rule (3)**
+## Implementation plan
+### 1. Add safe public event loading
+Create a public-event data path instead of using the private dashboard query for `/event/:id`.
 
-- Replace current Zod date schema in `lib/validation.ts` with full datetime comparison:
-  - `end_datetime > start_datetime`
-  - `end_datetime <= start_datetime + 1 month`
-- Allow same calendar day when end time > start time.
+- Add a backend function/view for public event details that returns only safe fields for non-draft/non-unpublished competitions.
+- Use this only on the public event page.
+- Keep the existing `competitions` access rules for the authenticated dashboard list, so affiliate-only competitions do not suddenly appear in everyone's dashboard.
 
-**Registration deadline (4)**
+Technical note:
+- This should be done through a Lovable Cloud migration, not by weakening the main `competitions` table policy globally.
+- The function should expose public page data while preserving dashboard/member-only visibility rules.
 
-- Add `registration_deadline < start_datetime` check.
-- In wizard: disable the deadline picker until start datetime is set; restrict its max to `start_datetime - 1 min`. Recompute when start changes.
+### 2. Update public event page to use public-safe reads
+In `CompetitionPublic.tsx`:
 
-**Inline validation messaging (5)**
+- Replace the direct `useCompetition(id)` dependency with a public event loader for the shared page.
+- Keep using normal authenticated actions for registration submission.
+- Ensure the error state distinguishes:
+  - competition not found / not published,
+  - backend error,
+  - registration blocked by affiliate membership.
 
-- Move all wizard errors from top banner to per-field `<FormMessage>` slots using `react-hook-form` + zod resolver (already in deps).
-- Trigger on blur, not on keystroke. Disable Next button while form invalid.
-- Where possible (date pickers), restrict selectable range instead of post-hoc error.
+### 3. Add affiliate-aware registration gating
+Create a small helper/hook for registration eligibility:
 
-## Phase 3 — Registration Lifecycle & Pre-population (items 2, 10)
+- Checks competition visibility and `gym_id`.
+- Checks current user's profile and gym membership status.
+- Returns one of:
+  - `anonymous`
+  - `allowed`
+  - `needs_affiliate_request`
+  - `pending_affiliate_approval`
+  - `closed`
 
-**Pre-populate private competition venue (2)**
+Use this in both:
+- `/event/:id`
+- `/competition/:id` Registration & Teams tab
 
-- On wizard mount, if `visibility === 'private'` and creator has gym/profile address, pre-fill `venue`, `host_gym`, location fields. Keep editable.
+### 4. Extract the existing registration wizard into a shared component
+Move the current registration wizard logic from `CompetitionPublic.tsx` into:
 
-**Registration availability (10)**
+`src/components/competition/RegisterForCompetitionCard.tsx`
 
-- Compute `registrationOpen = now < registration_deadline`.
-- Dashboard tabs (athlete/viewer mode):
-  - Open: show Registration (with team create/manage/members), Workouts, Teams.
-  - Closed: hide Registration tab; show banner "Registrations for this competition have closed. Please contact the competition administrator for assistance."
-- Disable team create/edit/member add/remove mutations on the client and add RLS check: `competition_teams` write policies require `now() < registration_deadline` (owner/super bypass).
-- This change should also apply to the public shared url like even there they should not be able to make changes once deadline is passed, they should see registration deadline passed or closed something like that, once competition is completed on the public url should redirect to login and ask them to login to view the leaderboard teams etc basically they will be directed to the competition page event page should redirect to competition page and competition page is under login right  
+It will handle:
+- self vs other athlete
+- individual vs team registration
+- division selection
+- age eligibility
+- teammate slots
+- duplicate registration checks
+- team creation + team member registration
+- already-registered state
+- affiliate request / pending status state
 
+Then use this component in:
+- `CompetitionPublic.tsx`
+- `RegistrationTeamsView.tsx`
 
-## Phase 4 — Sponsor Links & Teams UI (items 6, 7, 12)
+### 5. Embed registration into Registration & Teams tab
+In `src/components/competition/RegistrationTeamsView.tsx`:
 
-**Sponsor click + external warning (6, 7)**
+- Place `<RegisterForCompetitionCard />` above the roster grid when registration is open.
+- Keep the admin-only **Manage Registrations & Teams** collapsible as-is.
+- Keep the small metric row at the bottom, as previously requested.
+- If registration is closed, keep the read-only banner and roster only.
 
-- Restore `<a>` wrapper / onClick on sponsor logos in `CompetitionPublic.tsx`.
-- Add `ExternalLinkConfirmDialog` component: shows destination URL, Cancel / Continue buttons. Continue opens `target="_blank" rel="noopener noreferrer"`.
-- Still calls `increment_sponsor_click` RPC for analytics.
+### 6. Clean up repeated profile fields
+Adjust the registration card UX:
 
-**Teams & Members redesign (12)**
+- If registering self and profile has display/full name, show it as read-only identity text instead of asking for name again.
+- If profile is missing name, ask once and save it to the profile after successful self-registration.
+- If date of birth is required for eligibility and profile is missing DOB, ask for it once and save it to the profile after successful self-registration.
+- Leave `CreateProfile`/`ViewProfile` intact, but because registration now updates missing fields, those screens should hydrate with the values already provided.
 
-- New `TeamsLeaderboardView` in public/viewer dashboard:
-  - Card per team, leaderboard-style ranking (current standing if live, else by registration order).
-  - Team name header, division badge, captain marker, member avatars + names listed below.
-  - Responsive: 1 col mobile, 2 col tablet, 3 col desktop.
-  - Smooth hover, expandable member list on mobile.
+## Files likely touched
+- `src/pages/CompetitionPublic.tsx`
+- `src/components/competition/RegistrationTeamsView.tsx`
+- New: `src/components/competition/RegisterForCompetitionCard.tsx`
+- New or updated data/helper module for public event loading and registration eligibility
+- `src/modules/tournaments/api.ts` / hooks only if needed to separate public vs dashboard fetching
+- Lovable Cloud migration for safe public event access
 
-## Technical notes
+## What will not change
+- No scoring changes.
+- No leaderboard changes.
+- No change to admin approval workflow.
+- No change to draft/unpublished protection.
+- No global weakening of dashboard competition visibility.
+- No mock data.
 
-- DB migrations needed: competitions RLS (visibility), competition_teams RLS (deadline lock), gyms/competitions INSERT policy (affiliate scoping).
-- Validation centralised in `src/lib/validation.ts` so wizard + edit-panel share rules.
-- No business-logic change to scoring or leaderboard computation.
-- Will keep super-user override on every new restriction.
-
-## Suggested execution order
-
-I'd ship in this phase order so each step is testable independently. Estimated effort is largest in Phase 1 (RLS + tab logic) and Phase 4 (Teams redesign).
-
-**Questions before I start:**
-
-1. For affiliate-scoping (item 1): if a user belongs to multiple gyms, should the wizard let them pick from their gyms only, or always lock to their "primary" gym? allow to pick from their gyms
-2. For item 9, should competition **owners** (when previewing their own draft) still see Leaderboard/Heats tabs, or fully hidden until live? nothing changes for competition owners that stays same
-3. For item 12, do you want team ranking by current leaderboard points (when live), or alphabetical / registration order pre-live?   
-When live, it should be in sync with the current leaderboard.   
-pre-live registration order
+## Acceptance checks
+- Anonymous visitor opens shared `/event/:id` for an affiliate/private published competition and sees the public competition page.
+- Anonymous visitor clicks register and is sent to signup/login, then returned to the same competition.
+- Logged-in user without affiliate access sees the public page and can request affiliate access, but cannot register yet.
+- Pending affiliate user sees pending status and cannot register yet.
+- Active affiliate member can register from the public page.
+- Signed-in user can register directly from `/competition/:id` → **Registration & Teams** without navigating away.
+- Self-registration does not ask for name again when the profile already has it.
+- Missing name/DOB entered during registration is saved back to profile where appropriate.
