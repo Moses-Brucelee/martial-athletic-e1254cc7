@@ -107,6 +107,18 @@ export function useUpdateHeatStatus() {
   });
 }
 
+export function useUpdateHeatSchedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ heatId, scheduledStart, competitionId }: { heatId: string; scheduledStart: string | null; competitionId: string }) =>
+      engineApi.updateHeatSchedule(heatId, scheduledStart),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["heats", variables.competitionId] });
+    },
+  });
+}
+
+
 // ── Heat Assignments ──────────────────────────────────────────────────
 
 export function useHeatAssignments(heatId: string | undefined) {

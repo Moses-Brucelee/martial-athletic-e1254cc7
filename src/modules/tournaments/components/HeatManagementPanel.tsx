@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useHeats, useAddHeat, useUpdateHeatStatus, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
+import { useHeats, useAddHeat, useUpdateHeatStatus, useUpdateHeatSchedule, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,8 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const { data: allAssignments = [] } = useAllHeatAssignments(competitionId);
   const addHeatMutation = useAddHeat();
   const updateStatusMutation = useUpdateHeatStatus();
+  const updateScheduleMutation = useUpdateHeatSchedule();
+
   const qc = useQueryClient();
 
   const { data: judges = [] } = useQuery({
@@ -163,8 +165,26 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
     }
   };
 
+  const handleScheduleChange = async (heatId: string, value: string) => {
+    try {
+      const iso = value ? new Date(value).toISOString() : null;
+      await updateScheduleMutation.mutateAsync({ heatId, scheduledStart: iso, competitionId });
+      toast.success("Heat time updated");
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
+  const toLocalInput = (iso: string | null | undefined) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   const getStatusConfig = (status: string) =>
     HEAT_STATUSES.find((s) => s.value === status) || HEAT_STATUSES[0];
+
 
   if (isLoading) {
     return <div className="text-muted-foreground text-sm py-8 text-center">Loading heats…</div>;
@@ -358,6 +378,28 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                             );
                           })()}
                         </div>
+
+                        {canAdmin && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-foreground uppercase flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-primary" />
+                              Start Time
+                            </Label>
+                            <Input
+                              type="datetime-local"
+                              defaultValue={toLocalInput(heat.scheduled_start)}
+                              onBlur={(e) => {
+                                const next = e.target.value;
+                                if (next !== toLocalInput(heat.scheduled_start)) {
+                                  handleScheduleChange(heat.id, next);
+                                }
+                              }}
+                              className="h-9 bg-background text-sm w-full sm:w-64"
+                            />
+                          </div>
+                        )}
+
+
 
                         <HeatLaneAssigner
                           heatId={heat.id}
