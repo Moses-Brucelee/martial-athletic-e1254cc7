@@ -1,24 +1,39 @@
-## Goal
+## Problem
 
-On the Competition Dashboard → Registration & Teams tab, stop rendering the full inline registration wizard. Instead, show a compact card with a "Register now" button that routes the user to the public event page (`/event/:id`), where they go through the existing affiliate/signup/registration journey.
+The Teams panel shows every athlete as "UNKNOWN TEAM" and new teams can't be created/seen.
 
-## Changes
+Network shows:
+```
+GET /rest/v1/competition_teams ... → 403
+{"code":"42501","message":"permission denied for table competition_teams"}
+```
 
-**Edit `src/components/competition/RegistrationTeamsView.tsx`**
-- Remove the `<RegisterForCompetitionCard />` usage at the top of the view.
-- Replace it with a small inline CTA card (only when `registrationOpen` is true) containing:
-  - Title: "Register for this competition"
-  - Short helper text: "Complete your registration on the event page."
-  - Primary button "Register now" that navigates to `/event/{competitionId}` via `react-router-dom`'s `useNavigate`.
-- Keep the existing "Registrations are closed" banner for the closed state.
-- Keep the admin "Manage Registrations & Teams" collapsible panel unchanged.
-- Leave grouped divisions/teams/solo athletes list and summary metrics unchanged.
+Inspecting privileges on `competition_teams`:
+```
+anon          = awdDxtm   ← missing 'r' (SELECT)
+authenticated = awdDxtm   ← missing 'r' (SELECT)
+service_role  = arwdDxtm
+```
 
-**No other files changed.**
-- `RegisterForCompetitionCard.tsx` stays in place (still used by other flows / can be reused later); just unimport it from this view.
-- Public `/event/:id` page already handles affiliate gating, sign-up redirection, and the full registration flow — no changes needed there.
-- No backend, RLS, or data changes.
+Every other table in the project still has SELECT for these roles. Something (likely a recent migration touching teams/captain logic) ran `REVOKE SELECT ON competition_teams FROM anon, authenticated`, leaving the RLS policy in place but no underlying table-level SELECT — so PostgREST rejects every read with 42501, regardless of who's asking.
 
-## Out of scope
+This is the only impacted table; data in the DB is intact (7 teams exist, athletes still reference them correctly).
 
-- Affiliate gating logic, signup flow, RLS, and the public event page behavior remain exactly as they are.
+## Fix
+
+Single migration that re-grants the missing privileges to match the convention used by the rest of `public`:
+
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.competition_teams TO authenticated;
+GRANT SELECT ON public.competition_teams TO anon;  -- matches RLS: public read for non-draft comps
+GRANT ALL ON public.competition_teams TO service_role;
+```
+
+No RLS policy changes, no schema changes, no code changes. Visibility is still fully governed by the existing policies (`View teams (public for non-draft comps)`, `teams_delete`, `captain_update_own_team`, etc.).
+
+## Verification
+
+After the migration:
+1. Reload `/competition/ca66f148-…` → team headers show real team names (Deadlifts and doughnuts, Nice to WOD You, etc.) instead of "UNKNOWN TEAM".
+2. Network call to `competition_teams` returns 200 with 7 rows.
+3. "Create Team" succeeds and the new row appears immediately.
