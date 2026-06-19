@@ -165,8 +165,26 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
     }
   };
 
+  const handleScheduleChange = async (heatId: string, value: string) => {
+    try {
+      const iso = value ? new Date(value).toISOString() : null;
+      await updateScheduleMutation.mutateAsync({ heatId, scheduledStart: iso, competitionId });
+      toast.success("Heat time updated");
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
+  const toLocalInput = (iso: string | null | undefined) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   const getStatusConfig = (status: string) =>
     HEAT_STATUSES.find((s) => s.value === status) || HEAT_STATUSES[0];
+
 
   if (isLoading) {
     return <div className="text-muted-foreground text-sm py-8 text-center">Loading heats…</div>;
