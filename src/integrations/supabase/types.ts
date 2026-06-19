@@ -2666,7 +2666,6 @@ export type Database = {
           total_points: number
         }[]
       }
-      get_team_invite_code: { Args: { p_team_id: string }; Returns: string }
       has_competition_access: { Args: { p_user_id: string }; Returns: boolean }
       increment_sponsor_click: {
         Args: {

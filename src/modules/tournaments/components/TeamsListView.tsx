@@ -79,10 +79,9 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
   };
 
   const handleCopyInvite = async (team: Team) => {
-    const { supabase } = await import("@/integrations/supabase/client");
-    const { data: code, error } = await supabase.rpc("get_team_invite_code" as any, { p_team_id: team.id });
-    if (error || !code) {
-      toast.info("No invite code available for this team");
+    const code = (team as any).invite_code;
+    if (!code) {
+      toast.info("No invite code set for this team");
       return;
     }
     const link = `${window.location.origin}/event/${competitionId}?invite=${code}`;
@@ -91,7 +90,6 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
     toast.success("Invite link copied!");
     setTimeout(() => setCopiedId(null), 2000);
   };
-
 
   return (
     <div className="space-y-4">
@@ -159,10 +157,11 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
                       >
                         <Settings2 className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyInvite(team)} aria-label="Copy invite link" title="Copy invite link">
-                        {copiedId === team.id ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
-                      </Button>
-
+                      {(team as any).invite_code && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyInvite(team)} aria-label="Copy invite link">
+                          {copiedId === team.id ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(team)} aria-label="Delete team">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
