@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useHeats, useAddHeat, useUpdateHeatStatus, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
+import { useHeats, useAddHeat, useUpdateHeatStatus, useUpdateHeatSchedule, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
