@@ -132,6 +132,15 @@ export async function updateHeatStatus(heatId: string, status: string): Promise<
   if (error) throw error;
 }
 
+export async function updateHeatSchedule(heatId: string, scheduledStart: string | null): Promise<void> {
+  const { error } = await supabase
+    .from("heat_schedule")
+    .update({ scheduled_start: scheduledStart })
+    .eq("id", heatId);
+  if (error) throw error;
+}
+
+
 export async function removeHeat(heatId: string): Promise<void> {
   const { error } = await supabase
     .from("heat_schedule")
