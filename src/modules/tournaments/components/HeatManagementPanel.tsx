@@ -35,6 +35,8 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const { data: allAssignments = [] } = useAllHeatAssignments(competitionId);
   const addHeatMutation = useAddHeat();
   const updateStatusMutation = useUpdateHeatStatus();
+  const updateScheduleMutation = useUpdateHeatSchedule();
+
   const qc = useQueryClient();
 
   const { data: judges = [] } = useQuery({
