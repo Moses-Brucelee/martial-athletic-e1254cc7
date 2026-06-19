@@ -379,6 +379,28 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                           })()}
                         </div>
 
+                        {canAdmin && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-foreground uppercase flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-primary" />
+                              Start Time
+                            </Label>
+                            <Input
+                              type="datetime-local"
+                              defaultValue={toLocalInput(heat.scheduled_start)}
+                              onBlur={(e) => {
+                                const next = e.target.value;
+                                if (next !== toLocalInput(heat.scheduled_start)) {
+                                  handleScheduleChange(heat.id, next);
+                                }
+                              }}
+                              className="h-9 bg-background text-sm w-full sm:w-64"
+                            />
+                          </div>
+                        )}
+
+
+
                         <HeatLaneAssigner
                           heatId={heat.id}
                           competitionId={competitionId}
