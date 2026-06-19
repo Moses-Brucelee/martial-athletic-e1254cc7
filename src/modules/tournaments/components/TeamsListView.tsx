@@ -79,9 +79,10 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
   };
 
   const handleCopyInvite = async (team: Team) => {
-    const code = (team as any).invite_code;
-    if (!code) {
-      toast.info("No invite code set for this team");
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data: code, error } = await supabase.rpc("get_team_invite_code" as any, { p_team_id: team.id });
+    if (error || !code) {
+      toast.info("No invite code available for this team");
       return;
     }
     const link = `${window.location.origin}/event/${competitionId}?invite=${code}`;
@@ -90,6 +91,7 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
     toast.success("Invite link copied!");
     setTimeout(() => setCopiedId(null), 2000);
   };
+
 
   return (
     <div className="space-y-4">
