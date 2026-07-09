@@ -104,6 +104,23 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
     return map;
   }, [allAssignments, heats]);
 
+  // Map heat_id → assignments sorted by lane
+  const assignmentsByHeat = useMemo(() => {
+    const m = new Map<string, typeof allAssignments>();
+    for (const a of allAssignments) {
+      if (!m.has(a.heat_id)) m.set(a.heat_id, []);
+      m.get(a.heat_id)!.push(a);
+    }
+    for (const list of m.values()) list.sort((a, b) => a.lane_number - b.lane_number);
+    return m;
+  }, [allAssignments]);
+
+  const teamNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const t of teams) m.set(t.id, t.team_name);
+    return m;
+  }, [teams]);
+
   const workoutMap = useMemo(() => {
     const m = new Map<string, string>();
     for (const w of workouts) m.set(w.id, w.name || `WOD #${w.workout_number}`);
