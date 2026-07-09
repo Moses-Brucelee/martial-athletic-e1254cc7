@@ -1,5 +1,8 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
-import { Trophy, Monitor, Filter, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Maximize2, Minimize2 } from "lucide-react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { Trophy, Monitor, Filter, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Maximize2, Minimize2, Download } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { downloadNodeAsImage } from "@/lib/exportImage";
+import { toast } from "sonner";
 import { useLeaderboard } from "@/modules/leaderboard/hooks";
 import { useCompetition, useWorkouts, useDivisions, useTeams } from "@/modules/tournaments/hooks";
 import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
