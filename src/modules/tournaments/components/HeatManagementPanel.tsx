@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Play, CheckCircle2, Clock, Users, Flame, Lock, Gavel, X } from "lucide-react";
+import { Plus, Play, CheckCircle2, Clock, Users, Flame, Lock, Gavel, X, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { HeatLaneAssigner } from "./HeatLaneAssigner";
 import { AutoHeatGenerator } from "./AutoHeatGenerator";
+import { HeatSheetWhiteboard } from "./HeatSheetWhiteboard";
 import { getWorkoutColor } from "@/lib/workoutColors";
 import { fetchJudges } from "@/data/judges";
 import { fetchHeatJudges, assignHeatJudge, unassignHeatJudge } from "@/data/heatJudges";
@@ -80,6 +81,7 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const [laneCount, setLaneCount] = useState("10");
   const [scheduledStart, setScheduledStart] = useState("");
   const [expandedHeatId, setExpandedHeatId] = useState<string | null>(null);
+  const [whiteboardMode, setWhiteboardMode] = useState(false);
 
   const heatsByWorkout = useMemo(() => {
     const map = new Map<string, typeof heats>();
@@ -209,6 +211,24 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
 
   return (
     <div className="space-y-6">
+      {whiteboardMode && (
+        <HeatSheetWhiteboard competitionId={competitionId} onExit={() => setWhiteboardMode(false)} />
+      )}
+
+      {heats.length > 0 && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setWhiteboardMode(true)}
+            className="flex items-center gap-1"
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
+            <span>Whiteboard</span>
+          </Button>
+        </div>
+      )}
+
       {/* Auto heat generator */}
       {canAdmin && <AutoHeatGenerator competitionId={competitionId} />}
 
