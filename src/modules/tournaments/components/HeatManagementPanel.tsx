@@ -81,6 +81,7 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const [laneCount, setLaneCount] = useState("10");
   const [scheduledStart, setScheduledStart] = useState("");
   const [expandedHeatId, setExpandedHeatId] = useState<string | null>(null);
+  const [whiteboardMode, setWhiteboardMode] = useState(false);
 
   const heatsByWorkout = useMemo(() => {
     const map = new Map<string, typeof heats>();
