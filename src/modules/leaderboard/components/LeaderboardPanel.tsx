@@ -35,6 +35,22 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
   const [selectedDivision, setSelectedDivision] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("rank");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [exporting, setExporting] = useState(false);
+  const whiteboardRef = useRef<HTMLDivElement>(null);
+
+  const handleDownload = async (format: "png" | "jpeg") => {
+    if (!whiteboardRef.current) return;
+    setExporting(true);
+    try {
+      const safeName = (competition?.name || "leaderboard").replace(/[^a-z0-9-_]+/gi, "-").toLowerCase();
+      await downloadNodeAsImage(whiteboardRef.current, `${safeName}-leaderboard`, format);
+      toast.success(`Leaderboard exported as ${format.toUpperCase()}`);
+    } catch (err) {
+      toast.error(`Export failed: ${(err as Error).message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Whiteboard auto-refresh every 5 seconds
   useEffect(() => {
