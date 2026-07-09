@@ -228,35 +228,49 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
   // Whiteboard / TV mode with auto-refresh
   if (whiteboardMode) {
     return (
-      <div className="fixed inset-0 z-50 bg-background p-8 overflow-auto">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
+      <div className="fixed inset-0 z-50 bg-background overflow-auto">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
+          <Badge variant="outline" className="text-xs animate-pulse">
+            <RefreshCw className="h-3 w-3 mr-1" /> Auto-refreshing
+          </Badge>
+          <div className="flex items-center gap-2">
+            {divisions.length > 1 && (
+              <Select value={selectedDivision} onValueChange={setSelectedDivision}>
+                <SelectTrigger className="h-9 w-40 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Divisions</SelectItem>
+                  {divisions.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={exporting}>
+                  <Download className="h-4 w-4 mr-1" /> Download
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleDownload("png")}>PNG image</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownload("jpeg")}>JPEG image</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="outline" size="sm" onClick={() => setWhiteboardMode(false)}>
+              <Minimize2 className="h-4 w-4 mr-1" /> Exit
+            </Button>
+          </div>
+        </div>
+
+        <div ref={whiteboardRef} className="bg-background p-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center gap-3 mb-8">
               <Trophy className="h-8 w-8 text-primary" />
               <h1 className="text-4xl font-black text-foreground uppercase tracking-tight">
                 {competition?.name || "Leaderboard"}
               </h1>
             </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="text-xs animate-pulse">
-                <RefreshCw className="h-3 w-3 mr-1" /> Auto-refreshing
-              </Badge>
-              {divisions.length > 1 && (
-                <Select value={selectedDivision} onValueChange={setSelectedDivision}>
-                  <SelectTrigger className="h-9 w-40 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Divisions</SelectItem>
-                    {divisions.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <Button variant="outline" onClick={() => setWhiteboardMode(false)}>
-                <Minimize2 className="h-4 w-4 mr-1" /> Exit
-              </Button>
-            </div>
-          </div>
+
 
           {Object.entries(grouped).map(([divName, divEntries]) => (
             <div key={divName} className="mb-10">
