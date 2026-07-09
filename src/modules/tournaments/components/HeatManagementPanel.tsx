@@ -290,56 +290,109 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                   >
                     <button
                       onClick={() => setExpandedHeatId(isExpanded ? null : heat.id)}
-                      className="w-full text-left p-4 flex items-center justify-between hover:bg-muted/30 transition-colors border-l-4"
+                      className="w-full text-left hover:bg-muted/30 transition-colors border-l-4"
                       style={{ borderLeftColor: color.solid }}
                     >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="flex items-center justify-center w-8 h-8 rounded-lg font-black text-sm"
-                          style={{
-                            backgroundColor: heat.status === "active" ? color.solid : color.bg,
-                            color: heat.status === "active" ? "#fff" : color.text,
-                          }}
-                        >
-                          {heat.heat_number}
-                        </div>
-                        <div>
-                          <p className="font-bold text-foreground text-sm">Heat #{heat.heat_number}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                            <Users className="h-3 w-3" />
-                            <span>{heat.lane_count} lanes</span>
-                            {heat.scheduled_start && (
-                              <>
-                                <Clock className="h-3 w-3 ml-1" />
-                                <span>{new Date(heat.scheduled_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                              </>
-                            )}
-                            {(heatJudgesByHeat.get(heat.id)?.length ?? 0) > 0 && (
-                              <span className="flex items-center gap-1 ml-1">
-                                <Gavel className="h-3 w-3" />
-                                {heatJudgesByHeat.get(heat.id)!.length} judge{heatJudgesByHeat.get(heat.id)!.length === 1 ? "" : "s"}
-                              </span>
-                            )}
+                      <div className="p-4 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className="flex items-center justify-center w-10 h-10 rounded-lg font-black text-base shrink-0"
+                            style={{
+                              backgroundColor: heat.status === "active" ? color.solid : color.bg,
+                              color: heat.status === "active" ? "#fff" : color.text,
+                            }}
+                          >
+                            {heat.heat_number}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-baseline gap-2 flex-wrap">
+                              <p className="font-bold text-foreground text-sm">Heat #{heat.heat_number}</p>
+                              {heat.scheduled_start && (
+                                <span
+                                  className="font-mono font-black tracking-wider text-lg leading-none"
+                                  style={{ color: color.text }}
+                                >
+                                  {new Date(heat.scheduled_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
+                              <Users className="h-3 w-3" />
+                              <span>{heat.lane_count} lanes</span>
+                              {(heatJudgesByHeat.get(heat.id)?.length ?? 0) > 0 && (
+                                <span className="flex items-center gap-1 ml-1">
+                                  <Gavel className="h-3 w-3" />
+                                  {heatJudgesByHeat.get(heat.id)!.length} judge{heatJudgesByHeat.get(heat.id)!.length === 1 ? "" : "s"}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {canAdmin ? (
+                            <Select value={heat.status} onValueChange={(v) => handleStatusChange(heat.id, v)}>
+                              <SelectTrigger className={`h-7 text-xs font-semibold px-2 border-none ${sc.color}`} onClick={(e) => e.stopPropagation()}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {HEAT_STATUSES.map((s) => (
+                                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge variant="outline" className={sc.color}>{sc.label}</Badge>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {canAdmin ? (
-                          <Select value={heat.status} onValueChange={(v) => handleStatusChange(heat.id, v)}>
-                            <SelectTrigger className={`h-7 text-xs font-semibold px-2 border-none ${sc.color}`} onClick={(e) => e.stopPropagation()}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {HEAT_STATUSES.map((s) => (
-                                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Badge variant="outline" className={sc.color}>{sc.label}</Badge>
-                        )}
-                      </div>
+
+                      {/* Inline lane strip — team + judge per lane */}
+                      {(() => {
+                        const heatAssignments = assignmentsByHeat.get(heat.id) ?? [];
+                        const heatJs = heatJudgesByHeat.get(heat.id) ?? [];
+                        if (heat.lane_count === 0) return null;
+                        const lanes = Array.from({ length: heat.lane_count }, (_, i) => i + 1);
+                        return (
+                          <div className="px-4 pb-4 grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(180px, 1fr))` }}>
+                            {lanes.map((laneNum, idx) => {
+                              const a = heatAssignments.find((x) => x.lane_number === laneNum);
+                              const teamName = a ? teamNameById.get(a.team_id) : undefined;
+                              const hj = heatJs[idx % Math.max(heatJs.length, 1)];
+                              const judge = hj ? (judges.find((j) => j.id === hj.judge_id)) : undefined;
+                              const judgeName = judge ? judgeLabel(judge) : hj?.display_name;
+                              return (
+                                <div
+                                  key={laneNum}
+                                  className="flex items-center gap-2 rounded-lg px-2.5 py-2 border"
+                                  style={{
+                                    backgroundColor: a ? color.bg : "transparent",
+                                    borderColor: a ? color.border : "hsl(var(--border))",
+                                  }}
+                                >
+                                  <div
+                                    className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-black"
+                                    style={{ backgroundColor: color.solid, color: "#fff" }}
+                                  >
+                                    L{laneNum}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-bold text-foreground truncate leading-tight">
+                                      {teamName || <span className="italic text-muted-foreground font-normal">Empty lane</span>}
+                                    </p>
+                                    {judgeName && (
+                                      <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground truncate mt-0.5">
+                                        Judge: {judgeName}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                     </button>
+
 
                     {isExpanded && (
                       <div className="border-t border-border p-4 space-y-4">
