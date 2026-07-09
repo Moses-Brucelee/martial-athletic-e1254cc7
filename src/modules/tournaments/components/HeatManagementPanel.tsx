@@ -211,6 +211,24 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
 
   return (
     <div className="space-y-6">
+      {whiteboardMode && (
+        <HeatSheetWhiteboard competitionId={competitionId} onExit={() => setWhiteboardMode(false)} />
+      )}
+
+      {heats.length > 0 && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setWhiteboardMode(true)}
+            className="flex items-center gap-1"
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
+            <span>Whiteboard</span>
+          </Button>
+        </div>
+      )}
+
       {/* Auto heat generator */}
       {canAdmin && <AutoHeatGenerator competitionId={competitionId} />}
 
