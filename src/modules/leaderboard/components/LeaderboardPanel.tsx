@@ -312,6 +312,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
               </table>
             </div>
           ))}
+          </div>
         </div>
       </div>
     );
