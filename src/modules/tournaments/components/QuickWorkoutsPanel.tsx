@@ -212,7 +212,11 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
     try {
       const { error } = await supabase
         .from("competition_workouts")
-        .update({ name: editName.trim() || null, description: editDesc.trim() || null })
+        .update({
+          name: editName.trim() || null,
+          description: editDesc.trim() || null,
+          video_url: editVideo.trim() || null,
+        })
         .eq("id", workoutId);
       if (error) throw error;
       qc.invalidateQueries({ queryKey: ["workouts", competitionId] });
@@ -221,6 +225,7 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
     } catch { toast.error("Failed to update"); }
     setSaving(false);
   };
+
 
   const handleTrash = useCallback(async (w: any) => {
     // Animate out
