@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
 
 const MARKETPLACE_TABS = [
-  { key: "programs", label: "Programs" },
-  { key: "competitions", label: "Competitions" },
-  { key: "apparel", label: "Apparel" },
-  { key: "equipment", label: "Equipment" },
+  { key: "programs", label: "Programs", path: "/programs" },
+  { key: "competitions", label: "Competitions", path: "/browse" },
+  { key: "apparel", label: "Apparel", path: "/browse" },
+  { key: "equipment", label: "Equipment", path: "/browse" },
 ] as const;
 
 export function BrowseMarketplaceSection() {
