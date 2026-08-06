@@ -397,6 +397,8 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
                   {w.description && (
                     <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{w.description}</p>
                   )}
+                  <WorkoutVideo url={(w as any).video_url} />
+
                 </div>
               );
             })}
