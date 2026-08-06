@@ -6,6 +6,8 @@ import { useSuperUserAccess } from "@/hooks/useSuperUserAccess";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useCompetition } from "@/modules/tournaments/hooks";
 import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
+import { CompetitionSettingsPanel } from "@/modules/tournaments/components/CompetitionSettingsPanel";
+
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
