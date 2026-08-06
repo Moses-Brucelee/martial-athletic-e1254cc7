@@ -501,6 +501,15 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
                       </span>
                       <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Workout name" className="h-9 bg-background text-sm" maxLength={100} />
                       <Textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Description — movements, reps, time cap…" className="bg-background min-h-[60px] text-sm" maxLength={500} />
+                      <Input
+                        value={editVideo}
+                        onChange={(e) => setEditVideo(e.target.value)}
+                        placeholder="Video link (YouTube / Vimeo) — optional"
+                        className="h-9 bg-background text-sm"
+                        maxLength={500}
+                        inputMode="url"
+                      />
+
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => handleSaveEdit(w.id)} disabled={saving} className="bg-accent hover:bg-accent/90 text-accent-foreground gap-1">
                           <Check className="h-3.5 w-3.5" /> Save
