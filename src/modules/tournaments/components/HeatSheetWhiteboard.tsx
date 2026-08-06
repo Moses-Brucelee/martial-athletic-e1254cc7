@@ -229,7 +229,19 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
                   const w = workouts.find((x) => x.id === wid);
                   const color = getWorkoutColor(wid === "_unassigned" ? null : wid);
                   const wName = wid === "_unassigned" ? "Unassigned" : (w?.name || `WOD #${w?.workout_number ?? ""}`);
-                  const lanes = Array.from({ length: laneCountMax }, (_, i) => i + 1);
+                  // Lane count is per event group: widest of each heat's configured
+                  // lane_count and the highest lane actually occupied.
+                  const laneCount = Math.max(
+                    1,
+                    ...rows.map((r) =>
+                      Math.max(
+                        r.heat.lane_count || 0,
+                        ...(r.lanes.size ? Array.from(r.lanes.keys()) : [0]),
+                      ),
+                    ),
+                  );
+                  const lanes = Array.from({ length: laneCount }, (_, i) => i + 1);
+
                   return (
                     <div key={wid} className="mb-6 last:mb-0">
                       <h3 className="text-sm md:text-base font-black uppercase tracking-wider mb-2 flex items-center gap-2">
