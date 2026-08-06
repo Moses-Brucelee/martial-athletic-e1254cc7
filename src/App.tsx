@@ -54,6 +54,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <ProfileFieldsPromptProvider>
+            <Suspense fallback={null}>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
