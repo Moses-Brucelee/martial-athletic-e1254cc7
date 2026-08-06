@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useHeatAssignments, useAssignTeamToHeat } from "@/modules/tournaments/hooks-engine";
+import { useHeatAssignments, useAssignTeamToHeat, useAssignAthleteToHeat } from "@/modules/tournaments/hooks-engine";
 import { removeHeatAssignment } from "@/modules/tournaments/api-engine";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
