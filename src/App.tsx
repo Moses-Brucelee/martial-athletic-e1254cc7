@@ -37,6 +37,11 @@ import CompetitionDetail from "./pages/CompetitionDetail";
 import SponsorRedirect from "./pages/SponsorRedirect";
 import Unsubscribe from "./pages/Unsubscribe";
 import InviteResponse from "./pages/InviteResponse";
+import { lazy, Suspense } from "react";
+
+const Programs = lazy(() => import("./pages/Programs"));
+const ProgramDetail = lazy(() => import("./pages/ProgramDetail"));
+const WorkoutSessionPage = lazy(() => import("./pages/WorkoutSessionPage"));
 
 const queryClient = new QueryClient();
 
@@ -49,6 +54,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <ProfileFieldsPromptProvider>
+            <Suspense fallback={null}>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
@@ -76,9 +82,13 @@ const App = () => (
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/invite/:id" element={<InviteResponse />} />
               <Route path="/event/:id/results" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
+              <Route path="/programs" element={<ProtectedRoute><Programs /></ProtectedRoute>} />
+              <Route path="/programs/session/:id" element={<ProtectedRoute><WorkoutSessionPage /></ProtectedRoute>} />
+              <Route path="/programs/:id" element={<ProtectedRoute><ProgramDetail /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
             </ProfileFieldsPromptProvider>
           </BrowserRouter>
         </TooltipProvider>
