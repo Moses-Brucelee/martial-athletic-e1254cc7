@@ -149,6 +149,8 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  const [editVideo, setEditVideo] = useState("");
+
   const [saving, setSaving] = useState(false);
 
   // Draft tiles (new workout cards that appear inline)
