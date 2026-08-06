@@ -92,6 +92,11 @@ export function ManageTeamMembersDialog({
 
 
   const handleAdd = async (regId: string, currentTeamId: string | null) => {
+    if (isFull) {
+      toast.error(`${team.team_name} is full (${teamSize} ${teamSize === 1 ? "athlete" : "athletes"})`);
+      return;
+    }
+
     try {
       await updateTeam.mutateAsync({
         id: regId,
