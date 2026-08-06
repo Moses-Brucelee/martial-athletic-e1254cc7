@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useWorkouts } from "@/modules/tournaments/hooks";
+import { WorkoutVideo } from "@/components/competition/WorkoutVideo";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
