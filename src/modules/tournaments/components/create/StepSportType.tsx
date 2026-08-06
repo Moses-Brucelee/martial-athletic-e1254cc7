@@ -1,4 +1,7 @@
+import { useEffect } from "react";
 import { useCompetitionTypes } from "@/modules/tournaments/hooks-engine";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { Check, Dumbbell, Swords, Shield, Layers, Zap, Settings2 } from "lucide-react";
 
