@@ -118,7 +118,9 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {lanes.map(({ lane, assignment, teamName }) => {
-          const athletes = assignment ? getTeamAthletes(assignment.team_id) : [];
+          const athletes = assignment?.team_id ? getTeamAthletes(assignment.team_id) : [];
+          const isSolo = !!(assignment as any)?.athlete_registration_id;
+
           return (
             <div key={lane} className={`flex items-start gap-2 p-2.5 rounded-lg border transition-colors ${
               assignment ? "bg-primary/5 border-primary/20" : "bg-background border-border border-dashed"
