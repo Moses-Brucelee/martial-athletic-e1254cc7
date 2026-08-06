@@ -28,6 +28,8 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
   const { data: teams = [] } = useTeams(competitionId);
   const { data: divisions = [] } = useDivisions(competitionId);
   const { data: assignments = [] } = useAllHeatAssignments(competitionId);
+  const { data: registrations = [] } = useRegistrations(competitionId);
+
   const { data: judges = [] } = useQuery({
     queryKey: ["judges", competitionId],
     queryFn: () => fetchJudges(competitionId),
