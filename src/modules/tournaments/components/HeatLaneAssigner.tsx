@@ -132,8 +132,16 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
               {assignment ? (
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-foreground truncate">{teamName || "Unknown"}</span>
+                    <span className="text-sm font-semibold text-foreground truncate">
+                      {teamName || "Unknown"}
+                      {isSolo && (
+                        <Badge variant="outline" className="ml-1.5 text-[9px] h-4 px-1.5 align-middle">
+                          Solo
+                        </Badge>
+                      )}
+                    </span>
                     {canAdmin && (
+
                       <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
                         onClick={() => handleRemove(assignment.id)} aria-label="Remove heat assignment">
                         <X className="h-3 w-3" />
