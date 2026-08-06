@@ -186,6 +186,8 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
         workout_number: nextNum,
         name: draft.name.trim(),
         description: draft.description.trim() || null,
+        video_url: draft.videoUrl.trim() || null,
+
         display_order: nextNum,
         scoring_type: scoringType,
         measurement_type: measurementTypeFromScoring(scoringType),
