@@ -339,6 +339,8 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
     setEditingId(w.id);
     setEditName(w.name || "");
     setEditDesc(w.description || "");
+    setEditVideo(w.video_url || "");
+
   };
 
   // Cleanup timer
