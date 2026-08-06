@@ -307,10 +307,21 @@ export default function CompetitionDashboard() {
           <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
           <TeamsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
           <WorkoutsPanel competitionId={id!} workouts={[]} setWorkouts={() => {}} isOwner={effectiveCanAdmin} />
+          {canAdmin && competition && (
+            <div className="lg:col-span-2">
+              <CompetitionSettingsPanel
+                competitionId={id!}
+                competitionName={competition.name}
+                canAdmin={effectiveCanAdmin}
+                canDelete={isOwner || isSuperUser}
+              />
+            </div>
+          )}
           <div className="bg-card border border-border rounded-xl p-6">
             <h3 className="text-lg font-bold text-foreground uppercase mb-4">Score Locks</h3>
             <ScoreLockControls competitionId={id!} canAdmin={effectiveCanAdmin} isSuperUser={isSuperUser} />
           </div>
+
           {competition && (
             <div className="bg-card border border-border rounded-xl p-6">
               <h3 className="text-lg font-bold text-foreground uppercase mb-4">Poster</h3>
