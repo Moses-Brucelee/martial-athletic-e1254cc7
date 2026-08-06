@@ -19,6 +19,13 @@ interface StepSportTypeProps {
 
 export function StepSportType({ selected, onSelect, setupMode, onSetupModeChange, disabled }: StepSportTypeProps) {
   const { data: types = [], isLoading } = useCompetitionTypes();
+  const { enabled: advancedEnabled } = useFeatureFlag("advanced_competition_setup");
+
+  // When the advanced builder is disabled, everyone stays on quick setup.
+  useEffect(() => {
+    if (!advancedEnabled && setupMode !== "quick") onSetupModeChange("quick");
+  }, [advancedEnabled, setupMode, onSetupModeChange]);
+
 
   if (isLoading) {
     return (
