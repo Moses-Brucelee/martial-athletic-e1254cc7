@@ -164,32 +164,43 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
                   )}
                 </div>
               ) : canAdmin ? (
-                <Select onValueChange={(teamId) => handleAssign(lane, teamId)}>
+                <Select onValueChange={(value) => handleAssign(lane, value)}>
                   <SelectTrigger className="h-7 text-xs bg-background border-dashed flex-1">
-                    <span className="text-muted-foreground">Assign team…</span>
+                    <span className="text-muted-foreground">Assign team or athlete…</span>
                   </SelectTrigger>
                   <SelectContent>
-                    {availableTeams.length === 0 ? (
-                      <SelectItem value="_none" disabled>No teams available</SelectItem>
+                    {availableTeams.length === 0 && availableSoloAthletes.length === 0 ? (
+                      <SelectItem value="_none" disabled>Nobody available</SelectItem>
                     ) : (
-                      availableTeams.map((t) => {
-                        const tAthletes = getTeamAthletes(t.id);
-                        return (
-                          <SelectItem key={t.id} value={t.id}>
+                      <>
+                        {availableTeams.map((t) => {
+                          const tAthletes = getTeamAthletes(t.id);
+                          return (
+                            <SelectItem key={t.id} value={`team::${t.id}`}>
+                              <div className="flex items-center gap-2">
+                                <span>{t.team_name}</span>
+                                {tAthletes.length > 0 && (
+                                  <span className="text-muted-foreground text-[10px]">
+                                    ({tAthletes.length} athletes)
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                        {availableSoloAthletes.map((r) => (
+                          <SelectItem key={r.id} value={`ath::${r.id}`}>
                             <div className="flex items-center gap-2">
-                              <span>{t.team_name}</span>
-                              {tAthletes.length > 0 && (
-                                <span className="text-muted-foreground text-[10px]">
-                                  ({tAthletes.length} athletes)
-                                </span>
-                              )}
+                              <span>{r.athlete_name}</span>
+                              <span className="text-muted-foreground text-[10px]">(solo)</span>
                             </div>
                           </SelectItem>
-                        );
-                      })
+                        ))}
+                      </>
                     )}
                   </SelectContent>
                 </Select>
+
               ) : (
                 <span className="text-xs text-muted-foreground italic">Empty</span>
               )}
