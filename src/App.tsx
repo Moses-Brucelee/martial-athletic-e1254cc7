@@ -82,9 +82,13 @@ const App = () => (
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/invite/:id" element={<InviteResponse />} />
               <Route path="/event/:id/results" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
+              <Route path="/programs" element={<ProtectedRoute><Programs /></ProtectedRoute>} />
+              <Route path="/programs/session/:id" element={<ProtectedRoute><WorkoutSessionPage /></ProtectedRoute>} />
+              <Route path="/programs/:id" element={<ProtectedRoute><ProgramDetail /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
             </ProfileFieldsPromptProvider>
           </BrowserRouter>
         </TooltipProvider>
