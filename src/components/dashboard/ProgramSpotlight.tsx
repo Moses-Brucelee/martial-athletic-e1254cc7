@@ -18,7 +18,7 @@ export function ProgramSpotlight() {
           <div>
             <h3 className="text-sm font-bold text-foreground">Training Programs</h3>
             <p className="text-xs text-muted-foreground">
-              Follow structured programs built by top coaches — coming soon.
+              Follow structured programs, run guided workouts and track your progress.
             </p>
           </div>
         </div>
@@ -26,9 +26,9 @@ export function ProgramSpotlight() {
           variant="outline"
           size="sm"
           className="w-full text-xs font-semibold uppercase"
-          onClick={() => navigate("/browse")}
+          onClick={() => navigate("/programs")}
         >
-          Explore Programs
+          Open Programs
         </Button>
       </div>
     </section>
