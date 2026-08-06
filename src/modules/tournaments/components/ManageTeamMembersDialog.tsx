@@ -41,6 +41,7 @@ export function ManageTeamMembersDialog({
   const updateTeam = useUpdateRegistrationTeam();
   const updateTeamMeta = useUpdateTeam();
   const [search, setSearch] = useState("");
+  const [genderFilter, setGenderFilter] = useState<string>("all");
 
   const teamNameById = useMemo(() => {
     const m: Record<string, string> = {};
@@ -53,12 +54,23 @@ export function ManageTeamMembersDialog({
     [registrations, team?.id],
   );
 
+  // Team size comes from the team's division (defaults to 1 = solo)
+  const teamSize = useMemo(() => {
+    const div = divisions.find((d) => d.id === team?.division_id);
+    return Math.max(1, Number((div as any)?.team_size ?? 1));
+  }, [divisions, team?.division_id]);
+
+  const isFull = currentMembers.length >= teamSize;
+
   const availableAthletes = useMemo(() => {
     let list = registrations.filter((r) => r.team_id !== team?.id);
     // Exclude rejected / removed / withdrawn
     list = list.filter(
       (r) => !["rejected", "removed", "withdrawn"].includes(r.status),
     );
+    if (genderFilter !== "all") {
+      list = list.filter((r) => (r.gender ?? "").toLowerCase() === genderFilter);
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -74,9 +86,10 @@ export function ManageTeamMembersDialog({
       if (aUn !== bUn) return aUn - bUn;
       return a.athlete_name.localeCompare(b.athlete_name);
     });
-  }, [registrations, team?.id, search]);
+  }, [registrations, team?.id, search, genderFilter]);
 
   if (!team) return null;
+
 
   const handleAdd = async (regId: string, currentTeamId: string | null) => {
     try {
