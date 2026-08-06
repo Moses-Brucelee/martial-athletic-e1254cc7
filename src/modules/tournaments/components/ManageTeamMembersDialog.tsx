@@ -287,6 +287,21 @@ export function ManageTeamMembersDialog({
                               Unassigned
                             </Badge>
                           )}
+                          {(() => {
+                            const g = (r.gender ?? "").toLowerCase();
+                            if (!g) return null;
+                            const label = g === "male" ? "M" : g === "female" ? "F" : g.charAt(0).toUpperCase();
+                            return (
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] px-1.5 ${
+                                  g === "female" ? "border-accent/50 text-accent" : "border-primary/50 text-primary"
+                                }`}
+                              >
+                                {label}
+                              </Badge>
+                            );
+                          })()}
                           {r.email && (
                             <span className="text-[10px] text-muted-foreground truncate">
                               {r.email}
@@ -299,8 +314,9 @@ export function ManageTeamMembersDialog({
                         variant={currentTeamName ? "outline" : "default"}
                         className="shrink-0 h-7 text-xs"
                         onClick={() => handleAdd(r.id, r.team_id)}
-                        disabled={updateTeam.isPending}
+                        disabled={updateTeam.isPending || isFull}
                       >
+
                         {currentTeamName ? (
                           <>
                             <ArrowRightLeft className="h-3 w-3 mr-1" />
