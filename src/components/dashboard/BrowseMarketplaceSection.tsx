@@ -25,7 +25,7 @@ export function BrowseMarketplaceSection() {
               variant="outline"
               size="sm"
               className="text-xs font-semibold uppercase tracking-wide"
-              onClick={() => navigate("/browse")}
+              onClick={() => navigate(tab.path)}
             >
               {tab.label}
             </Button>
