@@ -37,6 +37,11 @@ import CompetitionDetail from "./pages/CompetitionDetail";
 import SponsorRedirect from "./pages/SponsorRedirect";
 import Unsubscribe from "./pages/Unsubscribe";
 import InviteResponse from "./pages/InviteResponse";
+import { lazy, Suspense } from "react";
+
+const Programs = lazy(() => import("./pages/Programs"));
+const ProgramDetail = lazy(() => import("./pages/ProgramDetail"));
+const WorkoutSessionPage = lazy(() => import("./pages/WorkoutSessionPage"));
 
 const queryClient = new QueryClient();
 
