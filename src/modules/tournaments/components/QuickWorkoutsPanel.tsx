@@ -119,6 +119,7 @@ interface DraftTile {
   localId: string;
   name: string;
   description: string;
+  videoUrl: string;
   scoringType: ScoringTypeValue;
   timeCap: string;
   saving: boolean;
@@ -129,11 +130,13 @@ function newDraftTile(): DraftTile {
     localId: crypto.randomUUID(),
     name: "",
     description: "",
+    videoUrl: "",
     scoringType: "time",
     timeCap: "",
     saving: false,
   };
 }
+
 
 // ── Component ──
 
