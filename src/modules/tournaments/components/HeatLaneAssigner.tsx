@@ -24,20 +24,33 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
   const { data: assignments = [], isLoading } = useHeatAssignments(heatId);
   const { data: registrations = [] } = useRegistrations(competitionId);
   const assignMutation = useAssignTeamToHeat();
+  const assignAthleteMutation = useAssignAthleteToHeat();
   const qc = useQueryClient();
+
+  const regById = useMemo(() => {
+    const m = new Map<string, (typeof registrations)[number]>();
+    for (const r of registrations) m.set(r.id, r);
+    return m;
+  }, [registrations]);
 
   // Build lane slots
   const lanes = useMemo(() => {
     const slots: { lane: number; assignment?: typeof assignments[0]; teamName?: string }[] = [];
     for (let i = 1; i <= laneCount; i++) {
       const a = assignments.find((a) => a.lane_number === i);
-      const team = a ? teams.find((t) => t.id === a.team_id) : undefined;
-      slots.push({ lane: i, assignment: a, teamName: team?.team_name });
+      const team = a?.team_id ? teams.find((t) => t.id === a.team_id) : undefined;
+      const athlete = (a as any)?.athlete_registration_id
+        ? regById.get((a as any).athlete_registration_id)
+        : undefined;
+      slots.push({ lane: i, assignment: a, teamName: team?.team_name || athlete?.athlete_name });
     }
     return slots;
-  }, [assignments, laneCount, teams]);
+  }, [assignments, laneCount, teams, regById]);
 
-  const assignedTeamIds = new Set(assignments.map((a) => a.team_id));
+  const assignedTeamIds = new Set(assignments.map((a) => a.team_id).filter(Boolean) as string[]);
+  const assignedAthleteIds = new Set(
+    assignments.map((a) => (a as any).athlete_registration_id).filter(Boolean) as string[],
+  );
   const availableTeams = teams.filter(
     (t) => !assignedTeamIds.has(t.id) && !(excludeTeamIds?.has(t.id))
   );
@@ -48,19 +61,34 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
     [registrations]
   );
 
+  /** Solo athletes: approved registrations with no team — can occupy a lane directly. */
+  const availableSoloAthletes = useMemo(
+    () => approvedRegs.filter((r) => !r.team_id && !assignedAthleteIds.has(r.id)),
+    [approvedRegs, assignedAthleteIds],
+  );
+
   const getTeamAthletes = (teamId: string) =>
     approvedRegs.filter((r) => r.team_id === teamId).map((r) => r.athlete_name);
 
   const filledCount = assignments.length;
   const fillPct = laneCount > 0 ? Math.round((filledCount / laneCount) * 100) : 0;
 
-  const handleAssign = async (lane: number, teamId: string) => {
+  const handleAssign = async (lane: number, value: string) => {
     try {
-      await assignMutation.mutateAsync({ heatId, teamId, laneNumber: lane });
+      if (value.startsWith("ath::")) {
+        await assignAthleteMutation.mutateAsync({
+          heatId,
+          registrationId: value.slice(5),
+          laneNumber: lane,
+        });
+      } else {
+        await assignMutation.mutateAsync({ heatId, teamId: value.replace(/^team::/, ""), laneNumber: lane });
+      }
     } catch (err) {
       toast.error((err as Error).message);
     }
   };
+
 
   const handleRemove = async (assignmentId: string) => {
     try {
