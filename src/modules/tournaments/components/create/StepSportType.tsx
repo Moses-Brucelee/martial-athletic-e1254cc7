@@ -73,7 +73,7 @@ export function StepSportType({ selected, onSelect, setupMode, onSetupModeChange
       </div>
 
       {/* Setup mode selector — only for CrossFit */}
-      {selected === "crossfit" && (
+      {selected === "crossfit" && advancedEnabled && (
         <div className="space-y-3 mt-6">
           <p className="text-xs font-bold text-foreground uppercase tracking-wider">Setup Mode</p>
           <div className="grid grid-cols-2 gap-3">
