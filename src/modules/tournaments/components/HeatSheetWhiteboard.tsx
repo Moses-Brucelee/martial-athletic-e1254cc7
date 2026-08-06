@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useCompetition, useTeams, useWorkouts, useDivisions } from "@/modules/tournaments/hooks";
 import { useHeats, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
+import { useRegistrations } from "@/modules/athletes/hooks";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchJudges } from "@/data/judges";
 import { fetchHeatJudges } from "@/data/heatJudges";
