@@ -239,8 +239,18 @@ export default function CompetitionDashboard() {
                 <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
               </div>
             </div>
+
+            {canAdmin && competition && (
+              <CompetitionSettingsPanel
+                competitionId={id!}
+                competitionName={competition.name}
+                canAdmin={effectiveCanAdmin}
+                canDelete={isOwner || isSuperUser}
+              />
+            )}
           </div>
         </TabsContent>
+
 
         <TabsContent value="workouts">
           <QuickWorkoutsPanel competitionId={id!} isOwner={effectiveCanAdmin} scoringMode={settings?.scoring_method === "auto" ? "auto" : "points"} />
