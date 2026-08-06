@@ -682,6 +682,15 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
                       className="bg-background min-h-[50px] text-sm"
                       maxLength={500}
                     />
+                    <Input
+                      value={draft.videoUrl}
+                      onChange={(e) => updateDraft(draft.localId, { videoUrl: e.target.value })}
+                      placeholder="Video link (YouTube / Vimeo) — optional"
+                      className="h-8 bg-background text-sm"
+                      maxLength={500}
+                      inputMode="url"
+                    />
+
 
                     {/* Time cap (contextual) */}
                     {isAutoMode && sc.hasTimeCap && (
