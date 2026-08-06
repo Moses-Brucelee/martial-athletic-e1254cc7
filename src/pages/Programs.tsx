@@ -98,6 +98,7 @@ export default function Programs() {
       <SEO
         title="Training Programs | Martial Athletic"
         description="Follow structured training programs, run guided workouts with smart timers, and track your progress and personal bests."
+        path="/programs"
       />
       <AppHeader title="Programs" />
 
