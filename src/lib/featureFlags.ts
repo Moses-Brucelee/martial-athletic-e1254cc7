@@ -32,7 +32,8 @@ export type FeatureFlagKey =
   | "whiteboard_mode"
   | "competition_templates"
   | "share_qr_code"
-  | "share_social_buttons";
+  | "share_social_buttons"
+  | "advanced_competition_setup";
 
 export const FEATURE_FLAG_DEFAULTS: Record<FeatureFlagKey, boolean> = {
   members_management: false,
@@ -46,6 +47,7 @@ export const FEATURE_FLAG_DEFAULTS: Record<FeatureFlagKey, boolean> = {
   competition_templates: true,
   share_qr_code: true,
   share_social_buttons: false,
+  advanced_competition_setup: false,
 };
 
 export const FEATURE_FLAG_LABELS: Record<FeatureFlagKey, string> = {
@@ -60,7 +62,9 @@ export const FEATURE_FLAG_LABELS: Record<FeatureFlagKey, string> = {
   competition_templates: "Save and reuse competition templates",
   share_qr_code: "QR code sharing for competitions",
   share_social_buttons: "X / Facebook / LinkedIn share buttons",
+  advanced_competition_setup: "Advanced competition creator (full workout builder)",
 };
+
 
 /**
  * Map menu_items.feature_key (DB) to a feature flag.
