@@ -41,6 +41,7 @@ export function ManageTeamMembersDialog({
   const updateTeam = useUpdateRegistrationTeam();
   const updateTeamMeta = useUpdateTeam();
   const [search, setSearch] = useState("");
+  const [genderFilter, setGenderFilter] = useState<string>("all");
 
   const teamNameById = useMemo(() => {
     const m: Record<string, string> = {};
@@ -53,12 +54,23 @@ export function ManageTeamMembersDialog({
     [registrations, team?.id],
   );
 
+  // Team size comes from the team's division (defaults to 1 = solo)
+  const teamSize = useMemo(() => {
+    const div = divisions.find((d) => d.id === team?.division_id);
+    return Math.max(1, Number((div as any)?.team_size ?? 1));
+  }, [divisions, team?.division_id]);
+
+  const isFull = currentMembers.length >= teamSize;
+
   const availableAthletes = useMemo(() => {
     let list = registrations.filter((r) => r.team_id !== team?.id);
     // Exclude rejected / removed / withdrawn
     list = list.filter(
       (r) => !["rejected", "removed", "withdrawn"].includes(r.status),
     );
+    if (genderFilter !== "all") {
+      list = list.filter((r) => (r.gender ?? "").toLowerCase() === genderFilter);
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -74,11 +86,17 @@ export function ManageTeamMembersDialog({
       if (aUn !== bUn) return aUn - bUn;
       return a.athlete_name.localeCompare(b.athlete_name);
     });
-  }, [registrations, team?.id, search]);
+  }, [registrations, team?.id, search, genderFilter]);
 
   if (!team) return null;
 
+
   const handleAdd = async (regId: string, currentTeamId: string | null) => {
+    if (isFull) {
+      toast.error(`${team.team_name} is full (${teamSize} ${teamSize === 1 ? "athlete" : "athletes"})`);
+      return;
+    }
+
     try {
       await updateTeam.mutateAsync({
         id: regId,
@@ -164,9 +182,17 @@ export function ManageTeamMembersDialog({
 
           {/* Current members */}
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Current members ({currentMembers.length})
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Current members ({currentMembers.length}/{teamSize})
+              </p>
+              {isFull && (
+                <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">
+                  Team full
+                </Badge>
+              )}
+            </div>
+
             {currentMembers.length === 0 ? (
               <p className="text-xs text-muted-foreground italic px-2">
                 No members yet — add some below.
@@ -199,15 +225,29 @@ export function ManageTeamMembersDialog({
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Add athletes
             </p>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name or email…"
-                className="pl-9 h-9"
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name or email…"
+                  className="pl-9 h-9"
+                />
+              </div>
+              <Select value={genderFilter} onValueChange={setGenderFilter}>
+                <SelectTrigger className="h-9 w-28 shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+
 
             <div className="flex-1 overflow-y-auto border border-border rounded-lg divide-y divide-border">
               {availableAthletes.length === 0 ? (
@@ -247,6 +287,21 @@ export function ManageTeamMembersDialog({
                               Unassigned
                             </Badge>
                           )}
+                          {(() => {
+                            const g = (r.gender ?? "").toLowerCase();
+                            if (!g) return null;
+                            const label = g === "male" ? "M" : g === "female" ? "F" : g.charAt(0).toUpperCase();
+                            return (
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] px-1.5 ${
+                                  g === "female" ? "border-accent/50 text-accent" : "border-primary/50 text-primary"
+                                }`}
+                              >
+                                {label}
+                              </Badge>
+                            );
+                          })()}
                           {r.email && (
                             <span className="text-[10px] text-muted-foreground truncate">
                               {r.email}
@@ -259,8 +314,9 @@ export function ManageTeamMembersDialog({
                         variant={currentTeamName ? "outline" : "default"}
                         className="shrink-0 h-7 text-xs"
                         onClick={() => handleAdd(r.id, r.team_id)}
-                        disabled={updateTeam.isPending}
+                        disabled={updateTeam.isPending || isFull}
                       >
+
                         {currentTeamName ? (
                           <>
                             <ArrowRightLeft className="h-3 w-3 mr-1" />

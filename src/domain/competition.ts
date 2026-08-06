@@ -202,10 +202,12 @@ export interface Heat {
 export interface HeatAssignment {
   id: string;
   heat_id: string;
-  team_id: string;
+  team_id: string | null;
+  athlete_registration_id?: string | null;
   lane_number: number | null;
   created_at: string;
 }
+
 
 export interface JudgeAssignment {
   id: string;

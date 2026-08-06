@@ -171,6 +171,26 @@ export async function assignTeamToHeat(heatId: string, teamId: string, laneNumbe
   return data as HeatAssignment;
 }
 
+/** Assign a single athlete (solo division) to a lane — no team wrapper required. */
+export async function assignAthleteToHeat(
+  heatId: string,
+  athleteRegistrationId: string,
+  laneNumber?: number
+): Promise<HeatAssignment> {
+  const { data, error } = await supabase
+    .from("heat_assignments")
+    .insert({
+      heat_id: heatId,
+      team_id: null,
+      athlete_registration_id: athleteRegistrationId,
+      lane_number: laneNumber ?? null,
+    } as any)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as HeatAssignment;
+}
+
 export async function removeHeatAssignment(assignmentId: string): Promise<void> {
   const { error } = await supabase
     .from("heat_assignments")
@@ -192,11 +212,23 @@ export async function fetchAllHeatAssignments(competitionId: string): Promise<(H
       id: a.id,
       heat_id: a.heat_id,
       team_id: a.team_id,
+      athlete_registration_id: a.athlete_registration_id ?? null,
       lane_number: a.lane_number,
       created_at: a.created_at,
       heat_number: a.heat_schedule?.heat_number,
     }));
 }
+
+// ── Competition deletion ──────────────────────────────────────────────
+
+export async function deleteCompetition(competitionId: string): Promise<void> {
+  const { error } = await supabase
+    .from("competitions")
+    .delete()
+    .eq("id", competitionId);
+  if (error) throw error;
+}
+
 
 // ── Judge Assignments ─────────────────────────────────────────────────
 

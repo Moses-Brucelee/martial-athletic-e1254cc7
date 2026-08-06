@@ -1,4 +1,7 @@
+import { useEffect } from "react";
 import { useCompetitionTypes } from "@/modules/tournaments/hooks-engine";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { Check, Dumbbell, Swords, Shield, Layers, Zap, Settings2 } from "lucide-react";
 
@@ -19,6 +22,13 @@ interface StepSportTypeProps {
 
 export function StepSportType({ selected, onSelect, setupMode, onSetupModeChange, disabled }: StepSportTypeProps) {
   const { data: types = [], isLoading } = useCompetitionTypes();
+  const { enabled: advancedEnabled } = useFeatureFlag("advanced_competition_setup");
+
+  // When the advanced builder is disabled, everyone stays on quick setup.
+  useEffect(() => {
+    if (!advancedEnabled && setupMode !== "quick") onSetupModeChange("quick");
+  }, [advancedEnabled, setupMode, onSetupModeChange]);
+
 
   if (isLoading) {
     return (
@@ -73,7 +83,7 @@ export function StepSportType({ selected, onSelect, setupMode, onSetupModeChange
       </div>
 
       {/* Setup mode selector — only for CrossFit */}
-      {selected === "crossfit" && (
+      {selected === "crossfit" && advancedEnabled && (
         <div className="space-y-3 mt-6">
           <p className="text-xs font-bold text-foreground uppercase tracking-wider">Setup Mode</p>
           <div className="grid grid-cols-2 gap-3">

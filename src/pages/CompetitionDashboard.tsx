@@ -6,6 +6,8 @@ import { useSuperUserAccess } from "@/hooks/useSuperUserAccess";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useCompetition } from "@/modules/tournaments/hooks";
 import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
+import { CompetitionSettingsPanel } from "@/modules/tournaments/components/CompetitionSettingsPanel";
+
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -239,8 +241,18 @@ export default function CompetitionDashboard() {
                 <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
               </div>
             </div>
+
+            {canAdmin && competition && (
+              <CompetitionSettingsPanel
+                competitionId={id!}
+                competitionName={competition.name}
+                canAdmin={effectiveCanAdmin}
+                canDelete={isOwner || isSuperUser}
+              />
+            )}
           </div>
         </TabsContent>
+
 
         <TabsContent value="workouts">
           <QuickWorkoutsPanel competitionId={id!} isOwner={effectiveCanAdmin} scoringMode={settings?.scoring_method === "auto" ? "auto" : "points"} />
@@ -295,10 +307,21 @@ export default function CompetitionDashboard() {
           <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
           <TeamsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
           <WorkoutsPanel competitionId={id!} workouts={[]} setWorkouts={() => {}} isOwner={effectiveCanAdmin} />
+          {canAdmin && competition && (
+            <div className="lg:col-span-2">
+              <CompetitionSettingsPanel
+                competitionId={id!}
+                competitionName={competition.name}
+                canAdmin={effectiveCanAdmin}
+                canDelete={isOwner || isSuperUser}
+              />
+            </div>
+          )}
           <div className="bg-card border border-border rounded-xl p-6">
             <h3 className="text-lg font-bold text-foreground uppercase mb-4">Score Locks</h3>
             <ScoreLockControls competitionId={id!} canAdmin={effectiveCanAdmin} isSuperUser={isSuperUser} />
           </div>
+
           {competition && (
             <div className="bg-card border border-border rounded-xl p-6">
               <h3 className="text-lg font-bold text-foreground uppercase mb-4">Poster</h3>

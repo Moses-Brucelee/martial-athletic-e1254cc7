@@ -141,7 +141,30 @@ export function useAssignTeamToHeat() {
   });
 }
 
+export function useAssignAthleteToHeat() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ heatId, registrationId, laneNumber }: { heatId: string; registrationId: string; laneNumber?: number }) =>
+      engineApi.assignAthleteToHeat(heatId, registrationId, laneNumber),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["heat-assignments", variables.heatId] });
+      qc.invalidateQueries({ queryKey: ["all-heat-assignments"] });
+    },
+  });
+}
+
+export function useDeleteCompetition() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (competitionId: string) => engineApi.deleteCompetition(competitionId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["competitions"] });
+    },
+  });
+}
+
 export function useAllHeatAssignments(competitionId: string | undefined) {
+
   return useQuery({
     queryKey: ["all-heat-assignments", competitionId],
     queryFn: () => engineApi.fetchAllHeatAssignments(competitionId!),

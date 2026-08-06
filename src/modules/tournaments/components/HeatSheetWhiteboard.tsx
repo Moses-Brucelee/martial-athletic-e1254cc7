@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useCompetition, useTeams, useWorkouts, useDivisions } from "@/modules/tournaments/hooks";
 import { useHeats, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
+import { useRegistrations } from "@/modules/athletes/hooks";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchJudges } from "@/data/judges";
 import { fetchHeatJudges } from "@/data/heatJudges";
@@ -28,6 +30,8 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
   const { data: teams = [] } = useTeams(competitionId);
   const { data: divisions = [] } = useDivisions(competitionId);
   const { data: assignments = [] } = useAllHeatAssignments(competitionId);
+  const { data: registrations = [] } = useRegistrations(competitionId);
+
   const { data: judges = [] } = useQuery({
     queryKey: ["judges", competitionId],
     queryFn: () => fetchJudges(competitionId),
@@ -74,6 +78,12 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
     return m;
   }, [heatJudges, judges]);
 
+  const athleteById = useMemo(() => {
+    const m = new Map<string, (typeof registrations)[number]>();
+    for (const r of registrations) m.set(r.id, r);
+    return m;
+  }, [registrations]);
+
   // Build [division → workout → heats] structure
   const grouped = useMemo(() => {
     const assignmentByHeat = new Map<string, typeof assignments>();
@@ -82,22 +92,37 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
       assignmentByHeat.get(a.heat_id)!.push(a);
     }
 
-    // Determine division(s) present in each heat via its team assignments
     type Row = { heat: (typeof heats)[number]; lanes: Map<number, string> };
     const structure = new Map<string /* divisionId or _all */, Map<string /* workoutId */, Row[]>>();
 
     for (const heat of heats) {
       const wid = heat.workout_id || "_unassigned";
-      const heatAssignments = assignmentByHeat.get(heat.id) ?? [];
-      // Group lanes by division (most heats are single-division; multi-div uses first)
+      const heatAssignments = [...(assignmentByHeat.get(heat.id) ?? [])].sort(
+        (a, b) => (a.lane_number ?? 9999) - (b.lane_number ?? 9999),
+      );
       const laneByDiv = new Map<string, Map<number, string>>();
+      // Track next free lane per division for assignments without an explicit lane
+      const nextFree = new Map<string, number>();
+
       for (const a of heatAssignments) {
-        const team = teamById.get(a.team_id);
-        const divId = team?.division_id || "_nodiv";
+        const team = a.team_id ? teamById.get(a.team_id) : undefined;
+        const athlete = a.athlete_registration_id ? athleteById.get(a.athlete_registration_id) : undefined;
+        const label = team?.team_name || athlete?.athlete_name || "—";
+        const divId = team?.division_id || (athlete as any)?.division_id || "_nodiv";
         if (!laneByDiv.has(divId)) laneByDiv.set(divId, new Map());
-        laneByDiv.get(divId)!.set(a.lane_number, team?.team_name || "—");
+        const lanes = laneByDiv.get(divId)!;
+
+        let lane = a.lane_number ?? 0;
+        if (!lane || lanes.has(lane)) {
+          // fall back to the first unoccupied lane for this division
+          let candidate = nextFree.get(divId) ?? 1;
+          while (lanes.has(candidate)) candidate += 1;
+          lane = candidate;
+        }
+        nextFree.set(divId, lane + 1);
+        lanes.set(lane, label);
       }
-      // If empty, still show under _nodiv so the heat row appears
+
       if (laneByDiv.size === 0) laneByDiv.set("_nodiv", new Map());
 
       for (const [divId, lanes] of laneByDiv) {
@@ -113,7 +138,7 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
       for (const rows of byW.values()) rows.sort((a, b) => a.heat.heat_number - b.heat.heat_number);
     }
     return structure;
-  }, [heats, assignments, teamById]);
+  }, [heats, assignments, teamById, athleteById]);
 
   const visibleDivisions = useMemo(() => {
     const ids = Array.from(grouped.keys());
@@ -135,7 +160,6 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
     }
   };
 
-  const laneCountMax = Math.max(4, ...heats.map((h) => h.lane_count || 0));
 
   return (
     <div className="fixed inset-0 z-50 bg-background overflow-auto">
@@ -205,7 +229,19 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
                   const w = workouts.find((x) => x.id === wid);
                   const color = getWorkoutColor(wid === "_unassigned" ? null : wid);
                   const wName = wid === "_unassigned" ? "Unassigned" : (w?.name || `WOD #${w?.workout_number ?? ""}`);
-                  const lanes = Array.from({ length: laneCountMax }, (_, i) => i + 1);
+                  // Lane count is per event group: widest of each heat's configured
+                  // lane_count and the highest lane actually occupied.
+                  const laneCount = Math.max(
+                    1,
+                    ...rows.map((r) =>
+                      Math.max(
+                        r.heat.lane_count || 0,
+                        ...(r.lanes.size ? Array.from(r.lanes.keys()) : [0]),
+                      ),
+                    ),
+                  );
+                  const lanes = Array.from({ length: laneCount }, (_, i) => i + 1);
+
                   return (
                     <div key={wid} className="mb-6 last:mb-0">
                       <h3 className="text-sm md:text-base font-black uppercase tracking-wider mb-2 flex items-center gap-2">

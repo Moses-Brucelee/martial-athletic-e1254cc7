@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useHeatAssignments, useAssignTeamToHeat } from "@/modules/tournaments/hooks-engine";
+import { useHeatAssignments, useAssignTeamToHeat, useAssignAthleteToHeat } from "@/modules/tournaments/hooks-engine";
 import { removeHeatAssignment } from "@/modules/tournaments/api-engine";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,20 +24,33 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
   const { data: assignments = [], isLoading } = useHeatAssignments(heatId);
   const { data: registrations = [] } = useRegistrations(competitionId);
   const assignMutation = useAssignTeamToHeat();
+  const assignAthleteMutation = useAssignAthleteToHeat();
   const qc = useQueryClient();
+
+  const regById = useMemo(() => {
+    const m = new Map<string, (typeof registrations)[number]>();
+    for (const r of registrations) m.set(r.id, r);
+    return m;
+  }, [registrations]);
 
   // Build lane slots
   const lanes = useMemo(() => {
     const slots: { lane: number; assignment?: typeof assignments[0]; teamName?: string }[] = [];
     for (let i = 1; i <= laneCount; i++) {
       const a = assignments.find((a) => a.lane_number === i);
-      const team = a ? teams.find((t) => t.id === a.team_id) : undefined;
-      slots.push({ lane: i, assignment: a, teamName: team?.team_name });
+      const team = a?.team_id ? teams.find((t) => t.id === a.team_id) : undefined;
+      const athlete = (a as any)?.athlete_registration_id
+        ? regById.get((a as any).athlete_registration_id)
+        : undefined;
+      slots.push({ lane: i, assignment: a, teamName: team?.team_name || athlete?.athlete_name });
     }
     return slots;
-  }, [assignments, laneCount, teams]);
+  }, [assignments, laneCount, teams, regById]);
 
-  const assignedTeamIds = new Set(assignments.map((a) => a.team_id));
+  const assignedTeamIds = new Set(assignments.map((a) => a.team_id).filter(Boolean) as string[]);
+  const assignedAthleteIds = new Set(
+    assignments.map((a) => (a as any).athlete_registration_id).filter(Boolean) as string[],
+  );
   const availableTeams = teams.filter(
     (t) => !assignedTeamIds.has(t.id) && !(excludeTeamIds?.has(t.id))
   );
@@ -48,19 +61,34 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
     [registrations]
   );
 
+  /** Solo athletes: approved registrations with no team — can occupy a lane directly. */
+  const availableSoloAthletes = useMemo(
+    () => approvedRegs.filter((r) => !r.team_id && !assignedAthleteIds.has(r.id)),
+    [approvedRegs, assignedAthleteIds],
+  );
+
   const getTeamAthletes = (teamId: string) =>
     approvedRegs.filter((r) => r.team_id === teamId).map((r) => r.athlete_name);
 
   const filledCount = assignments.length;
   const fillPct = laneCount > 0 ? Math.round((filledCount / laneCount) * 100) : 0;
 
-  const handleAssign = async (lane: number, teamId: string) => {
+  const handleAssign = async (lane: number, value: string) => {
     try {
-      await assignMutation.mutateAsync({ heatId, teamId, laneNumber: lane });
+      if (value.startsWith("ath::")) {
+        await assignAthleteMutation.mutateAsync({
+          heatId,
+          registrationId: value.slice(5),
+          laneNumber: lane,
+        });
+      } else {
+        await assignMutation.mutateAsync({ heatId, teamId: value.replace(/^team::/, ""), laneNumber: lane });
+      }
     } catch (err) {
       toast.error((err as Error).message);
     }
   };
+
 
   const handleRemove = async (assignmentId: string) => {
     try {
@@ -90,7 +118,9 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {lanes.map(({ lane, assignment, teamName }) => {
-          const athletes = assignment ? getTeamAthletes(assignment.team_id) : [];
+          const athletes = assignment?.team_id ? getTeamAthletes(assignment.team_id) : [];
+          const isSolo = !!(assignment as any)?.athlete_registration_id;
+
           return (
             <div key={lane} className={`flex items-start gap-2 p-2.5 rounded-lg border transition-colors ${
               assignment ? "bg-primary/5 border-primary/20" : "bg-background border-border border-dashed"
@@ -102,8 +132,16 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
               {assignment ? (
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-foreground truncate">{teamName || "Unknown"}</span>
+                    <span className="text-sm font-semibold text-foreground truncate">
+                      {teamName || "Unknown"}
+                      {isSolo && (
+                        <Badge variant="outline" className="ml-1.5 text-[9px] h-4 px-1.5 align-middle">
+                          Solo
+                        </Badge>
+                      )}
+                    </span>
                     {canAdmin && (
+
                       <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
                         onClick={() => handleRemove(assignment.id)} aria-label="Remove heat assignment">
                         <X className="h-3 w-3" />
@@ -126,32 +164,43 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
                   )}
                 </div>
               ) : canAdmin ? (
-                <Select onValueChange={(teamId) => handleAssign(lane, teamId)}>
+                <Select onValueChange={(value) => handleAssign(lane, value)}>
                   <SelectTrigger className="h-7 text-xs bg-background border-dashed flex-1">
-                    <span className="text-muted-foreground">Assign team…</span>
+                    <span className="text-muted-foreground">Assign team or athlete…</span>
                   </SelectTrigger>
                   <SelectContent>
-                    {availableTeams.length === 0 ? (
-                      <SelectItem value="_none" disabled>No teams available</SelectItem>
+                    {availableTeams.length === 0 && availableSoloAthletes.length === 0 ? (
+                      <SelectItem value="_none" disabled>Nobody available</SelectItem>
                     ) : (
-                      availableTeams.map((t) => {
-                        const tAthletes = getTeamAthletes(t.id);
-                        return (
-                          <SelectItem key={t.id} value={t.id}>
+                      <>
+                        {availableTeams.map((t) => {
+                          const tAthletes = getTeamAthletes(t.id);
+                          return (
+                            <SelectItem key={t.id} value={`team::${t.id}`}>
+                              <div className="flex items-center gap-2">
+                                <span>{t.team_name}</span>
+                                {tAthletes.length > 0 && (
+                                  <span className="text-muted-foreground text-[10px]">
+                                    ({tAthletes.length} athletes)
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                        {availableSoloAthletes.map((r) => (
+                          <SelectItem key={r.id} value={`ath::${r.id}`}>
                             <div className="flex items-center gap-2">
-                              <span>{t.team_name}</span>
-                              {tAthletes.length > 0 && (
-                                <span className="text-muted-foreground text-[10px]">
-                                  ({tAthletes.length} athletes)
-                                </span>
-                              )}
+                              <span>{r.athlete_name}</span>
+                              <span className="text-muted-foreground text-[10px]">(solo)</span>
                             </div>
                           </SelectItem>
-                        );
-                      })
+                        ))}
+                      </>
                     )}
                   </SelectContent>
                 </Select>
+
               ) : (
                 <span className="text-xs text-muted-foreground italic">Empty</span>
               )}

@@ -853,6 +853,7 @@ export type Database = {
           ranking_direction: string
           require_video_verification: boolean
           scoring_method: string
+          scoring_model: string
           settings_json: Json | null
           setup_mode: string
           tie_breaker_policy: string
@@ -868,6 +869,7 @@ export type Database = {
           ranking_direction?: string
           require_video_verification?: boolean
           scoring_method?: string
+          scoring_model?: string
           settings_json?: Json | null
           setup_mode?: string
           tie_breaker_policy?: string
@@ -883,6 +885,7 @@ export type Database = {
           ranking_direction?: string
           require_video_verification?: boolean
           scoring_method?: string
+          scoring_model?: string
           settings_json?: Json | null
           setup_mode?: string
           tie_breaker_policy?: string
@@ -1062,6 +1065,7 @@ export type Database = {
           scheduled_reveal_at: string | null
           scoring_type: string
           time_cap_seconds: number | null
+          video_url: string | null
           visibility: string
           workout_number: number
           workout_type: string
@@ -1079,6 +1083,7 @@ export type Database = {
           scheduled_reveal_at?: string | null
           scoring_type?: string
           time_cap_seconds?: number | null
+          video_url?: string | null
           visibility?: string
           workout_number: number
           workout_type?: string
@@ -1096,6 +1101,7 @@ export type Database = {
           scheduled_reveal_at?: string | null
           scoring_type?: string
           time_cap_seconds?: number | null
+          video_url?: string | null
           visibility?: string
           workout_number?: number
           workout_type?: string
@@ -1558,27 +1564,37 @@ export type Database = {
       }
       heat_assignments: {
         Row: {
+          athlete_registration_id: string | null
           created_at: string
           heat_id: string
           id: string
           lane_number: number | null
-          team_id: string
+          team_id: string | null
         }
         Insert: {
+          athlete_registration_id?: string | null
           created_at?: string
           heat_id: string
           id?: string
           lane_number?: number | null
-          team_id: string
+          team_id?: string | null
         }
         Update: {
+          athlete_registration_id?: string | null
           created_at?: string
           heat_id?: string
           id?: string
           lane_number?: number | null
-          team_id?: string
+          team_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "heat_assignments_athlete_registration_id_fkey"
+            columns: ["athlete_registration_id"]
+            isOneToOne: false
+            referencedRelation: "athlete_registrations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "heat_assignments_heat_id_fkey"
             columns: ["heat_id"]
@@ -1882,6 +1898,45 @@ export type Database = {
           route?: string
           sort_order?: number
           tier_key?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          metadata: Json | null
+          read_at: string | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          metadata?: Json | null
+          read_at?: string | null
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          metadata?: Json | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
