@@ -182,9 +182,17 @@ export function ManageTeamMembersDialog({
 
           {/* Current members */}
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Current members ({currentMembers.length})
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Current members ({currentMembers.length}/{teamSize})
+              </p>
+              {isFull && (
+                <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">
+                  Team full
+                </Badge>
+              )}
+            </div>
+
             {currentMembers.length === 0 ? (
               <p className="text-xs text-muted-foreground italic px-2">
                 No members yet — add some below.
