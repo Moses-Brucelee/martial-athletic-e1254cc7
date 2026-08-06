@@ -544,6 +544,8 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
                           {w.description && (
                             <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap line-clamp-3">{w.description}</p>
                           )}
+                          <WorkoutVideo url={(w as any).video_url} compact />
+
                         </div>
 
                         {/* Action buttons */}
