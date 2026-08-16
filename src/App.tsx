@@ -38,6 +38,8 @@ import CompetitionPublic from "./pages/CompetitionPublic";
 import CompetitionDetail from "./pages/CompetitionDetail";
 import SponsorRedirect from "./pages/SponsorRedirect";
 import Unsubscribe from "./pages/Unsubscribe";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import InviteResponse from "./pages/InviteResponse";
 import { lazy, Suspense } from "react";
 
@@ -65,6 +67,8 @@ const App = () => (
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/guide" element={<Guide />} />
               <Route path="/tutorial" element={<Guide />} />
               <Route path="/create-profile" element={<ProtectedRoute><CreateProfile /></ProtectedRoute>} />

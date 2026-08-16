@@ -6,4 +6,6 @@
   <url><loc>https://martialathletic.fitness/guide</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://martialathletic.fitness/tutorial</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://martialathletic.fitness/browse</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://martialathletic.fitness/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://martialathletic.fitness/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
 </urlset>
