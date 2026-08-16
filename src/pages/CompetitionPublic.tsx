@@ -42,7 +42,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
   const { profile } = useProfile();
   const { data: competition, isLoading, error, refetch: refetchCompetition } = useCompetition(id);
   const { data: teams = [] } = useTeams(id);
-  const { data: divisions = [] } = useDivisions(id);
+  const { data: divisions = [], error: divisionsError } = useDivisions(id);
   const { data: workouts = [] } = useWorkouts(id);
   const { data: registrations = [] } = useRegistrations(id);
   const createReg = useCreateRegistration();
@@ -591,7 +591,11 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
         return (
           <div className="space-y-4">
             <h3 className="text-base font-bold text-foreground">Select Division</h3>
-            {divisions.length === 0 ? (
+            {divisionsError ? (
+              <p className="text-sm text-destructive">
+                Divisions could not be loaded right now, so registration is temporarily unavailable. Please refresh and try again.
+              </p>
+            ) : divisions.length === 0 ? (
               <p className="text-sm text-muted-foreground">No divisions available. You can proceed without one.</p>
             ) : (
               <RadioGroup value={selectedDivisionId} onValueChange={setSelectedDivisionId} className="space-y-2">
