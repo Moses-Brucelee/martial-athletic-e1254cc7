@@ -310,7 +310,7 @@ export default function Guide() {
       name: s.title,
       acceptedAnswer: {
         "@type": "Answer",
-        text: `Learn about ${s.title.toLowerCase()} on Martial Athletic — see the platform guide for full step-by-step details.`,
+        text: `See the Martial Athletic platform guide for details on ${s.title.toLowerCase()}.`,
       },
     })),
   };
@@ -337,7 +337,7 @@ export default function Guide() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground mb-2">How to Use the Platform</h1>
           <p className="text-muted-foreground">
-            Everything you need to know about setting up and running competitions — from divisions and teams to brackets and scoring.
+            Setting up and running competitions: divisions, teams, brackets, scoring, and everything else.
           </p>
         </div>
 
