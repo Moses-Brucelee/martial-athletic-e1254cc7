@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useCompetitionTypes } from "@/modules/tournaments/hooks-engine";
-import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { useAllFeatureFlags } from "@/hooks/useFeatureFlag";
+
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Check, Dumbbell, Swords, Shield, Layers, Zap, Settings2 } from "lucide-react";
@@ -22,12 +23,17 @@ interface StepSportTypeProps {
 
 export function StepSportType({ selected, onSelect, setupMode, onSetupModeChange, disabled }: StepSportTypeProps) {
   const { data: types = [], isLoading } = useCompetitionTypes();
-  const { enabled: advancedEnabled } = useFeatureFlag("advanced_competition_setup");
+  const { data: flags } = useAllFeatureFlags();
+  // Use the raw DB flag value (not the super-user preview override) so the
+  // Advanced mode is hidden by default unless explicitly enabled in the
+  // feature_flags table. Super users can still toggle it from the flags admin.
+  const advancedEnabled = flags?.["advanced_competition_setup"]?.enabled ?? false;
 
   // When the advanced builder is disabled, everyone stays on quick setup.
   useEffect(() => {
     if (!advancedEnabled && setupMode !== "quick") onSetupModeChange("quick");
   }, [advancedEnabled, setupMode, onSetupModeChange]);
+
 
 
   if (isLoading) {
