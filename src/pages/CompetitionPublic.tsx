@@ -719,9 +719,9 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
     location: competition.venue
       ? { "@type": "Place", name: competition.venue, address: competition.venue }
-      : { "@type": "VirtualLocation", url: `https://martial-athletic.jaggulasconsulting.com/event/${id}` },
+      : { "@type": "VirtualLocation", url: `https://martialathletic.fitness/event/${id}` },
     image: competition.poster_url || undefined,
-    organizer: { "@type": "Organization", name: "Martial Athletic", url: "https://martial-athletic.jaggulasconsulting.com/" },
+    organizer: { "@type": "Organization", name: "Martial Athletic", url: "https://martialathletic.fitness/" },
   };
 
   return (

@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 
-const SITE = "https://martial-athletic.jaggulasconsulting.com";
+export const SITE = "https://martialathletic.fitness";
 
 interface SEOProps {
   title: string;
@@ -8,9 +8,11 @@ interface SEOProps {
   path: string;
   type?: "website" | "article";
   jsonLd?: object | object[];
+  /** Private / gated routes should not be indexed but still need unique metadata. */
+  noindex?: boolean;
 }
 
-export function SEO({ title, description, path, type = "website", jsonLd }: SEOProps) {
+export function SEO({ title, description, path, type = "website", jsonLd, noindex }: SEOProps) {
   const url = `${SITE}${path}`;
   const schemas = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
   return (
@@ -18,6 +20,7 @@ export function SEO({ title, description, path, type = "website", jsonLd }: SEOP
       <title>{title}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={url} />
+      {noindex && <meta name="robots" content="noindex, follow" />}
       <meta property="og:type" content={type} />
       <meta property="og:url" content={url} />
       <meta property="og:title" content={title} />
