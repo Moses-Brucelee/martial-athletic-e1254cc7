@@ -507,6 +507,35 @@ export default function CreateProfile() {
           </div>
         </div>
       </main>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm your details</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Your date of birth, age and gender are used for division eligibility and cannot be
+                  changed afterwards. Please double-check them.
+                </p>
+                <div className="rounded-md border border-border bg-muted/50 p-3 text-sm text-foreground space-y-1">
+                  <div><span className="text-muted-foreground">Name:</span> {displayName.trim() || "—"}</div>
+                  <div>
+                    <span className="text-muted-foreground">Date of birth:</span>{" "}
+                    {dobString ? new Date(dobString + "T00:00:00").toLocaleDateString() : "—"}
+                  </div>
+                  <div><span className="text-muted-foreground">Age:</span> {computedAge ?? "—"}</div>
+                  <div><span className="text-muted-foreground">Gender:</span> {gender ? gender.replace(/_/g, " ") : "—"}</div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go back and edit</AlertDialogCancel>
+            <AlertDialogAction onClick={persistProfile}>Confirm &amp; save</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
