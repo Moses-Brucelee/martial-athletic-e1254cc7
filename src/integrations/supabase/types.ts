@@ -2150,6 +2150,8 @@ export type Database = {
           full_name: string | null
           gender: string | null
           id: string
+          identity_locked_at: string | null
+          identity_unlocked_by: string | null
           profile_completed: boolean
           subscription_tier: string
           tier_assigned_at: string
@@ -2169,6 +2171,8 @@ export type Database = {
           full_name?: string | null
           gender?: string | null
           id?: string
+          identity_locked_at?: string | null
+          identity_unlocked_by?: string | null
           profile_completed?: boolean
           subscription_tier?: string
           tier_assigned_at?: string
@@ -2188,6 +2192,8 @@ export type Database = {
           full_name?: string | null
           gender?: string | null
           id?: string
+          identity_locked_at?: string | null
+          identity_unlocked_by?: string | null
           profile_completed?: boolean
           subscription_tier?: string
           tier_assigned_at?: string
@@ -3265,6 +3271,10 @@ export type Database = {
           email: string
           user_id: string
         }[]
+      }
+      admin_unlock_profile_identity: {
+        Args: { p_user_id: string }
+        Returns: Json
       }
       can_read_program: {
         Args: { p_program_id: string; p_user_id: string }
