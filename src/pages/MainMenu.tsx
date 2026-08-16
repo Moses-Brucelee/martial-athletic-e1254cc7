@@ -239,14 +239,10 @@ export default function MainMenu() {
         <div className="space-y-2">
           {accessibleItems.map((item) => {
             const Icon = ICON_MAP[item.icon_name] ?? User;
-            const displayLabel =
-              item.feature_key === "create_competitions" && hasCompetitions
-                ? "View / Build Your Comp"
-                : item.label;
             return (
               <MenuItem
                 key={item.id}
-                label={displayLabel}
+                label={item.label}
                 description={item.description}
                 icon={Icon}
                 onClick={() => handleItemClick(item)}
