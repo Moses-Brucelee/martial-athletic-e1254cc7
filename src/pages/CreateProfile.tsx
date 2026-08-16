@@ -23,7 +23,14 @@ import {
   REQUIRED_PROFILE_FIELDS,
   isProfileComplete,
   missingProfileFields,
+  isIdentityLocked,
 } from "@/lib/profileCompletion";
+import { IdentityFieldHint, LockedValue } from "@/components/profile/IdentityFieldHint";
+import { getSocialIdentity, importSocialAvatar, providerLabel } from "@/lib/socialProfile";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { fetchAllAffiliates, requestAffiliation, fetchUserAffiliationStatuses, type AffiliateGym } from "@/data/affiliates";
 
