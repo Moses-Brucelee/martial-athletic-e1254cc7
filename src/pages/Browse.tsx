@@ -148,6 +148,21 @@ export default function Browse() {
     },
   });
 
+  const itemsQuery = useQuery({
+    queryKey: ["browse-marketplace-items"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("marketplace_items")
+        .select("id, category, title, description, price, currency, vendor_name, external_url")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as MarketplaceItemRow[];
+    },
+  });
+
+
+
   return (
     <div className="min-h-dvh bg-background flex flex-col">
       <SEO
