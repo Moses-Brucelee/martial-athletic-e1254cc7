@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateOfBirthPicker } from "@/components/ui/DateOfBirthPicker";
+import { IdentityFieldHint, LockedValue } from "@/components/profile/IdentityFieldHint";
+import { isIdentityLocked } from "@/lib/profileCompletion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Camera, AlertCircle, CheckCircle } from "lucide-react";
@@ -46,6 +48,8 @@ export default function ViewProfile() {
   const computedAge = dateOfBirth ? calculateAge(dateOfBirth) : null;
 
   const validation = profileSchema.safeParse({ fullName, gender, affiliation, aboutMe });
+  // DOB, age, gender and legal name are locked once the profile is completed.
+  const identityLocked = isIdentityLocked(profile);
   const fieldErrors: Record<string, string> = {};
   if (!validation.success) {
     validation.error.issues.forEach((issue) => {
