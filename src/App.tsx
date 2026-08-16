@@ -54,8 +54,10 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <ProfileFieldsPromptProvider>
+            <RouteMeta />
             <Suspense fallback={null}>
             <Routes>
+
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
