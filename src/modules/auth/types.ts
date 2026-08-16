@@ -10,6 +10,7 @@ export interface Profile {
   affiliation: string | null;
   about_me: string | null;
   profile_completed: boolean;
+  identity_locked_at: string | null;
   subscription_tier: string;
   created_at: string;
   updated_at: string;
