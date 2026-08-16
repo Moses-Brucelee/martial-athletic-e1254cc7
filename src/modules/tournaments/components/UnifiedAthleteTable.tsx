@@ -280,7 +280,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
               <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
                 <SheetHeader><SheetTitle>Add Athlete</SheetTitle></SheetHeader>
                 <AddForm
-                  {...{ newName, setNewName, newEmail, setNewEmail, newPhone, setNewPhone, newGender, setNewGender, newDob, setNewDob, newDivisionId, setNewDivisionId, newTeamId, setNewTeamId, divisions, teams }}
+                  {...{ newName, setNewName, newEmail, setNewEmail, newPhone, setNewPhone, newGender, setNewGender, newDob, setNewDob, newDivisionId, setNewDivisionId, newTeamId, setNewTeamId, divisions }} teams={selectableTeams}
                   onSubmit={handleAddAthlete} isPending={createReg.isPending} onCancel={() => setShowAddForm(false)}
                 />
               </SheetContent>
@@ -378,7 +378,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
         <div className="bg-card border border-border rounded-xl p-4">
           <h3 className="text-sm font-bold text-foreground uppercase mb-3">Add Athlete</h3>
           <AddForm
-            {...{ newName, setNewName, newEmail, setNewEmail, newPhone, setNewPhone, newGender, setNewGender, newDob, setNewDob, newDivisionId, setNewDivisionId, newTeamId, setNewTeamId, divisions, teams }}
+            {...{ newName, setNewName, newEmail, setNewEmail, newPhone, setNewPhone, newGender, setNewGender, newDob, setNewDob, newDivisionId, setNewDivisionId, newTeamId, setNewTeamId, divisions }} teams={selectableTeams}
             onSubmit={handleAddAthlete} isPending={createReg.isPending} onCancel={() => setShowAddForm(false)}
           />
         </div>
