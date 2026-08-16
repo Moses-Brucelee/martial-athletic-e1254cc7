@@ -23,7 +23,14 @@ import {
   REQUIRED_PROFILE_FIELDS,
   isProfileComplete,
   missingProfileFields,
+  isIdentityLocked,
 } from "@/lib/profileCompletion";
+import { IdentityFieldHint, LockedValue } from "@/components/profile/IdentityFieldHint";
+import { getSocialIdentity, importSocialAvatar, providerLabel } from "@/lib/socialProfile";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { fetchAllAffiliates, requestAffiliation, fetchUserAffiliationStatuses, type AffiliateGym } from "@/data/affiliates";
 
@@ -51,6 +58,7 @@ export default function CreateProfile() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [existingAvatarUrl, setExistingAvatarUrl] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -78,6 +86,29 @@ export default function CreateProfile() {
     }).catch(() => {});
   }, [profile?.id]);
 
+  const social = getSocialIdentity(user);
+  const socialProvider = providerLabel(social.provider);
+
+  // Enrich a fresh social sign-up: pull name + avatar from the provider once.
+  useEffect(() => {
+    if (!user || !profile || profile.profile_completed) return;
+    const patch: Record<string, unknown> = {};
+    if (!profile.full_name && social.fullName) patch.full_name = social.fullName;
+    if (!profile.display_name && social.displayName) patch.display_name = social.displayName;
+
+    const run = async () => {
+      if (!profile.avatar_url && social.avatarUrl) {
+        const stored = await importSocialAvatar(user.id, social.avatarUrl);
+        if (stored) patch.avatar_url = stored;
+      }
+      if (Object.keys(patch).length === 0) return;
+      const { error: err } = await supabase.from("profiles").update(patch).eq("user_id", user.id);
+      if (!err) await refetch();
+    };
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, profile?.id]);
+
   // Hydrate from existing profile so re-entry is safe.
   useEffect(() => {
     if (!profile) return;
@@ -104,6 +135,10 @@ export default function CreateProfile() {
   const consentMissing = requiresParentConsent && !parentConsent;
   const nameInvalid = displayName.trim().length > 0 && displayName.trim().length < 2;
 
+  // Identity fields (DOB, age, gender, legal name) can only be captured once.
+  const identityLocked = isIdentityLocked(profile);
+  const willLockIdentity = Boolean(dobString && gender);
+
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -114,6 +149,7 @@ export default function CreateProfile() {
     setAvatarPreview(URL.createObjectURL(file));
   };
 
+  /** Entry point for the Save button — confirms identity details once. */
   const handleSave = async () => {
     if (!user) return;
     if (ageError || consentMissing || nameInvalid) {
@@ -121,6 +157,17 @@ export default function CreateProfile() {
       setError(ageError ?? (consentMissing ? "Parental consent is required for under-18s." : "Please fix the highlighted fields."));
       return;
     }
+    // Ask for confirmation the first time identity details get locked in.
+    if (!identityLocked && willLockIdentity) {
+      setConfirmOpen(true);
+      return;
+    }
+    await persistProfile();
+  };
+
+  const persistProfile = async () => {
+    if (!user) return;
+    setConfirmOpen(false);
     setError("");
     setLoading(true);
 
@@ -134,12 +181,15 @@ export default function CreateProfile() {
       const updates: Record<string, unknown> = {};
       if (trimmedName) {
         updates.display_name = trimmedName;
-        updates.full_name = trimmedName;
+        // Legal name is locked once set — never overwrite it afterwards.
+        if (!identityLocked && !profile?.full_name) updates.full_name = trimmedName;
       }
-      if (gender) updates.gender = gender;
-      if (dobString) {
-        updates.date_of_birth = dobString;
-        updates.age = computedAge;
+      if (!identityLocked) {
+        if (gender) updates.gender = gender;
+        if (dobString) {
+          updates.date_of_birth = dobString;
+          updates.age = computedAge;
+        }
       }
       if (trimmedAffiliation) updates.affiliation = trimmedAffiliation;
       if (trimmedAbout) updates.about_me = trimmedAbout;
@@ -292,6 +342,12 @@ export default function CreateProfile() {
 
                 {/* Form fields */}
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {socialProvider && (
+                    <p className="sm:col-span-2 text-xs text-muted-foreground">
+                      Details filled in from your {socialProvider} account. You can adjust them below.
+                    </p>
+                  )}
+
                   <div className="space-y-2">
                     <Label className="text-foreground font-medium">Display Name</Label>
                     <Input
@@ -308,31 +364,53 @@ export default function CreateProfile() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-foreground font-medium">Gender</Label>
-                    <Select value={gender} onValueChange={setGender} disabled={loading}>
-                      <SelectTrigger className="h-11 bg-background">
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                        <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {identityLocked ? (
+                    <LockedValue label="Gender" value={profile?.gender ? profile.gender.replace(/_/g, " ") : null} />
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <Label className="text-foreground font-medium">Gender</Label>
+                        <IdentityFieldHint />
+                      </div>
+                      <Select value={gender} onValueChange={setGender} disabled={loading}>
+                        <SelectTrigger className="h-11 bg-background">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                          <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {identityLocked ? (
+                    <LockedValue
+                      label="Date of Birth"
+                      value={profile?.date_of_birth ? new Date(profile.date_of_birth + "T00:00:00").toLocaleDateString() : null}
+                    />
+                  ) : (
+                    <div className="space-y-2">
+                      <DateOfBirthPicker value={dobString} onChange={setDobString} disabled={loading} error={ageError ?? undefined} />
+                      <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <IdentityFieldHint /> Cannot be changed later.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
-                    <DateOfBirthPicker value={dobString} onChange={setDobString} disabled={loading} error={ageError ?? undefined} />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-foreground font-medium">Age</Label>
+                    <div className="flex items-center gap-1.5">
+                      <Label className="text-foreground font-medium">Age</Label>
+                      <IdentityFieldHint locked={identityLocked} />
+                    </div>
                     <div className="h-11 flex items-center px-3 rounded-md border border-border bg-muted text-foreground">
                       {computedAge !== null ? computedAge : <span className="text-muted-foreground">Select DOB</span>}
                     </div>
                   </div>
+
+
 
                   {requiresParentConsent && (
                     <div className="sm:col-span-2 flex items-start gap-2 p-3 rounded-lg border border-primary/30 bg-primary/5">
@@ -429,6 +507,35 @@ export default function CreateProfile() {
           </div>
         </div>
       </main>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm your details</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Your date of birth, age and gender are used for division eligibility and cannot be
+                  changed afterwards. Please double-check them.
+                </p>
+                <div className="rounded-md border border-border bg-muted/50 p-3 text-sm text-foreground space-y-1">
+                  <div><span className="text-muted-foreground">Name:</span> {displayName.trim() || "—"}</div>
+                  <div>
+                    <span className="text-muted-foreground">Date of birth:</span>{" "}
+                    {dobString ? new Date(dobString + "T00:00:00").toLocaleDateString() : "—"}
+                  </div>
+                  <div><span className="text-muted-foreground">Age:</span> {computedAge ?? "—"}</div>
+                  <div><span className="text-muted-foreground">Gender:</span> {gender ? gender.replace(/_/g, " ") : "—"}</div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go back and edit</AlertDialogCancel>
+            <AlertDialogAction onClick={persistProfile}>Confirm &amp; save</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

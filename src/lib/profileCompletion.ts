@@ -64,3 +64,22 @@ export function isProfileComplete(profile: ProfileLike | null | undefined): bool
 export function getFieldDef(key: ProfileFieldKey): ProfileFieldDef | undefined {
   return PROFILE_FIELD_DEFS.find((f) => f.key === key);
 }
+
+/**
+ * Identity fields that become permanently read-only once the profile is
+ * completed. Mirrored by the `enforce_profile_identity_lock` DB trigger.
+ */
+export const LOCKED_IDENTITY_FIELDS = ["date_of_birth", "age", "gender", "full_name"] as const;
+
+export const IDENTITY_LOCK_HINT =
+  "This cannot be changed later — please enter it correctly.";
+
+export const IDENTITY_LOCKED_HINT =
+  "Locked — contact support to change.";
+
+/** True once the athlete's identity details have been locked. */
+export function isIdentityLocked(
+  profile: { identity_locked_at?: string | null } | null | undefined,
+): boolean {
+  return Boolean(profile?.identity_locked_at);
+}
