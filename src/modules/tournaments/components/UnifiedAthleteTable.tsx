@@ -52,6 +52,18 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
   const bulkUpdate = useBulkUpdateStatus();
   const isMobile = useIsMobile();
 
+  // Teams only make sense when a division allows more than one athlete
+  const teamDivisions = useMemo(
+    () => divisions.filter((d) => Number((d as any).team_size ?? 1) > 1),
+    [divisions],
+  );
+  const teamsEnabled = teamDivisions.length > 0;
+  const selectableTeams = useMemo(() => {
+    if (!teamsEnabled) return [];
+    const ids = new Set(teamDivisions.map((d) => d.id));
+    return teams.filter((t) => !t.division_id || ids.has(t.division_id));
+  }, [teams, teamDivisions, teamsEnabled]);
+
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDivision, setFilterDivision] = useState("all");
   const [search, setSearch] = useState("");
