@@ -74,7 +74,7 @@ export default function ResetPassword() {
     // landed here without a valid email link — bounce to /forgot-password.
     const timer = setTimeout(() => {
       if (!recoveryDetected) {
-        toast.error("Reset links must be opened from your email.");
+        toast.error("Open this link from the email we sent you.");
         navigate("/forgot-password", { replace: true });
       }
     }, 2500);
@@ -112,7 +112,7 @@ export default function ResetPassword() {
 
     await supabase.auth.signOut();
     setLoading(false);
-    toast.success("Password updated. Please sign in with your new password.");
+    toast.success("Password updated. Sign in with your new password.");
     navigate("/login", { replace: true });
   };
 
@@ -143,7 +143,7 @@ export default function ResetPassword() {
             <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg space-y-4">
               <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
               <h1 className="text-xl font-bold text-foreground">Link Expired</h1>
-              <p className="text-sm text-muted-foreground">This reset link has expired or has already been used. Request a new one.</p>
+              <p className="text-sm text-muted-foreground">This link expired or was already used. Request a new one.</p>
               <Button onClick={() => navigate("/forgot-password")} className="w-full">Request New Link</Button>
             </div>
           </div>
@@ -167,7 +167,7 @@ export default function ResetPassword() {
           <div className="text-center mb-8">
             <img src={logoCompact} alt="Martial Athletic" className="w-20 h-20 mx-auto mb-4 object-contain" />
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">RESET PASSWORD</h1>
-            <p className="text-muted-foreground mt-2 text-sm">Enter your new password below</p>
+            <p className="text-muted-foreground mt-2 text-sm">Choose a new password</p>
           </div>
 
           <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg">

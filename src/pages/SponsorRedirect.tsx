@@ -53,7 +53,7 @@ export default function SponsorRedirect() {
           <ShieldAlert className="h-10 w-10 text-destructive mx-auto" />
           <h1 className="text-xl font-bold">Invalid sponsor link</h1>
           <p className="text-sm text-muted-foreground">
-            The link is missing or not a valid web address.
+            This link is missing or isn't a valid web address.
           </p>
           <Button onClick={() => navigate(-1)} variant="outline">
             <ArrowLeft className="h-4 w-4 mr-1.5" /> Go back
@@ -70,11 +70,10 @@ export default function SponsorRedirect() {
         <ShieldAlert className="h-8 w-8 text-accent mx-auto" />
         <div className="space-y-2">
           <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-tight">
-            You're leaving Martial Athletic
+            Leaving Martial Athletic
           </h1>
           <p className="text-sm text-muted-foreground">
-            You're about to visit an external sponsor website. We can't vouch for the
-            content or security of pages outside Martial Athletic.
+            You're about to visit a sponsor's site. We can't vouch for what's on it.
           </p>
         </div>
 

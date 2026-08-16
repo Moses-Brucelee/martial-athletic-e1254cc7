@@ -85,7 +85,7 @@ export default function InviteResponse() {
                 <Mail className="h-10 w-10 text-primary mx-auto" />
                 <h2 className="text-xl font-bold">Sign in to respond</h2>
                 <p className="text-sm text-muted-foreground">
-                  Please sign in or create an account with the email this invitation was sent to.
+                  Sign in or create an account with the email this invitation was sent to.
                 </p>
                 <div className="flex gap-2 justify-center pt-2">
                   <Button onClick={() => navigate(`/login?redirect=/invite/${id}`)}>Sign in</Button>
@@ -112,9 +112,9 @@ export default function InviteResponse() {
             {state.kind === "ready" && (
               <>
                 <Mail className="h-10 w-10 text-primary mx-auto" />
-                <h2 className="text-xl font-bold">You're invited to join {state.gymName}</h2>
+                <h2 className="text-xl font-bold">Join {state.gymName}?</h2>
                 <p className="text-sm text-muted-foreground">
-                  Accept to be added as a member, or decline if this wasn't expected.
+                  Accept to join, or decline if this wasn't expected.
                 </p>
                 <div className="flex gap-2 justify-center pt-2">
                   <Button onClick={() => respond(true)} disabled={submitting}>
@@ -131,7 +131,7 @@ export default function InviteResponse() {
               <>
                 <CheckCircle2 className="h-10 w-10 text-muted-foreground mx-auto" />
                 <h2 className="text-xl font-bold">Already {state.status}</h2>
-                <p className="text-sm text-muted-foreground">You've already responded to this invitation.</p>
+                <p className="text-sm text-muted-foreground">You already responded to this invitation.</p>
                 <Button onClick={() => navigate("/dashboard")}>Go to dashboard</Button>
               </>
             )}
@@ -148,8 +148,8 @@ export default function InviteResponse() {
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   {state.status === "accepted"
-                    ? "You've been added to the gym."
-                    : "Thanks for letting us know."}
+                    ? "You're now a member."
+                    : "Got it — no changes made."}
                 </p>
                 <Button onClick={() => navigate("/dashboard")}>Continue</Button>
               </>

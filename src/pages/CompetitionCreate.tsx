@@ -109,7 +109,7 @@ export default function CompetitionCreate() {
             scoring_method: "auto",
           } as any,
         });
-        toast.success("Competition created! Add divisions & workouts on the dashboard.");
+        toast.success("Competition created. Add divisions and workouts from the dashboard.");
         navigate(`/competition/${comp.id}`);
       } else {
         setStep(2);
@@ -128,11 +128,11 @@ export default function CompetitionCreate() {
     for (let i = 0; i < workouts.length; i++) {
       const w = workouts[i];
       if (w.movements.length === 0 || !w.movements.some((m) => m.movement_name.trim())) {
-        toast.error(`Workout #${i + 1} needs at least one named movement`);
+        toast.error(`Workout #${i + 1} needs at least one movement`);
         return;
       }
       if (w.workout_type === "amrap" && !w.time_cap_seconds) {
-        toast.error(`Workout #${i + 1}: AMRAP requires a time cap`);
+        toast.error(`Workout #${i + 1}: set a time cap for AMRAP`);
         return;
       }
     }
@@ -169,7 +169,7 @@ export default function CompetitionCreate() {
             })),
         });
       }
-      toast.success("Competition created!");
+      toast.success("Competition created.");
       navigate(`/competition/${competitionId}`);
     } catch (err) {
       setError(sanitizeError(err));
@@ -274,7 +274,7 @@ export default function CompetitionCreate() {
               {divisionsData.length === 0 && (
                 <div className="flex items-start gap-3 p-3 mt-4 rounded-lg bg-destructive/10 border border-destructive/20">
                   <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                  <p className="text-sm text-destructive">At least one division is required to continue.</p>
+                  <p className="text-sm text-destructive">Add at least one division to continue.</p>
                 </div>
               )}
             </>

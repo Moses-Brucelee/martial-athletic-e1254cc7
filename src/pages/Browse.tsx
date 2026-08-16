@@ -189,9 +189,8 @@ export default function Browse() {
             Marketplace
           </h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Everything you can join or train with on Martial Athletic: upcoming competitions open for
-            registration and public training programs built by coaches. Apparel and equipment listings
-            are on the way.
+            Competitions open for registration and public training programs from coaches. Apparel and
+            equipment listings are coming soon.
           </p>
         </section>
 
@@ -223,8 +222,7 @@ export default function Browse() {
             </p>
           ) : (competitionsQuery.data?.length ?? 0) === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No competitions are open for registration at the moment. New events are published by host
-              gyms regularly — check back soon.
+              No competitions are open for registration right now. Check back soon for new events.
             </p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -274,8 +272,7 @@ export default function Browse() {
             </div>
           ) : (programsQuery.data?.length ?? 0) === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No public programs have been published yet. Coaches can build and publish structured
-              multi-week programs from the Programs area.
+              No public programs published yet. Coaches can build and publish programs from the Programs area.
             </p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -318,7 +315,7 @@ export default function Browse() {
         <MarketplaceSection
           icon={<Shirt className="h-4 w-4 text-primary" />}
           title="Apparel"
-          emptyCopy="Event and gym apparel sold directly by host affiliates, with sizing collected at registration."
+          emptyCopy="Event and gym apparel sold by host affiliates, with sizing collected at registration."
           items={itemsQuery.data?.filter((i) => i.category === "apparel") ?? []}
           isLoading={itemsQuery.isLoading}
         />
@@ -327,7 +324,7 @@ export default function Browse() {
         <MarketplaceSection
           icon={<Package className="h-4 w-4 text-primary" />}
           title="Equipment"
-          emptyCopy="Training equipment listings from partner suppliers, filtered by discipline and gym setup."
+          emptyCopy="Training equipment from partner suppliers, filtered by discipline and gym setup."
           items={itemsQuery.data?.filter((i) => i.category === "equipment") ?? []}
           isLoading={itemsQuery.isLoading}
         />

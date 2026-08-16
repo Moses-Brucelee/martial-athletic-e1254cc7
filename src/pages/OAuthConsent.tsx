@@ -85,18 +85,18 @@ export default function OAuthConsent() {
         {error ? (
           <div className="flex items-start gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
             <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-            <p className="text-sm text-destructive">Could not load this authorization request: {error}</p>
+            <p className="text-sm text-destructive">Couldn't load this request: {error}</p>
           </div>
         ) : !details ? (
-          <p className="text-sm text-muted-foreground text-center">Loading authorization request…</p>
+          <p className="text-sm text-muted-foreground text-center">Loading request…</p>
         ) : (
           <>
             <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-muted/50 border border-border">
               <ShieldCheck className="h-4 w-4 text-primary mt-0.5 shrink-0" />
               <p className="text-sm text-muted-foreground">
                 <span className="text-foreground font-medium">{clientName}</span> is requesting access to your Martial
-                Athletic account. It will be able to read your profile, competitions, registrations, leaderboards and
-                training programs as you.
+                Athletic account. It can read your profile, competitions, registrations, leaderboards, and
+                training programs on your behalf.
               </p>
             </div>
             <div className="space-y-3">

@@ -97,7 +97,7 @@ export default function Programs() {
     <div className="min-h-dvh bg-background pb-20">
       <SEO
         title="Training Programs | Martial Athletic"
-        description="Follow structured training programs, run guided workouts with smart timers, and track your progress and personal bests."
+        description="Structured training programs with guided workouts, built-in timers, and progress tracking."
         path="/programs"
       />
       <AppHeader title="Programs" />

@@ -150,7 +150,7 @@ export default function CompetitionDetail() {
           ) : sortedWorkouts.length === 0 ? (
             <div className="bg-card border border-border rounded-xl p-8 text-center">
               <Dumbbell className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No workouts configured for this competition.</p>
+              <p className="text-sm text-muted-foreground">No workouts set up yet.</p>
             </div>
           ) : (
             <div className="space-y-3">

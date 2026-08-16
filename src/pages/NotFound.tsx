@@ -26,7 +26,7 @@ const NotFound = () => {
       <main className="flex-1 flex items-center justify-center px-4">
         <div className="text-center space-y-6 max-w-sm">
           <h1 className="text-7xl font-bold text-primary">404</h1>
-          <p className="text-lg text-muted-foreground">The page you're looking for doesn't exist or has been moved.</p>
+          <p className="text-lg text-muted-foreground">This page doesn't exist or moved.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button onClick={() => navigate(-1)} variant="outline" className="min-h-[44px]">
               <ArrowLeft className="h-4 w-4 mr-2" /> Go Back
