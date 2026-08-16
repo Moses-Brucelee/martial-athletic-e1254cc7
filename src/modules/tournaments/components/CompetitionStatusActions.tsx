@@ -18,6 +18,7 @@ import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 import { getStatusLabel } from "@/modules/tournaments/stateMachine";
 import { validateTransition, type TransitionContext } from "@/modules/tournaments/statusValidation";
 import { supabase } from "@/integrations/supabase/client";
+import { probePublicVisibility } from "@/modules/tournaments/publicVisibility";
 import { Send, Play, CheckCircle, Check, AlertTriangle, XCircle, Loader2 } from "lucide-react";
 
 interface CompetitionStatusActionsProps {
@@ -103,9 +104,20 @@ export function CompetitionStatusActions({ competitionId, currentStatus, canAdmi
     updateStatus(
       { id: competitionId, status: transition.next },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
           setOpen(false);
           toast.success(`Competition is now ${getStatusLabel(transition.next)}`);
+          if (transition.next === "published") {
+            const probe = await probePublicVisibility(competitionId);
+            if (!probe.reachable) {
+              toast.warning("Public event page is not reachable", {
+                description:
+                  probe.reason ||
+                  "Visitors who are not signed in cannot open the share link yet. Contact support if this persists.",
+                duration: 10000,
+              });
+            }
+          }
         },
         onError: (err) => toast.error((err as Error).message),
       }

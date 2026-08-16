@@ -84,19 +84,29 @@ export function validateTransition(
         { label: "Competition has a name", level: "blocker", passed: !!ctx.name?.trim() },
         { label: "Start date is set", level: "blocker", passed: !!ctx.startDate },
         { label: "At least one division is configured", level: "blocker", passed: ctx.divisionCount > 0 },
-        { label: "At least one workout is added", level: "warning", passed: ctx.workoutCount > 0 },
-        { label: "Registration deadline is set", level: "warning", passed: !!ctx.registrationDeadline },
+        {
+          label: "Registration deadline is set (athletes cannot register without it)",
+          level: "blocker",
+          passed: !!ctx.registrationDeadline,
+        },
         {
           label: "Registration deadline is before the start date",
-          level: "warning",
+          level: "blocker",
           passed: !deadline || !start || deadline <= start,
         },
+        {
+          label: "Registration deadline is still in the future",
+          level: "warning",
+          passed: !deadline || deadline > now,
+        },
+        { label: "At least one workout is added", level: "warning", passed: ctx.workoutCount > 0 },
         { label: "Venue is set", level: "warning", passed: !!ctx.venue?.trim() },
         { label: "Poster uploaded", level: "warning", passed: !!ctx.posterUrl },
       ],
       key
     );
   }
+
 
   if (key === "published>live") {
     return build(
