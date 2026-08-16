@@ -69,6 +69,21 @@ function mapAuthErrorToField(message: string): { field: FieldKey | "form"; messa
 export default function Register() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+
+  const safeRedirect = (raw: string | null): string => {
+    if (!raw) return "/dashboard";
+    try {
+      const decoded = decodeURIComponent(raw).trim();
+      if (decoded.startsWith("/") && !decoded.startsWith("//") && !/^javascript:/i.test(decoded)) {
+        return decoded;
+      }
+    } catch {
+      /* fall through */
+    }
+    return "/dashboard";
+  };
+  const redirectTarget = safeRedirect(searchParams.get("redirectTo"));
 
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
