@@ -52,6 +52,18 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
   const bulkUpdate = useBulkUpdateStatus();
   const isMobile = useIsMobile();
 
+  // Teams only make sense when a division allows more than one athlete
+  const teamDivisions = useMemo(
+    () => divisions.filter((d) => Number((d as any).team_size ?? 1) > 1),
+    [divisions],
+  );
+  const teamsEnabled = teamDivisions.length > 0;
+  const selectableTeams = useMemo(() => {
+    if (!teamsEnabled) return [];
+    const ids = new Set(teamDivisions.map((d) => d.id));
+    return teams.filter((t) => !t.division_id || ids.has(t.division_id));
+  }, [teams, teamDivisions, teamsEnabled]);
+
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDivision, setFilterDivision] = useState("all");
   const [search, setSearch] = useState("");
@@ -138,8 +150,10 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
   const handleCreateTeam = async () => {
     const name = newTeamName.trim();
     if (!name) { toast.error("Team name required"); return; }
+    if (teamsEnabled && !newTeamDivisionId) { toast.error("Select a team division"); return; }
     const dup = teams.find((t) => t.team_name.toLowerCase() === name.toLowerCase());
     if (dup) { toast.error("Team already exists"); return; }
+
     const div = divisions.find((d) => d.id === newTeamDivisionId);
     try {
       await addTeamMutation.mutateAsync({
@@ -266,7 +280,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
               <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
                 <SheetHeader><SheetTitle>Add Athlete</SheetTitle></SheetHeader>
                 <AddForm
-                  {...{ newName, setNewName, newEmail, setNewEmail, newPhone, setNewPhone, newGender, setNewGender, newDob, setNewDob, newDivisionId, setNewDivisionId, newTeamId, setNewTeamId, divisions, teams }}
+                  {...{ newName, setNewName, newEmail, setNewEmail, newPhone, setNewPhone, newGender, setNewGender, newDob, setNewDob, newDivisionId, setNewDivisionId, newTeamId, setNewTeamId, divisions }} teams={selectableTeams}
                   onSubmit={handleAddAthlete} isPending={createReg.isPending} onCancel={() => setShowAddForm(false)}
                 />
               </SheetContent>
@@ -276,9 +290,11 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
               <UserPlus className="h-4 w-4 mr-1" /> Add Athlete
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => setShowCreateTeam(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Create Team
-          </Button>
+          {teamsEnabled && (
+            <Button size="sm" variant="outline" onClick={() => setShowCreateTeam(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Create Team
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
             <Upload className="h-4 w-4 mr-1" /> Import
           </Button>
@@ -321,32 +337,38 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
                 onKeyDown={(e) => e.key === "Enter" && handleCreateTeam()}
               />
             </div>
-            {divisions.length > 0 && (
+            {teamsEnabled && (
               <div>
-                <Label className="text-xs font-medium text-foreground">Division</Label>
-                <Select value={newTeamDivisionId || "__none__"} onValueChange={(v) => setNewTeamDivisionId(v === "__none__" ? "" : v)}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
+                <Label className="text-xs font-medium text-foreground">Division *</Label>
+                <Select value={newTeamDivisionId} onValueChange={setNewTeamDivisionId}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select a team division" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">No Division</SelectItem>
-                    {divisions.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    {teamDivisions.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name} · Team of {(d as any).team_size}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                <p className="text-[10px] text-muted-foreground mt-1">Only divisions with a team size above 1 can hold teams.</p>
               </div>
             )}
-            {teams.length > 0 && (
+
+            {selectableTeams.length > 0 && (
               <div className="bg-muted/30 border border-border rounded-lg p-3">
-                <p className="text-xs font-semibold text-foreground mb-2">Existing Teams ({teams.length})</p>
+                <p className="text-xs font-semibold text-foreground mb-2">Existing Teams ({selectableTeams.length})</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {teams.map((t) => (
+                  {selectableTeams.map((t) => (
                     <Badge key={t.id} variant="secondary" className="text-[11px]">{t.team_name}</Badge>
                   ))}
                 </div>
               </div>
             )}
             <div className="flex gap-2 pt-1">
-              <Button onClick={handleCreateTeam} disabled={!newTeamName.trim() || addTeamMutation.isPending} className="flex-1 bg-accent text-accent-foreground">
+              <Button onClick={handleCreateTeam} disabled={!newTeamName.trim() || (teamsEnabled && !newTeamDivisionId) || addTeamMutation.isPending} className="flex-1 bg-accent text-accent-foreground">
                 <Plus className="h-4 w-4 mr-1" /> Create Team
               </Button>
+
               <Button variant="ghost" onClick={() => setShowCreateTeam(false)}>Cancel</Button>
             </div>
           </div>
@@ -356,7 +378,7 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
         <div className="bg-card border border-border rounded-xl p-4">
           <h3 className="text-sm font-bold text-foreground uppercase mb-3">Add Athlete</h3>
           <AddForm
-            {...{ newName, setNewName, newEmail, setNewEmail, newPhone, setNewPhone, newGender, setNewGender, newDob, setNewDob, newDivisionId, setNewDivisionId, newTeamId, setNewTeamId, divisions, teams }}
+            {...{ newName, setNewName, newEmail, setNewEmail, newPhone, setNewPhone, newGender, setNewGender, newDob, setNewDob, newDivisionId, setNewDivisionId, newTeamId, setNewTeamId, divisions }} teams={selectableTeams}
             onSubmit={handleAddAthlete} isPending={createReg.isPending} onCancel={() => setShowAddForm(false)}
           />
         </div>
@@ -543,16 +565,19 @@ function AddForm({
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label className="text-xs font-medium">Team</Label>
-          <Select value={newTeamId || "__none__"} onValueChange={(v) => setNewTeamId(v === "__none__" ? "" : v)}>
-            <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">None</SelectItem>
-              {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        {teams.length > 0 && (
+          <div>
+            <Label className="text-xs font-medium">Team</Label>
+            <Select value={newTeamId || "__none__"} onValueChange={(v) => setNewTeamId(v === "__none__" ? "" : v)}>
+              <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">None</SelectItem>
+                {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
