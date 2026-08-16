@@ -94,8 +94,24 @@ export function SuperUserManager() {
                 <User className="h-4 w-4 text-muted-foreground shrink-0" />
                 <p className="font-semibold text-foreground text-sm truncate">{p.display_name || p.full_name || "Unnamed"}</p>
               </div>
-              <p className="text-xs text-muted-foreground ml-6">Tier: {p.subscription_tier} • Joined: {new Date(p.created_at).toLocaleDateString()}</p>
+              <p className="text-xs text-muted-foreground ml-6">
+                Tier: {p.subscription_tier} • Joined: {new Date(p.created_at).toLocaleDateString()}
+                {p.identity_locked_at ? " • Identity locked" : ""}
+              </p>
             </div>
+            {p.identity_locked_at && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="shrink-0 text-xs"
+                disabled={unlocking === p.id}
+                onClick={() => handleUnlockIdentity(p)}
+                title="Unlock date of birth, gender and name for correction"
+              >
+                <Unlock className="h-4 w-4 mr-1" />
+                {unlocking === p.id ? "Unlocking…" : "Unlock identity"}
+              </Button>
+            )}
             <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive shrink-0" onClick={() => setDeleting(p)}>
               <Trash2 className="h-4 w-4" />
             </Button>
