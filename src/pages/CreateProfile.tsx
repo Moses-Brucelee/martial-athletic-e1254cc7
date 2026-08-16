@@ -121,6 +121,7 @@ export default function CreateProfile() {
     setAvatarPreview(URL.createObjectURL(file));
   };
 
+  /** Entry point for the Save button — confirms identity details once. */
   const handleSave = async () => {
     if (!user) return;
     if (ageError || consentMissing || nameInvalid) {
@@ -128,6 +129,17 @@ export default function CreateProfile() {
       setError(ageError ?? (consentMissing ? "Parental consent is required for under-18s." : "Please fix the highlighted fields."));
       return;
     }
+    // Ask for confirmation the first time identity details get locked in.
+    if (!identityLocked && willLockIdentity) {
+      setConfirmOpen(true);
+      return;
+    }
+    await persistProfile();
+  };
+
+  const persistProfile = async () => {
+    if (!user) return;
+    setConfirmOpen(false);
     setError("");
     setLoading(true);
 
@@ -141,12 +153,15 @@ export default function CreateProfile() {
       const updates: Record<string, unknown> = {};
       if (trimmedName) {
         updates.display_name = trimmedName;
-        updates.full_name = trimmedName;
+        // Legal name is locked once set — never overwrite it afterwards.
+        if (!identityLocked && !profile?.full_name) updates.full_name = trimmedName;
       }
-      if (gender) updates.gender = gender;
-      if (dobString) {
-        updates.date_of_birth = dobString;
-        updates.age = computedAge;
+      if (!identityLocked) {
+        if (gender) updates.gender = gender;
+        if (dobString) {
+          updates.date_of_birth = dobString;
+          updates.age = computedAge;
+        }
       }
       if (trimmedAffiliation) updates.affiliation = trimmedAffiliation;
       if (trimmedAbout) updates.about_me = trimmedAbout;
