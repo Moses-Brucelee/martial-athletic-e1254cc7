@@ -117,22 +117,44 @@ export default function MainMenu() {
   // manage_members + link_gym_website are now sub-tabs inside manage_affiliation
   const HIDDEN_FEATURES = new Set(["manage_members", "link_gym_website", "track_performances"]);
   const accessibleItems = useMemo(() => {
-    return menuItems
-      .filter((m) => !HIDDEN_FEATURES.has(m.feature_key))
-      .map((m) =>
-        m.feature_key === "view_leaderboards"
-          ? { ...m, label: "View Competitions", description: null }
-          : m,
-      )
-      .filter((m) => {
-        if (!V1_FULL_ACCESS && !canAccess(m.feature_key)) return false;
-        const flagKey = MENU_FEATURE_TO_FLAG[m.feature_key] as FeatureFlagKey | undefined;
-        if (flagKey && flags[flagKey] === false) return false;
-        const requiredTier = FEATURE_TIER_REQUIREMENT[m.feature_key];
-        if (requiredTier && !isAtLeast(requiredTier)) return false;
-        return true;
+    const passesGates = (m: DbMenuItem) => {
+      if (!V1_FULL_ACCESS && !canAccess(m.feature_key)) return false;
+      const flagKey = MENU_FEATURE_TO_FLAG[m.feature_key] as FeatureFlagKey | undefined;
+      if (flagKey && flags[flagKey] === false) return false;
+      const requiredTier = FEATURE_TIER_REQUIREMENT[m.feature_key];
+      if (requiredTier && !isAtLeast(requiredTier)) return false;
+      return true;
+    };
+
+    const visible = menuItems.filter((m) => !HIDDEN_FEATURES.has(m.feature_key) && passesGates(m));
+
+    // "View leaderboards" and "Create / manage competitions" both land on /competitions.
+    // Collapse them into a single Competitions entry.
+    const canCreate = visible.some((m) => m.feature_key === "create_competitions");
+
+    return visible
+      .filter((m) => !(canCreate && m.feature_key === "view_leaderboards"))
+      .map((m) => {
+        if (m.feature_key === "create_competitions") {
+          return {
+            ...m,
+            label: "Competitions",
+            description: "Browse events, build and run your own",
+            icon_name: "Trophy",
+          };
+        }
+        if (m.feature_key === "view_leaderboards") {
+          return {
+            ...m,
+            label: "Competitions",
+            description: "Browse events and live leaderboards",
+            icon_name: "Trophy",
+          };
+        }
+        return m;
       });
   }, [menuItems, canAccess, flags, isAtLeast]);
+
 
   const initials = profile?.display_name
     ? profile.display_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
