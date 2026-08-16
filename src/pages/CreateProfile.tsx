@@ -226,12 +226,12 @@ export default function CreateProfile() {
         try {
           const res = await requestAffiliation(affiliateGymId);
           if (res?.status === "pending") {
-            toast.info("Affiliation request sent. The gym manager will review it.");
+            toast.info("Request sent. The gym manager will review it.");
           }
         } catch {}
       }
 
-      toast.success(updates.profile_completed ? "Profile complete 🎉" : "Saved");
+      toast.success(updates.profile_completed ? "Profile complete" : "Saved");
       setAvatarFile(null);
       await refetch();
       navigate("/dashboard", { replace: true });
@@ -284,7 +284,7 @@ export default function CreateProfile() {
             )}
             <div className="text-xs">
               {isComplete ? (
-                <p className="text-foreground font-medium">Your profile is complete.</p>
+                <p className="text-foreground font-medium">Profile complete.</p>
               ) : (
                 <p className="text-foreground">
                   <span className="font-medium">Still missing:</span>{" "}
@@ -294,7 +294,7 @@ export default function CreateProfile() {
                 </p>
               )}
               <p className="text-muted-foreground mt-1">
-                Save anytime — partial updates are fine.
+                You can save partial info and finish later.
               </p>
             </div>
           </div>
@@ -344,7 +344,7 @@ export default function CreateProfile() {
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {socialProvider && (
                     <p className="sm:col-span-2 text-xs text-muted-foreground">
-                      Details filled in from your {socialProvider} account. You can adjust them below.
+                      Filled in from your {socialProvider} account. Edit anything below.
                     </p>
                   )}
 
@@ -461,7 +461,7 @@ export default function CreateProfile() {
                       <p className="text-[11px] text-accent">You are an active member of this gym.</p>
                     )}
                     <p className="text-[10px] text-muted-foreground">
-                      Optional. Select your gym to request affiliation — the gym manager must approve.
+                      Optional. Pick your gym to request affiliation; the manager approves it.
                     </p>
                   </div>
                 </div>
@@ -515,8 +515,7 @@ export default function CreateProfile() {
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>
-                  Your date of birth, age and gender are used for division eligibility and cannot be
-                  changed afterwards. Please double-check them.
+                  Your date of birth, age, and gender decide which divisions you can enter, and you can't change them later. Double-check them.
                 </p>
                 <div className="rounded-md border border-border bg-muted/50 p-3 text-sm text-foreground space-y-1">
                   <div><span className="text-muted-foreground">Name:</span> {displayName.trim() || "—"}</div>
