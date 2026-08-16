@@ -150,8 +150,10 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
   const handleCreateTeam = async () => {
     const name = newTeamName.trim();
     if (!name) { toast.error("Team name required"); return; }
+    if (teamsEnabled && !newTeamDivisionId) { toast.error("Select a team division"); return; }
     const dup = teams.find((t) => t.team_name.toLowerCase() === name.toLowerCase());
     if (dup) { toast.error("Team already exists"); return; }
+
     const div = divisions.find((d) => d.id === newTeamDivisionId);
     try {
       await addTeamMutation.mutateAsync({
