@@ -9,7 +9,7 @@ import { JudgesPanel as OriginalJudgesPanel } from "@/components/competition/Jud
 import { ShareCompetitionMenu } from "@/components/competition/ShareCompetitionMenu";
 import { useJudges } from "@/modules/admin/hooks";
 import { useRegistrations } from "@/modules/athletes/hooks";
-import { useTeams, useCompetition } from "@/modules/tournaments/hooks";
+import { useTeams, useCompetition, useDivisions } from "@/modules/tournaments/hooks";
 import { useHeats } from "@/modules/tournaments/hooks-engine";
 import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 
