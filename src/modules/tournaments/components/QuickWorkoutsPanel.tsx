@@ -794,6 +794,108 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
           })()}
         </div>
       </div>
+
+      {/* ── Full-screen workout editor ── */}
+      <Dialog open={!!editingId} onOpenChange={(o) => { if (!o) setEditingId(null); }}>
+        <DialogContent className="max-w-3xl w-[96vw] max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="uppercase tracking-wide">
+              Edit WOD {editNumber ?? ""}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            {isAutoMode && (
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Scoring type</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {SCORING_TYPES.map((st) => {
+                    const StIcon = st.icon;
+                    const active = editScoring === st.value;
+                    return (
+                      <button
+                        key={st.value}
+                        type="button"
+                        onClick={() => setEditScoring(st.value)}
+                        className={`flex items-center justify-center gap-1.5 h-10 rounded-lg border text-xs font-semibold transition-all ${
+                          active ? st.activeColor : "border-border text-muted-foreground hover:bg-muted/50"
+                        }`}
+                      >
+                        <StIcon className="h-3.5 w-3.5" /> {st.shortLabel}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground">{getScoringConfig(editScoring).desc}</p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="wod-name" className="text-xs uppercase tracking-wider text-muted-foreground">Workout name</Label>
+              <Input
+                id="wod-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="e.g. Fran"
+                className="h-11 bg-background"
+                maxLength={100}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="wod-desc" className="text-xs uppercase tracking-wider text-muted-foreground">Description</Label>
+              <Textarea
+                id="wod-desc"
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                placeholder="Movements, reps, standards…"
+                className="bg-background min-h-[240px] text-sm leading-relaxed font-mono"
+                maxLength={2000}
+              />
+              <p className="text-[11px] text-muted-foreground text-right">{editDesc.length}/2000</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="wod-video" className="text-xs uppercase tracking-wider text-muted-foreground">Video link</Label>
+                <Input
+                  id="wod-video"
+                  value={editVideo}
+                  onChange={(e) => setEditVideo(e.target.value)}
+                  placeholder="YouTube / Vimeo — optional"
+                  className="h-11 bg-background"
+                  maxLength={500}
+                  inputMode="url"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="wod-cap" className="text-xs uppercase tracking-wider text-muted-foreground">Time cap (min)</Label>
+                <Input
+                  id="wod-cap"
+                  value={editTimeCap}
+                  onChange={(e) => setEditTimeCap(e.target.value.replace(/[^0-9]/g, ""))}
+                  placeholder="Optional"
+                  className="h-11 bg-background"
+                  inputMode="numeric"
+                />
+              </div>
+            </div>
+
+            {editVideo.trim() && <WorkoutVideo url={editVideo.trim()} />}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
+            <Button
+              onClick={() => editingId && handleSaveEdit(editingId)}
+              disabled={saving}
+              className="bg-accent hover:bg-accent/90 text-accent-foreground gap-1"
+            >
+              <Check className="h-4 w-4" /> {saving ? "Saving…" : "Save workout"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
