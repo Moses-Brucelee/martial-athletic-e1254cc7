@@ -45,14 +45,33 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
     return map;
   }, [registrations]);
 
+  // Only divisions that actually allow more than one athlete can hold a team
+  const teamDivisions = useMemo(
+    () => divisions.filter((d) => Number((d as any).team_size ?? 1) > 1),
+    [divisions],
+  );
+  const soloDivisionIds = useMemo(
+    () => new Set(divisions.filter((d) => Number((d as any).team_size ?? 1) <= 1).map((d) => d.id)),
+    [divisions],
+  );
+
+  const visibleTeams = useMemo(
+    () => teams.filter((t) => !t.division_id || !soloDivisionIds.has(t.division_id)),
+    [teams, soloDivisionIds],
+  );
+
   const filtered = useMemo(() => {
-    if (!search.trim()) return teams;
+    if (!search.trim()) return visibleTeams;
     const q = search.toLowerCase();
-    return teams.filter((t) => t.team_name.toLowerCase().includes(q));
-  }, [teams, search]);
+    return visibleTeams.filter((t) => t.team_name.toLowerCase().includes(q));
+  }, [visibleTeams, search]);
 
   const handleCreate = async () => {
     if (!teamName.trim()) { toast.error("Team name required"); return; }
+    if (teamDivisions.length > 0 && !teamDivisionId) {
+      toast.error("Select a team division");
+      return;
+    }
     const div = divisions.find((d) => d.id === teamDivisionId);
     try {
       await addTeam.mutateAsync({
@@ -65,6 +84,7 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
       setTeamName(""); setTeamDivisionId(""); setShowCreate(false);
     } catch { toast.error("Failed to create team"); }
   };
+
 
   const handleDelete = async (team: Team) => {
     const members = teamMembers[team.id] || [];
