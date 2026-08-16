@@ -184,6 +184,14 @@ export default function Login() {
               </div>
             )}
 
+            {/* Social sign-in */}
+            <GoogleSignInButton label="Continue with Google" redirectTo={redirectTarget} />
+            <div className="flex items-center gap-3 my-6">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">or continue with email</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
