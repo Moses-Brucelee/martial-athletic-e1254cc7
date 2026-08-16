@@ -243,21 +243,30 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
               <Label className="text-xs font-medium">Team Name *</Label>
               <Input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="e.g. Team Alpha" className="mt-1" maxLength={100} onKeyDown={(e) => e.key === "Enter" && handleCreate()} />
             </div>
-            {divisions.length > 0 && (
+            {teamDivisions.length > 0 && (
               <div>
-                <Label className="text-xs font-medium">Division</Label>
-                <Select value={teamDivisionId || "__none__"} onValueChange={(v) => setTeamDivisionId(v === "__none__" ? "" : v)}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
+                <Label className="text-xs font-medium">Division *</Label>
+                <Select value={teamDivisionId} onValueChange={setTeamDivisionId}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select a team division" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">No Division</SelectItem>
-                    {divisions.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    {teamDivisions.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name} · Team of {(d as any).team_size}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                <p className="text-[10px] text-muted-foreground mt-1">Only divisions with a team size above 1 can hold teams.</p>
               </div>
             )}
-            <Button onClick={handleCreate} disabled={!teamName.trim() || addTeam.isPending} className="w-full bg-accent text-accent-foreground">
+            <Button
+              onClick={handleCreate}
+              disabled={!teamName.trim() || (teamDivisions.length > 0 && !teamDivisionId) || addTeam.isPending}
+              className="w-full bg-accent text-accent-foreground"
+            >
               <Plus className="h-4 w-4 mr-1" /> Create Team
             </Button>
+
           </div>
         </DialogContent>
       </Dialog>
