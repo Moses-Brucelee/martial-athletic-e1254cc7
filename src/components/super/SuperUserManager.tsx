@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Search, Trash2, AlertTriangle, User } from "lucide-react";
+import { Search, Trash2, AlertTriangle, User, Unlock } from "lucide-react";
 import { toast } from "sonner";
 
 interface Profile {
@@ -13,6 +13,7 @@ interface Profile {
   full_name: string | null;
   subscription_tier: string;
   created_at: string;
+  identity_locked_at: string | null;
 }
 
 export function SuperUserManager() {
@@ -20,15 +21,32 @@ export function SuperUserManager() {
   const [search, setSearch] = useState("");
   const [deleting, setDeleting] = useState<Profile | null>(null);
   const [saving, setSaving] = useState(false);
+  const [unlocking, setUnlocking] = useState<string | null>(null);
 
   const load = () => {
     supabase
       .from("profiles")
-      .select("id, user_id, display_name, full_name, subscription_tier, created_at")
+      .select("id, user_id, display_name, full_name, subscription_tier, created_at, identity_locked_at")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        if (data) setProfiles(data);
+        if (data) setProfiles(data as Profile[]);
       });
+  };
+
+  /** Clears the identity lock so the athlete can correct DOB / gender / name. */
+  const handleUnlockIdentity = async (profile: Profile) => {
+    setUnlocking(profile.id);
+    try {
+      const { error } = await supabase.rpc("admin_unlock_profile_identity", {
+        p_user_id: profile.user_id,
+      });
+      if (error) throw error;
+      toast.success("Identity details unlocked for correction");
+      load();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to unlock identity details");
+    }
+    setUnlocking(null);
   };
 
   useEffect(load, []);
