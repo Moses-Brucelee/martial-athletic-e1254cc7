@@ -1877,6 +1877,57 @@ export type Database = {
           },
         ]
       }
+      marketplace_items: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          description: string | null
+          external_url: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          is_synthetic: boolean
+          price: number | null
+          title: string
+          updated_at: string
+          vendor_name: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          external_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_synthetic?: boolean
+          price?: number | null
+          title: string
+          updated_at?: string
+          vendor_name?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          external_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_synthetic?: boolean
+          price?: number | null
+          title?: string
+          updated_at?: string
+          vendor_name?: string | null
+        }
+        Relationships: []
+      }
       member_discounts: {
         Row: {
           created_at: string
@@ -2408,6 +2459,7 @@ export type Database = {
           gym_id: string | null
           id: string
           is_public: boolean
+          is_synthetic: boolean
           level: string
           status: string
           title: string
@@ -2425,6 +2477,7 @@ export type Database = {
           gym_id?: string | null
           id?: string
           is_public?: boolean
+          is_synthetic?: boolean
           level?: string
           status?: string
           title: string
@@ -2442,6 +2495,7 @@ export type Database = {
           gym_id?: string | null
           id?: string
           is_public?: boolean
+          is_synthetic?: boolean
           level?: string
           status?: string
           title?: string

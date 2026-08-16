@@ -28,11 +28,88 @@ interface ProgramRow {
   weeks_count: number | null;
 }
 
+interface MarketplaceItemRow {
+  id: string;
+  category: string;
+  title: string;
+  description: string | null;
+  price: number | null;
+  currency: string;
+  vendor_name: string | null;
+  external_url: string | null;
+}
+
 function formatDate(value: string | null) {
   if (!value) return "Date to be announced";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "Date to be announced";
   return format(parsed, "d MMM yyyy");
+}
+
+function formatPrice(price: number | null, currency: string) {
+  if (price == null) return null;
+  return `${currency} ${Number(price).toFixed(2)}`;
+}
+
+function MarketplaceSection({
+  icon,
+  title,
+  emptyCopy,
+  items,
+  isLoading,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  emptyCopy: string;
+  items: MarketplaceItemRow[];
+  isLoading: boolean;
+}) {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center gap-2">
+        {icon}
+        <h2 className="text-xs font-bold tracking-widest uppercase text-muted-foreground">
+          {title}
+        </h2>
+      </div>
+
+      {isLoading ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1].map((i) => (
+            <Skeleton key={i} className="h-28 rounded-xl" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{emptyCopy}</p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((item) => (
+            <article
+              key={item.id}
+              className="rounded-xl border border-border bg-card p-4 space-y-2"
+            >
+              <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
+                {item.title}
+              </h3>
+              {item.description && (
+                <p className="text-xs text-muted-foreground line-clamp-3">{item.description}</p>
+              )}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {formatPrice(item.price, item.currency) && (
+                  <Badge variant="outline" className="text-[10px] uppercase">
+                    {formatPrice(item.price, item.currency)}
+                  </Badge>
+                )}
+                {item.vendor_name && (
+                  <span className="text-[11px] text-muted-foreground">{item.vendor_name}</span>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }
 
 export default function Browse() {
@@ -70,6 +147,21 @@ export default function Browse() {
       return (data ?? []) as ProgramRow[];
     },
   });
+
+  const itemsQuery = useQuery({
+    queryKey: ["browse-marketplace-items"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("marketplace_items")
+        .select("id, category, title, description, price, currency, vendor_name, external_url")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as MarketplaceItemRow[];
+    },
+  });
+
+
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
@@ -222,32 +314,23 @@ export default function Browse() {
           </Button>
         </section>
 
-        {/* Coming soon */}
-        <section className="space-y-4">
-          <h2 className="text-xs font-bold tracking-widest uppercase text-muted-foreground">
-            Coming soon
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-              <span className="flex items-center gap-2 text-sm font-bold text-foreground uppercase tracking-wide">
-                <Shirt className="h-4 w-4 text-primary" /> Apparel
-              </span>
-              <p className="text-xs text-muted-foreground">
-                Event and gym apparel sold directly by host affiliates, with sizing collected at
-                registration.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-              <span className="flex items-center gap-2 text-sm font-bold text-foreground uppercase tracking-wide">
-                <Package className="h-4 w-4 text-primary" /> Equipment
-              </span>
-              <p className="text-xs text-muted-foreground">
-                Training equipment listings from partner suppliers, filtered by discipline and gym
-                setup.
-              </p>
-            </div>
-          </div>
-        </section>
+        {/* Apparel */}
+        <MarketplaceSection
+          icon={<Shirt className="h-4 w-4 text-primary" />}
+          title="Apparel"
+          emptyCopy="Event and gym apparel sold directly by host affiliates, with sizing collected at registration."
+          items={itemsQuery.data?.filter((i) => i.category === "apparel") ?? []}
+          isLoading={itemsQuery.isLoading}
+        />
+
+        {/* Equipment */}
+        <MarketplaceSection
+          icon={<Package className="h-4 w-4 text-primary" />}
+          title="Equipment"
+          emptyCopy="Training equipment listings from partner suppliers, filtered by discipline and gym setup."
+          items={itemsQuery.data?.filter((i) => i.category === "equipment") ?? []}
+          isLoading={itemsQuery.isLoading}
+        />
 
         <div className="pt-2">
           <Button variant="outline" onClick={() => navigate(backPath)}>
