@@ -84,9 +84,13 @@ export function RegisterForCompetitionCard({ competitionId, competition, registr
     () => divisions.find((d) => d.id === divisionId),
     [divisions, divisionId],
   );
-  const teamSize = (selectedDivision as any)?.team_size ?? 1;
-  const requiresTeam = mode === "team" || teamSize > 1;
+  const teamSize = Number((selectedDivision as any)?.team_size ?? 1);
+  // With divisions configured, the selected division's team size decides the form.
+  // Without divisions, the athlete picks individual vs team manually.
+  const showModeToggle = divisions.length === 0;
+  const requiresTeam = divisions.length === 0 ? mode === "team" : teamSize > 1;
   const teammateSlots = Math.max(0, teamSize - 1);
+
 
   // Keep teammates array length in sync with required slots
   useEffect(() => {
@@ -339,13 +343,14 @@ export function RegisterForCompetitionCard({ competitionId, competition, registr
           </div>
         </div>
 
-        {/* Mode toggle when teams are possible */}
-        {(divisions.length === 0 || teamSize > 0) && (
+        {/* Mode toggle only when no divisions define the team size */}
+        {showModeToggle && (
           <div className="grid grid-cols-2 gap-2">
             <ModeChip active={mode === "individual"} onClick={() => setMode("individual")} icon={<UserPlus className="h-4 w-4" />} label="Individual" />
             <ModeChip active={mode === "team"} onClick={() => setMode("team")} icon={<Users className="h-4 w-4" />} label="Team" />
           </div>
         )}
+
 
         {needsName && (
           <div className="space-y-1.5">

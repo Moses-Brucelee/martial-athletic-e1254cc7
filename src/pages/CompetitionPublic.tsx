@@ -67,11 +67,22 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
     () => divisions.find((d) => d.id === selectedDivisionId),
     [divisions, selectedDivisionId]
   );
-  const teamSize = (selectedDivision as any)?.team_size ?? 1;
+  const teamSize = Number((selectedDivision as any)?.team_size ?? 1);
+  // Teams only exist when a division allows more than one athlete
+  const teamDivisions = useMemo(
+    () => divisions.filter((d) => Number((d as any).team_size ?? 1) > 1),
+    [divisions],
+  );
+  const teamsEnabled = divisions.length === 0 || teamDivisions.length > 0;
+  useEffect(() => {
+    if (!teamsEnabled && regMode === "team") setRegMode("individual");
+  }, [teamsEnabled, regMode]);
+  const teamDivisionIds = useMemo(() => new Set(teamDivisions.map((d) => d.id)), [teamDivisions]);
   const requiresTeammates = teamSize > 1;
   const additionalTeammateSlots = Math.max(0, teamSize - 1);
   const teammateNamesValid = !requiresTeammates ||
     Array.from({ length: additionalTeammateSlots }).every((_, i) => (teammateNames[i] || "").trim().length >= 2);
+
 
   // Team registration state
   const [teamName, setTeamName] = useState("");
@@ -585,20 +596,23 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
                 })}
               </RadioGroup>
             )}
-            {teams.length > 0 && (
+            {teamSize > 1 && teams.filter((t) => !t.division_id || teamDivisionIds.has(t.division_id)).length > 0 && (
               <div>
                 <Label className="text-sm font-medium">Team (optional)</Label>
                 <Select value={selectedTeamId || "__none__"} onValueChange={(v) => setSelectedTeamId(v === "__none__" ? "" : v)}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Individual" /></SelectTrigger>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="No team yet" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">Individual</SelectItem>
-                    {teams.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>
-                    ))}
+                    <SelectItem value="__none__">No team yet</SelectItem>
+                    {teams
+                      .filter((t) => !t.division_id || teamDivisionIds.has(t.division_id))
+                      .map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
+
 
             {requiresTeammates && (
               <div className="space-y-2 pt-2">
@@ -1016,19 +1030,22 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
             </Button>
           ) : (
             <div className="space-y-4">
-              {/* Mode tabs */}
-              <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
-                <button
-                  type="button"
-                  onClick={() => { setRegMode("individual"); setRegStep(0); }}
-                  className={`py-2 text-sm font-semibold rounded-md transition-colors ${regMode === "individual" ? "bg-card text-foreground shadow" : "text-muted-foreground"}`}
-                >Individual</button>
-                <button
-                  type="button"
-                  onClick={() => { setRegMode("team"); setRegStep(0); }}
-                  className={`py-2 text-sm font-semibold rounded-md transition-colors ${regMode === "team" ? "bg-card text-foreground shadow" : "text-muted-foreground"}`}
-                >Team</button>
-              </div>
+              {/* Mode tabs — only when a division supports teams */}
+              {teamsEnabled && (
+                <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => { setRegMode("individual"); setRegStep(0); }}
+                    className={`py-2 text-sm font-semibold rounded-md transition-colors ${regMode === "individual" ? "bg-card text-foreground shadow" : "text-muted-foreground"}`}
+                  >Individual</button>
+                  <button
+                    type="button"
+                    onClick={() => { setRegMode("team"); setRegStep(0); }}
+                    className={`py-2 text-sm font-semibold rounded-md transition-colors ${regMode === "team" ? "bg-card text-foreground shadow" : "text-muted-foreground"}`}
+                  >Team</button>
+                </div>
+              )}
+
 
               {/* Step indicator (individual only) */}
               {regMode === "individual" && (

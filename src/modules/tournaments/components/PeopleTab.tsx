@@ -9,7 +9,7 @@ import { JudgesPanel as OriginalJudgesPanel } from "@/components/competition/Jud
 import { ShareCompetitionMenu } from "@/components/competition/ShareCompetitionMenu";
 import { useJudges } from "@/modules/admin/hooks";
 import { useRegistrations } from "@/modules/athletes/hooks";
-import { useTeams, useCompetition } from "@/modules/tournaments/hooks";
+import { useTeams, useCompetition, useDivisions } from "@/modules/tournaments/hooks";
 import { useHeats } from "@/modules/tournaments/hooks-engine";
 import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 
@@ -42,12 +42,17 @@ export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabP
   const { data: teams = [] } = useTeams(competitionId);
   const { data: heats = [] } = useHeats(competitionId);
   const { data: competition } = useCompetition(competitionId);
+  const { data: divisions = [] } = useDivisions(competitionId);
+
+  // Teams only make sense when at least one division allows more than one athlete.
+  const teamsEnabled = divisions.some((d) => Number((d as any).team_size ?? 1) > 1);
 
   const approvedCount = registrations.filter(
     (r) => r.status === "approved" || r.status === "confirmed"
   ).length;
 
   const showShareLink = derivedStatus === "published" || derivedStatus === "live";
+
 
   return (
     <div className="space-y-4">
@@ -72,17 +77,19 @@ export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabP
 
       {/* Inner tabs — Athletes, Teams, Judges, Heats */}
       <Tabs defaultValue="athletes" className="w-full">
-        <TabsList className="w-full grid grid-cols-4 h-10">
+        <TabsList className={`w-full grid ${teamsEnabled ? "grid-cols-4" : "grid-cols-3"} h-10`}>
           <TabsTrigger value="athletes" className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Users className="h-3.5 w-3.5 hidden sm:block" />
             Athletes
             <Badge variant="outline" className="ml-1 h-5 px-1.5 text-[10px] bg-background">{approvedCount}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="teams" className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <Users2 className="h-3.5 w-3.5 hidden sm:block" />
-            Teams
-            <Badge variant="outline" className="ml-1 h-5 px-1.5 text-[10px] bg-background">{teams.length}</Badge>
-          </TabsTrigger>
+          {teamsEnabled && (
+            <TabsTrigger value="teams" className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Users2 className="h-3.5 w-3.5 hidden sm:block" />
+              Teams
+              <Badge variant="outline" className="ml-1 h-5 px-1.5 text-[10px] bg-background">{teams.length}</Badge>
+            </TabsTrigger>
+          )}
           <TabsTrigger value="judges" className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Gavel className="h-3.5 w-3.5 hidden sm:block" />
             Judges
@@ -98,9 +105,12 @@ export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabP
           <UnifiedAthleteTable competitionId={competitionId} canAdmin={canAdmin} />
         </TabsContent>
 
-        <TabsContent value="teams" className="mt-4">
-          <TeamsListView competitionId={competitionId} canAdmin={canAdmin} />
-        </TabsContent>
+        {teamsEnabled && (
+          <TabsContent value="teams" className="mt-4">
+            <TeamsListView competitionId={competitionId} canAdmin={canAdmin} />
+          </TabsContent>
+        )}
+
 
         <TabsContent value="judges" className="mt-4">
           <JudgesPanelWrapper competitionId={competitionId} canAdmin={canAdmin} />
