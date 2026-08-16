@@ -175,7 +175,7 @@ export default function CompetitionDashboard() {
           <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-accent/10 border border-accent/20">
             <Lock className="h-4 w-4 text-accent mt-0.5 shrink-0" />
             <p className="text-sm text-foreground">
-              This competition is <strong>{getStatusLabel(derivedStatus).toLowerCase()}</strong>. Viewing leaderboard only.
+              This competition is <strong>{getStatusLabel(derivedStatus).toLowerCase()}</strong>. Leaderboard only.
             </p>
           </div>
 
@@ -479,7 +479,7 @@ export default function CompetitionDashboard() {
         {compError && (
           <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-destructive/10 border border-destructive/20">
             <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-            <p className="text-sm text-destructive">Failed to load competition data.</p>
+            <p className="text-sm text-destructive">Couldn't load competition data.</p>
           </div>
         )}
 
