@@ -118,7 +118,7 @@ export function TeamsListView({ competitionId, canAdmin }: Props) {
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-bold text-foreground uppercase">Teams</h3>
-          <Badge variant="secondary" className="text-[10px]">{teams.length}</Badge>
+          <Badge variant="secondary" className="text-[10px]">{visibleTeams.length}</Badge>
         </div>
         {canAdmin && (
           <Button size="sm" onClick={() => setShowCreate(true)} className="bg-primary text-primary-foreground">
