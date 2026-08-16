@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://martial-athletic.jaggulasconsulting.com/sitemap.xml
+Sitemap: https://martialathletic.fitness/sitemap.xml
