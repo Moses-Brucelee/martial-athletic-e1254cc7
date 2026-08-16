@@ -25,7 +25,7 @@ interface ProgramRow {
   description: string | null;
   category: string | null;
   level: string | null;
-  duration_weeks: number | null;
+  weeks_count: number | null;
 }
 
 function formatDate(value: string | null) {
@@ -61,7 +61,7 @@ export default function Browse() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
-        .select("id, title, description, category, level, duration_weeks")
+        .select("id, title, description, category, level, weeks_count")
         .eq("status", "published")
         .eq("is_public", true)
         .order("created_at", { ascending: false })
@@ -206,9 +206,9 @@ export default function Browse() {
                     {p.level && (
                       <Badge variant="outline" className="text-[10px] uppercase">{p.level}</Badge>
                     )}
-                    {p.duration_weeks && (
+                    {p.weeks_count && (
                       <Badge variant="outline" className="text-[10px] uppercase">
-                        {p.duration_weeks} weeks
+                        {p.weeks_count} weeks
                       </Badge>
                     )}
                   </span>
