@@ -19,7 +19,15 @@ The dashboard currently renders inside a narrow 512px column, so on a 1128px+ sc
 +--------------------------------------------------------------+
 ```
 
-Breakpoints: single stacked column on mobile (current behaviour preserved, bottom nav intact), two columns from `lg`, max width 1400px centred with generous gutters.
+## Responsive behaviour (mobile-first)
+
+The layout is built mobile-first, then widened — the wide grid is a `lg` enhancement, not the baseline.
+
+- **Mobile (<640px):** one column. Hero drops to a 4:3 poster with text stacked under it, thumbnail strip becomes swipe dots. Carousels stay horizontal swipe rows with snap and edge fade — no arrows, thumb-friendly. Right rail content moves inline: profile completion banner near the top, action list below the hero. Bottom nav and safe-area padding preserved; touch targets stay at least 44px.
+- **Tablet (640–1024px):** two-up card rows, hero full width above the action list.
+- **Desktop (≥1024px):** two-column grid (content + 320px rail), max width 1400px, centred with gutters.
+- No fixed pixel widths or horizontal overflow at 320px; verified at 320/375/768/1280/1600.
+
 
 ## What changes
 
