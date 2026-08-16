@@ -354,20 +354,21 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
               </div>
             )}
 
-            {teams.length > 0 && (
+            {selectableTeams.length > 0 && (
               <div className="bg-muted/30 border border-border rounded-lg p-3">
-                <p className="text-xs font-semibold text-foreground mb-2">Existing Teams ({teams.length})</p>
+                <p className="text-xs font-semibold text-foreground mb-2">Existing Teams ({selectableTeams.length})</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {teams.map((t) => (
+                  {selectableTeams.map((t) => (
                     <Badge key={t.id} variant="secondary" className="text-[11px]">{t.team_name}</Badge>
                   ))}
                 </div>
               </div>
             )}
             <div className="flex gap-2 pt-1">
-              <Button onClick={handleCreateTeam} disabled={!newTeamName.trim() || addTeamMutation.isPending} className="flex-1 bg-accent text-accent-foreground">
+              <Button onClick={handleCreateTeam} disabled={!newTeamName.trim() || (teamsEnabled && !newTeamDivisionId) || addTeamMutation.isPending} className="flex-1 bg-accent text-accent-foreground">
                 <Plus className="h-4 w-4 mr-1" /> Create Team
               </Button>
+
               <Button variant="ghost" onClick={() => setShowCreateTeam(false)}>Cancel</Button>
             </div>
           </div>
