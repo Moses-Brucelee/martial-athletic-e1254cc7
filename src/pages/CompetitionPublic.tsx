@@ -67,11 +67,19 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
     () => divisions.find((d) => d.id === selectedDivisionId),
     [divisions, selectedDivisionId]
   );
-  const teamSize = (selectedDivision as any)?.team_size ?? 1;
+  const teamSize = Number((selectedDivision as any)?.team_size ?? 1);
+  // Teams only exist when a division allows more than one athlete
+  const teamDivisions = useMemo(
+    () => divisions.filter((d) => Number((d as any).team_size ?? 1) > 1),
+    [divisions],
+  );
+  const teamsEnabled = divisions.length === 0 || teamDivisions.length > 0;
+  const teamDivisionIds = useMemo(() => new Set(teamDivisions.map((d) => d.id)), [teamDivisions]);
   const requiresTeammates = teamSize > 1;
   const additionalTeammateSlots = Math.max(0, teamSize - 1);
   const teammateNamesValid = !requiresTeammates ||
     Array.from({ length: additionalTeammateSlots }).every((_, i) => (teammateNames[i] || "").trim().length >= 2);
+
 
   // Team registration state
   const [teamName, setTeamName] = useState("");
