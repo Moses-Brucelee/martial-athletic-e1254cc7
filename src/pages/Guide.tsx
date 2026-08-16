@@ -32,9 +32,8 @@ const sections = [
     title: "Getting Started",
     content: (
       <ul className="space-y-2 list-disc list-inside text-muted-foreground">
-        <li><strong className="text-foreground">Create your account</strong> — Sign up with your email and verify it. You'll be prompted to create a profile with your display name, affiliation, date of birth, and gender.</li>
-        <li><strong className="text-foreground">Navigate the Main Menu</strong> — After logging in, the main menu gives you quick access to competitions, your profile, and platform features.</li>
-        <li><strong className="text-foreground">Explore your menu</strong> — The main menu shows everything available to your account. Use it to view competitions, manage your profile, and access platform features.</li>
+        <li><strong className="text-foreground">Sign up</strong> — Create an account with your email and verify it, then fill in your display name, affiliation, date of birth, and gender.</li>
+        <li><strong className="text-foreground">Main menu</strong> — Once you're logged in, this is where you find competitions, your profile, and everything else.</li>
       </ul>
     ),
   },
@@ -44,12 +43,12 @@ const sections = [
     title: "Creating a Competition",
     content: (
       <ul className="space-y-2 list-disc list-inside text-muted-foreground">
-        <li><strong className="text-foreground">Required fields</strong> — Name your competition, set the start/end dates, venue, host gym, and registration deadline.</li>
-        <li><strong className="text-foreground">Competition type</strong> — Choose between <em>Tournament</em> (bracket-based elimination) or <em>Straightforward</em> (workout scoring only).</li>
-        <li><strong className="text-foreground">Age categories</strong> — Set to <em>Open</em> (no age restriction), <em>Under X</em> (maximum age), or <em>Age Range</em> (min–max).</li>
-        <li><strong className="text-foreground">Templates</strong> — Save any competition setup as a template for reuse, or start from an existing template when creating a new competition.</li>
-        <li><strong className="text-foreground">Poster</strong> — Upload a poster image for your competition from the dashboard to make it visually appealing on public listings.</li>
-        <li><strong className="text-foreground">After creation</strong> — You'll be redirected to the competition dashboard where you can configure workouts, divisions, teams, and more.</li>
+        <li><strong className="text-foreground">Basics</strong> — Name, start/end dates, venue, host gym, and registration deadline.</li>
+        <li><strong className="text-foreground">Type</strong> — <em>Tournament</em> runs bracket eliminations; <em>Straightforward</em> just scores workouts.</li>
+        <li><strong className="text-foreground">Age categories</strong> — <em>Open</em>, <em>Under X</em> (max age), or an age range (min–max).</li>
+        <li><strong className="text-foreground">Templates</strong> — Save a setup as a template, or start a new competition from one.</li>
+        <li><strong className="text-foreground">Poster</strong> — Add a poster image so your listing looks good publicly.</li>
+        <li>Once created, you land on the competition dashboard to set up workouts, divisions, and teams.</li>
       </ul>
     ),
   },
@@ -59,12 +58,12 @@ const sections = [
     title: "Competition Dashboard & Command Center",
     content: (
       <div className="space-y-3 text-muted-foreground">
-        <p>The competition dashboard is your <strong className="text-foreground">central hub</strong> for managing everything about your competition.</p>
+        <p>This is where you run everything for your competition.</p>
         <ul className="space-y-2 list-disc list-inside">
-          <li><strong className="text-foreground">Command Center</strong> — A quick-glance overview showing team count, workout count, score entry progress, and status — all in one place.</li>
-          <li><strong className="text-foreground">Tabs</strong> — The dashboard is organized into tabs: Command, Setup, Registrations, Judges, Heats, Brackets, Scores, Leaderboard, and Roster.</li>
-          <li><strong className="text-foreground">Status actions</strong> — Use the status bar to transition your competition through its lifecycle (Draft → Published → Live → Completed).</li>
-          <li><strong className="text-foreground">Role-based views</strong> — Owners see all tabs. Judges see Scores, Brackets, Leaderboard, and Roster. Viewers see Leaderboard, Roster, and Overview.</li>
+          <li><strong className="text-foreground">Command</strong> — Team count, workout count, score entry progress, and status, at a glance.</li>
+          <li><strong className="text-foreground">Tabs</strong> — Command, Setup, Registrations, Judges, Heats, Brackets, Scores, Leaderboard, Roster.</li>
+          <li><strong className="text-foreground">Status bar</strong> — Move the competition through Draft → Published → Live → Completed.</li>
+          <li><strong className="text-foreground">Who sees what</strong> — Owners get every tab. Judges get Scores, Brackets, Leaderboard, and Roster. Viewers get Leaderboard, Roster, and Overview.</li>
         </ul>
       </div>
     ),
@@ -75,12 +74,12 @@ const sections = [
     title: "Understanding Divisions",
     content: (
       <div className="space-y-3 text-muted-foreground">
-        <p>Divisions are <strong className="text-foreground">categories</strong> that group teams for fair competition. They can represent weight classes, skill levels, age groups, or any custom grouping.</p>
+        <p>Divisions group teams so competition stays fair — by weight, skill, age, or anything else you choose.</p>
         <ul className="space-y-2 list-disc list-inside">
-          <li><strong className="text-foreground">Examples</strong> — "Lightweight", "Heavyweight", "Beginner", "Advanced", "Under 18", "Masters 40+"</li>
-          <li><strong className="text-foreground">Creating divisions</strong> — Go to the Setup tab in your competition dashboard and add as many as needed.</li>
-          <li><strong className="text-foreground">Impact</strong> — Divisions affect team grouping, bracket generation (one bracket per division), and leaderboard filtering.</li>
-          <li><strong className="text-foreground">Best practice</strong> — Create divisions before adding teams so you can assign teams to divisions right away.</li>
+          <li><strong className="text-foreground">Examples</strong> — Lightweight, Heavyweight, Beginner, Advanced, Under 18, Masters 40+.</li>
+          <li><strong className="text-foreground">Set them up</strong> — Add as many as you need from the Setup tab.</li>
+          <li><strong className="text-foreground">Why it matters</strong> — Each division gets its own bracket and its own leaderboard section.</li>
+          <li>Create divisions before adding teams — it makes assigning teams much faster.</li>
         </ul>
       </div>
     ),
@@ -91,11 +90,11 @@ const sections = [
     title: "Setting Up Teams",
     content: (
       <div className="space-y-3 text-muted-foreground">
-        <p>Teams are the <strong className="text-foreground">competing units</strong> in your competition. A team can be a single individual or a group of athletes.</p>
+        <p>A team is whatever competes and gets scored — one athlete or a group.</p>
         <ul className="space-y-2 list-disc list-inside">
-          <li><strong className="text-foreground">Creating a team</strong> — Go to the Setup tab, find the Teams panel, enter a team name, and optionally assign it to a division.</li>
-          <li><strong className="text-foreground">Division assignment</strong> — Each team can belong to one division. This determines which bracket they compete in and which leaderboard section shows their scores.</li>
-          <li><strong className="text-foreground">Naming tips</strong> — Use clear, unique names. For individual competitors, use their name or nickname as the team name.</li>
+          <li><strong className="text-foreground">Add a team</strong> — In the Setup tab's Teams panel, enter a name and optionally pick a division.</li>
+          <li>Each team belongs to one division, which decides its bracket and leaderboard section.</li>
+          <li>For solo competitors, just use their name as the team name.</li>
         </ul>
       </div>
     ),
@@ -106,20 +105,17 @@ const sections = [
     title: "Registration & Athlete Management",
     content: (
       <div className="space-y-3 text-muted-foreground">
-        <p>Once your competition is <strong className="text-foreground">published</strong>, athletes can register to participate via the public competition page.</p>
+        <p>Once a competition is published, athletes can register from its public page.</p>
         <ul className="space-y-2 list-disc list-inside">
-          <li><strong className="text-foreground">Public registration</strong> — Share the competition link. Athletes fill in their details and submit a registration request.</li>
-          <li><strong className="text-foreground">Reviewing registrations</strong> — Go to the <em>Registrations</em> tab on the dashboard. Summary cards show Total Registered, Approved, Waitlisted, and Capacity Remaining at a glance.</li>
-          <li><strong className="text-foreground">Statuses</strong> — Each registration can be <em>pending</em>, <em>approved</em>, <em>waitlisted</em>, <em>rejected</em>, <em>withdrawn</em>, or <em>removed</em>. Use the action buttons to transition between statuses.</li>
-          <li><strong className="text-foreground">Capacity limits</strong> — Set <em>max_athletes</em> on the competition or individual divisions. When the approved count reaches the limit, new registrations are automatically waitlisted.</li>
-          <li><strong className="text-foreground">Auto-promotion</strong> — When an approved athlete is withdrawn, rejected, or removed, the first waitlisted athlete (ordered by registration date) is automatically promoted to approved.</li>
-          <li><strong className="text-foreground">Bulk actions</strong> — Select multiple registrations and approve, reject, waitlist, or delete them in one action. You can also export registrations as CSV.</li>
-          <li><strong className="text-foreground">CSV import</strong> — Upload a CSV file to bulk-register athletes. Preview the data, map columns, review validation errors, and confirm. Download a CSV template to get the correct format.</li>
-          <li><strong className="text-foreground">Add athlete form</strong> — Use the mobile-optimized form to manually add athletes with name, email, phone, gender, date of birth, division, and team.</li>
-          <li><strong className="text-foreground">Deletion</strong> — Organizers can fully remove registration records using the delete/remove action.</li>
-          <li><strong className="text-foreground">Payment status</strong> — Payment status badges (paid, pending, waived) are displayed on each registration card and table row.</li>
-          <li><strong className="text-foreground">Roster</strong> — The <em>Roster</em> tab shows individual athletes within each team. Owners can also manually add athletes to any team.</li>
-          <li><strong className="text-foreground">Teams vs Roster</strong> — <em>Teams</em> are the competing unit that gets scored. The <em>Roster</em> lists the individual people on each team. Scores are entered per team, not per individual.</li>
+          <li><strong className="text-foreground">Review</strong> — The Registrations tab shows totals: registered, approved, waitlisted, and capacity remaining.</li>
+          <li><strong className="text-foreground">Statuses</strong> — Pending, approved, waitlisted, rejected, withdrawn, or removed. Move between them with the action buttons.</li>
+          <li><strong className="text-foreground">Capacity</strong> — Set a max on the competition or a division. Once it's full, new registrations go to the waitlist automatically.</li>
+          <li>If an approved athlete drops out, the next person on the waitlist gets promoted automatically.</li>
+          <li><strong className="text-foreground">Bulk actions</strong> — Approve, reject, waitlist, or delete several registrations at once, or export to CSV.</li>
+          <li><strong className="text-foreground">CSV import</strong> — Upload a file to register a batch of athletes. You'll preview the data and fix errors before confirming.</li>
+          <li>You can also add athletes one at a time with a simple mobile-friendly form.</li>
+          <li>Payment status (paid, pending, waived) shows right on each registration.</li>
+          <li><strong className="text-foreground">Roster vs Teams</strong> — Teams get scored. Roster is the list of people on each team. Scoring always happens at the team level.</li>
         </ul>
       </div>
     ),
