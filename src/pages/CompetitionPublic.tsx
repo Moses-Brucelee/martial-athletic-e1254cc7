@@ -593,20 +593,23 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
                 })}
               </RadioGroup>
             )}
-            {teams.length > 0 && (
+            {teamSize > 1 && teams.filter((t) => !t.division_id || teamDivisionIds.has(t.division_id)).length > 0 && (
               <div>
                 <Label className="text-sm font-medium">Team (optional)</Label>
                 <Select value={selectedTeamId || "__none__"} onValueChange={(v) => setSelectedTeamId(v === "__none__" ? "" : v)}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Individual" /></SelectTrigger>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="No team yet" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">Individual</SelectItem>
-                    {teams.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>
-                    ))}
+                    <SelectItem value="__none__">No team yet</SelectItem>
+                    {teams
+                      .filter((t) => !t.division_id || teamDivisionIds.has(t.division_id))
+                      .map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
+
 
             {requiresTeammates && (
               <div className="space-y-2 pt-2">
