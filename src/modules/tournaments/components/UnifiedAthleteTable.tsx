@@ -337,18 +337,23 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
                 onKeyDown={(e) => e.key === "Enter" && handleCreateTeam()}
               />
             </div>
-            {divisions.length > 0 && (
+            {teamsEnabled && (
               <div>
-                <Label className="text-xs font-medium text-foreground">Division</Label>
-                <Select value={newTeamDivisionId || "__none__"} onValueChange={(v) => setNewTeamDivisionId(v === "__none__" ? "" : v)}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
+                <Label className="text-xs font-medium text-foreground">Division *</Label>
+                <Select value={newTeamDivisionId} onValueChange={setNewTeamDivisionId}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select a team division" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">No Division</SelectItem>
-                    {divisions.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    {teamDivisions.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name} · Team of {(d as any).team_size}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                <p className="text-[10px] text-muted-foreground mt-1">Only divisions with a team size above 1 can hold teams.</p>
               </div>
             )}
+
             {teams.length > 0 && (
               <div className="bg-muted/30 border border-border rounded-lg p-3">
                 <p className="text-xs font-semibold text-foreground mb-2">Existing Teams ({teams.length})</p>
