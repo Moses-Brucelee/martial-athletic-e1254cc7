@@ -58,6 +58,7 @@ export default function CreateProfile() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [existingAvatarUrl, setExistingAvatarUrl] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -110,6 +111,10 @@ export default function CreateProfile() {
   const requiresParentConsent = computedAge !== null && computedAge >= MIN_AGE && computedAge < 18;
   const consentMissing = requiresParentConsent && !parentConsent;
   const nameInvalid = displayName.trim().length > 0 && displayName.trim().length < 2;
+
+  // Identity fields (DOB, age, gender, legal name) can only be captured once.
+  const identityLocked = isIdentityLocked(profile);
+  const willLockIdentity = Boolean(dobString && gender);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
