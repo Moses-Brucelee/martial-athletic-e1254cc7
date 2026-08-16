@@ -207,6 +207,14 @@ export default function Register() {
               </div>
             )}
 
+            {/* Social sign-up */}
+            <GoogleSignInButton label="Sign up with Google" redirectTo={redirectTarget} />
+            <div className="flex items-center gap-3 my-6">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">or continue with email</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-foreground font-medium">
