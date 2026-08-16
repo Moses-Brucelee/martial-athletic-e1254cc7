@@ -14,7 +14,7 @@ export default function GymWebsite() {
           <Link2 className="h-12 w-12 text-primary mx-auto" />
           <h1 className="text-xl font-bold text-foreground">Link Gym Website</h1>
           <p className="text-sm text-muted-foreground">
-            Gym profile editor — build and manage your gym's public landing page, schedule, branding, and contact info. Coming soon.
+            Build a public page for your gym with your schedule, branding, and contact info. Coming soon.
           </p>
           <Button variant="outline" onClick={() => navigate("/dashboard")}>
             Back to Main Menu

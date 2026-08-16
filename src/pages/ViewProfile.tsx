@@ -207,7 +207,7 @@ export default function ViewProfile() {
             {success && (
               <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-accent/10 border border-accent/20">
                 <CheckCircle className="h-4 w-4 text-accent mt-0.5 shrink-0" />
-                <p className="text-sm text-accent">Profile updated successfully!</p>
+                <p className="text-sm text-accent">Profile updated.</p>
               </div>
             )}
 
@@ -328,7 +328,7 @@ export default function ViewProfile() {
                     <p className="text-[11px] text-accent">You are an active member of this gym.</p>
                   )}
                   <p className="text-[10px] text-muted-foreground">
-                    Optional. Select your gym to request affiliation — the gym manager must approve.
+                    Optional. Your gym manager approves affiliation requests before they take effect.
                   </p>
                 </div>
               </div>

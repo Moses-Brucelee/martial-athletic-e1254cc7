@@ -71,7 +71,7 @@ export default function CompetitionWorkouts() {
       });
       navigate(`/competition/${id}`);
     } catch {
-      setError("Failed to save workouts");
+      setError("Couldn't save workouts. Try again.");
     }
   };
 
@@ -92,7 +92,7 @@ export default function CompetitionWorkouts() {
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
         <h2 className="text-2xl font-bold text-foreground tracking-tight uppercase mb-6">
-          Create Workout / Scoring Opportunities
+          Set Up Workouts
         </h2>
 
         {error && (
@@ -133,7 +133,7 @@ export default function CompetitionWorkouts() {
         <div className="mt-6 flex items-start gap-3 p-4 rounded-xl bg-accent/10 border border-accent/20">
           <Info className="h-5 w-5 text-accent mt-0.5 shrink-0" />
           <p className="text-sm text-foreground">
-            Once a team signs up to the competition, you will be able to input scores against each workout for each team.
+            Once teams register, you can enter scores for each workout here.
           </p>
         </div>
 

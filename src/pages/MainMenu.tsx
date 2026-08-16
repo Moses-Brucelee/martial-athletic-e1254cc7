@@ -233,20 +233,24 @@ export default function MainMenu() {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 lg:pb-12 space-y-6">
+      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-24 lg:pb-16 space-y-8 sm:space-y-12">
         <ProfileCompletionBanner />
 
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight uppercase">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-border pb-4">
+          <h1 className="text-3xl sm:text-5xl font-bold text-foreground tracking-tight uppercase leading-none">
             Hey, {firstName}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Here's what's running right now.
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground tabular-nums">
+            {new Date().toLocaleDateString(undefined, {
+              weekday: "long",
+              day: "numeric",
+              month: "short",
+            })}
           </p>
         </div>
 
         {/* Featured + rail */}
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <div className="grid gap-6 lg:gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
           <FeaturedCompetitionHero />
           <DashboardRail
             name={profile?.display_name ?? firstName}
@@ -258,7 +262,7 @@ export default function MainMenu() {
         </div>
 
         {/* Rows */}
-        <div className="space-y-8">
+        <div className="space-y-10 sm:space-y-14">
           <UpcomingCompetitionsSpotlight />
           <ProgramSpotlight />
           <BrowseMarketplaceSection />

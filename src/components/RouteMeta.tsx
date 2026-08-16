@@ -33,7 +33,7 @@ const ROUTE_META: RouteMetaEntry[] = [
     pattern: "/forgot-password",
     title: "Reset Your Password | Martial Athletic",
     description:
-      "Request a password reset link for your Martial Athletic account and get back to managing your competitions and training.",
+      "Get a password reset link for your Martial Athletic account.",
   },
   {
     pattern: "/reset-password",
@@ -102,7 +102,7 @@ const ROUTE_META: RouteMetaEntry[] = [
     pattern: "/gym-website",
     title: "Gym Website Builder | Martial Athletic",
     description:
-      "Build your gym's public page on Martial Athletic — branding, schedule, contact details and a link to your competitions.",
+      "Build your gym's public page: branding, schedule, contact details, and a link to your competitions.",
     noindex: true,
   },
   {
@@ -144,7 +144,7 @@ const ROUTE_META: RouteMetaEntry[] = [
   {
     pattern: "/sponsor-redirect",
     title: "Sponsor Link | Martial Athletic",
-    description: "You are being redirected to a competition sponsor's website.",
+    description: "You're being redirected to a competition sponsor's website.",
     noindex: true,
   },
 ];

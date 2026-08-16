@@ -171,7 +171,7 @@ export default function Login() {
           <div className="text-center mb-8">
             <img src={logoCompact} alt="Martial Athletic" className="w-20 h-20 mx-auto mb-4 object-contain" />
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">LOGIN</h1>
-            <p className="text-muted-foreground mt-2 text-sm">Sign in to your account</p>
+            <p className="text-muted-foreground mt-2 text-sm">Welcome back</p>
           </div>
 
           {/* Card */}

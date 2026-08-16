@@ -1,0 +1,5 @@
+UPDATE public.competitions SET poster_url = 'https://kbiuojepvucbsadesbcf.supabase.co/storage/v1/object/public/competition-posters/seed%2Fposter-iron-circuit.jpg' WHERE id = '11111111-1111-4111-8111-000000000001';
+UPDATE public.competitions SET poster_url = 'https://kbiuojepvucbsadesbcf.supabase.co/storage/v1/object/public/competition-posters/seed%2Fposter-winter-ladder.jpg' WHERE id = '11111111-1111-4111-8111-000000000002';
+UPDATE public.programs SET cover_url = 'https://kbiuojepvucbsadesbcf.supabase.co/storage/v1/object/public/competition-posters/seed%2Fcover-squat.jpg' WHERE id = '77770001-0000-4000-8000-000000000001';
+UPDATE public.programs SET cover_url = 'https://kbiuojepvucbsadesbcf.supabase.co/storage/v1/object/public/competition-posters/seed%2Fcover-engine.jpg' WHERE id = '77770001-0000-4000-8000-000000000002';
+UPDATE public.programs SET cover_url = 'https://kbiuojepvucbsadesbcf.supabase.co/storage/v1/object/public/competition-posters/seed%2Fcover-comp-prep.jpg' WHERE id = '77770001-0000-4000-8000-000000000003';

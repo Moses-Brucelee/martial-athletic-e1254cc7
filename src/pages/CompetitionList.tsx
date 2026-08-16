@@ -124,21 +124,21 @@ export default function CompetitionList() {
 
         {!hasAny ? (
           <div className="text-center py-16">
-            <p className="text-muted-foreground mb-4">No competitions yet.</p>
+            <p className="text-muted-foreground mb-4">No competitions yet</p>
             {canCreate ? (
               <Button onClick={() => navigate("/competition/create")}
                 className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                Create Your First Competition
+                Create a Competition
               </Button>
             ) : (
-              <p className="text-xs text-muted-foreground">Upgrade to Affiliate Pro to create competitions.</p>
+              <p className="text-xs text-muted-foreground">Upgrade to Affiliate Pro to create a competition.</p>
             )}
           </div>
         ) : (
           <div className="space-y-8">
-            <Section title="🔴 Live" comps={live} navigate={navigate} />
-            <Section title="📅 Upcoming" comps={upcoming} navigate={navigate} />
-            <Section title="✅ Completed" comps={completed} navigate={navigate} />
+            <Section title="Live" comps={live} navigate={navigate} />
+            <Section title="Upcoming" comps={upcoming} navigate={navigate} />
+            <Section title="Completed" comps={completed} navigate={navigate} />
           </div>
         )}
       </main>

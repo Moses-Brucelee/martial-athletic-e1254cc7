@@ -128,7 +128,7 @@ export default function MembersPage() {
       { name: gymName.trim(), description: gymDesc.trim() || undefined },
       {
         onSuccess: () => {
-          toast.success("Gym created!");
+          toast.success("Gym created");
           setGymName("");
           setGymDesc("");
         },
@@ -178,7 +178,7 @@ export default function MembersPage() {
               <div className="text-center space-y-2">
                 <Users className="h-12 w-12 text-primary mx-auto" />
                 <h2 className="text-xl font-bold text-foreground">Create Your Gym</h2>
-                <p className="text-sm text-muted-foreground">Set up your gym to start managing members.</p>
+                <p className="text-sm text-muted-foreground">Set up your gym before adding members.</p>
               </div>
               <div className="space-y-2">
                 <Label>Gym Name</Label>

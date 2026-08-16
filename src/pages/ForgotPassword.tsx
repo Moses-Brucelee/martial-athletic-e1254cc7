@@ -88,7 +88,7 @@ export default function ForgotPassword() {
                   We've sent a password reset link to <strong>{email}</strong>
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Click the link in your email to reset your password. The link will expire in 24 hours.
+                  The link expires in 24 hours.
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Didn't receive the email? Check your spam folder or{" "}
@@ -138,7 +138,7 @@ export default function ForgotPassword() {
           <div className="text-center mb-8">
             <img src={logoCompact} alt="Martial Athletic" className="w-20 h-20 mx-auto mb-4 object-contain" />
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">FORGOT PASSWORD</h1>
-            <p className="text-muted-foreground mt-2 text-sm">Enter your email to receive a reset link</p>
+            <p className="text-muted-foreground mt-2 text-sm">We'll email you a reset link</p>
           </div>
 
           <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg">

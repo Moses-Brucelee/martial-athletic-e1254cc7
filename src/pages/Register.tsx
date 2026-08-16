@@ -153,7 +153,7 @@ export default function Register() {
     // Profile row is created automatically by the `handle_new_user` trigger
     // (tier_slug defaults to 'free', profile_completed to false).
     toast.success("Welcome!", {
-      description: `We sent a verification email to ${result.data.email} — verify when you have a moment.`,
+      description: `We sent a verification email to ${result.data.email}.`,
       duration: 8000,
     });
 
@@ -195,7 +195,7 @@ export default function Register() {
               CREATE ACCOUNT
             </h1>
             <p className="text-muted-foreground mt-2 text-sm">
-              Join the Martial Athletic community
+              Set up your athlete account
             </p>
           </div>
 

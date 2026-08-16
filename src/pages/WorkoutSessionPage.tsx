@@ -240,7 +240,7 @@ export default function WorkoutSessionPage() {
         ) : (
           <div className="rounded-xl border border-border bg-card p-4 space-y-3 text-center">
             <TimerIcon className="h-5 w-5 text-primary mx-auto" />
-            <p className="text-sm text-foreground">Free workout — run the timer and finish when you're done.</p>
+            <p className="text-sm text-foreground">Free workout. Run the timer and finish when you're done.</p>
           </div>
         )}
 

@@ -187,7 +187,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
     if (regType === "self") {
       const isDup = await checkDuplicateRegistration(id, user.id);
       if (isDup) {
-        toast.error("You are already registered for this competition.");
+        toast.error("You're already registered for this competition.");
         return;
       }
     }
@@ -207,7 +207,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
         date_of_birth: regType === "self" ? null : (athleteDob || null),
         status: "pending",
       });
-      toast.success("Registration submitted!");
+      toast.success("Registration submitted.");
       setShowRegWizard(false);
       setRegStep(0);
       setAthleteEmail("");
@@ -216,7 +216,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
       setSelectedDivisionId("");
       setSelectedTeamId("");
     } catch (err) {
-      toast.error("Registration failed. Please try again.");
+      toast.error("Couldn't register. Try again.");
     }
   };
 
@@ -260,7 +260,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
         if (tName.length < 2) { toast.error("Team name is required"); setSubmitting(false); return; }
         const nameTaken = teams.some((t) => t.team_name.trim().toLowerCase() === tName.toLowerCase());
         if (nameTaken) {
-          toast.error(`Team name "${tName}" is already taken. Please choose another.`);
+          toast.error(`Team name "${tName}" is taken. Choose another.`);
           setSubmitting(false);
           return;
         }
@@ -347,9 +347,9 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
       setSelectedDivisionId("");
     } catch (err: any) {
       if (err?.message === "TEAM_NAME_TAKEN") {
-        toast.error("Team name is already taken in this competition. Please choose another.");
+        toast.error("Team name is taken in this competition. Choose another.");
       } else {
-        toast.error("Team registration failed. Please try again.");
+        toast.error("Couldn't register team. Try again.");
       }
     } finally {
       setSubmitting(false);
@@ -381,14 +381,14 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
           ? "Sign in to view this competition"
           : "Competition not found";
     const detail = isPermission
-      ? "The organizer's access settings are blocking public visitors. Please ask them to check the event's visibility, or sign in if you were invited."
+      ? "The organizer has restricted access to this event. Sign in if you were invited, or ask them to check the visibility setting."
       : isNetwork
-        ? "We couldn't reach the server. Check your connection and try again."
+        ? "Couldn't reach the server. Check your connection and try again."
         : error
-          ? "Something went wrong reaching the server. Please try again in a moment."
+          ? "Something went wrong. Try again in a moment."
           : isAuthRequired
-            ? "This competition may be a draft or restricted. Sign in to see if you have access."
-            : "This event doesn't exist, has been removed, or isn't published yet.";
+            ? "This competition may be a draft or restricted. Sign in to check access."
+            : "This event doesn't exist, was removed, or isn't published yet.";
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-md">
@@ -417,7 +417,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
         <div className="text-center space-y-4 max-w-md">
           <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
           <p className="text-foreground font-bold text-lg">Not yet published</p>
-          <p className="text-sm text-muted-foreground">This competition is still a draft. Check back once the organizer publishes it.</p>
+          <p className="text-sm text-muted-foreground">This competition is still a draft. Check back once it's published.</p>
           <Button variant="outline" onClick={() => navigate("/")}>Go Home</Button>
         </div>
       </div>
@@ -441,7 +441,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-foreground">
               You're the captain of <span className="font-semibold">{myCaptainTeam.team_name}</span>
               {myCaptainTeam.division ? <> · <span className="text-muted-foreground">{myCaptainTeam.division}</span></> : null}.
-              New members below will be added to this team — duplicates are skipped automatically.
+              New members below get added to this team. Duplicates are skipped.
             </div>
           ) : (
             <>
@@ -593,10 +593,10 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
             <h3 className="text-base font-bold text-foreground">Select Division</h3>
             {divisionsError ? (
               <p className="text-sm text-destructive">
-                Divisions could not be loaded right now, so registration is temporarily unavailable. Please refresh and try again.
+                Couldn't load divisions, so registration is unavailable right now. Refresh and try again.
               </p>
             ) : divisions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No divisions available. You can proceed without one.</p>
+              <p className="text-sm text-muted-foreground">No divisions available. You can continue without one.</p>
             ) : (
               <RadioGroup value={selectedDivisionId} onValueChange={setSelectedDivisionId} className="space-y-2">
                 {divisions.map((d) => {
@@ -638,7 +638,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
                   Teammate names ({additionalTeammateSlots} additional)
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  This division requires {teamSize} athletes per team. You count as one — please add the other {additionalTeammateSlots}.
+                  This division requires {teamSize} athletes per team. You count as one, so add the other {additionalTeammateSlots}.
                 </p>
                 {Array.from({ length: additionalTeammateSlots }).map((_, i) => (
                   <Input
@@ -810,9 +810,9 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
                     registration_type: "self",
                     status: "pending",
                   } as any);
-                  toast.success("You're in! Registration submitted.");
+                  toast.success("You're in.");
                 } catch {
-                  toast.error("Registration failed. Please try again.");
+                  toast.error("Couldn't register. Try again.");
                 }
               };
               return (
@@ -849,7 +849,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
         {(sponsorsLoading || visibleSponsors.length > 0) && (
           <div className="bg-card border border-border rounded-xl p-4">
             <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-bold mb-3 text-center">
-              Proudly Sponsored By
+              Sponsored By
             </p>
             {sponsorsLoading ? (
               <>
@@ -981,7 +981,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
                 );
               })}
             </div>
-            <p className="text-[11px] text-muted-foreground mt-3">Tap a workout to view full details.</p>
+            <p className="text-[11px] text-muted-foreground mt-3">Tap a workout for details.</p>
           </div>
         )}
 
@@ -1028,15 +1028,15 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
               <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
               <p className="text-sm text-foreground">
                 {isDeadlinePassed
-                  ? "Registrations for this competition have closed. Please contact the competition administrator for assistance."
-                  : "Registration is not yet open."}
+                  ? "Registration for this competition has closed. Contact the organizer for help."
+                  : "Registration isn't open yet."}
               </p>
             </div>
           ) : alreadyRegistered && !showRegWizard ? (
             <div className="space-y-3">
               <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10 border border-accent/20">
                 <CheckCircle2 className="h-4 w-4 text-accent mt-0.5 shrink-0" />
-                <p className="text-sm text-foreground">You are registered for this competition.</p>
+                <p className="text-sm text-foreground">You're registered for this competition.</p>
               </div>
               <Button variant="outline" size="sm" onClick={() => { setRegType("other"); setShowRegWizard(true); setRegStep(0); }}>
                 Register another athlete
@@ -1167,9 +1167,9 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
                 if (!removingReg || !id) return;
                 try {
                   await deleteReg.mutateAsync({ id: removingReg.id, competitionId: id });
-                  toast.success("Member removed");
+                  toast.success("Member removed.");
                 } catch {
-                  toast.error("Failed to remove member");
+                  toast.error("Couldn't remove member.");
                 } finally {
                   setRemovingReg(null);
                 }
@@ -1237,7 +1237,7 @@ function WorkoutRevealDialog({
             <div>
               <h4 className="text-xs font-bold text-muted-foreground uppercase mb-2">Movements</h4>
               {movements.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No movements specified.</p>
+                <p className="text-sm text-muted-foreground">No movements listed.</p>
               ) : (
                 <ol className="space-y-1.5 list-decimal list-inside">
                   {movements.map((m: any) => (

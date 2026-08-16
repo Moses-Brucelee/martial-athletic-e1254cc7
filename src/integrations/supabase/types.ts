@@ -135,6 +135,7 @@ export type Database = {
           email: string | null
           gender: string | null
           id: string
+          is_synthetic: boolean
           name: string
           phone: string | null
           updated_at: string
@@ -147,6 +148,7 @@ export type Database = {
           email?: string | null
           gender?: string | null
           id?: string
+          is_synthetic?: boolean
           name: string
           phone?: string | null
           updated_at?: string
@@ -159,6 +161,7 @@ export type Database = {
           email?: string | null
           gender?: string | null
           id?: string
+          is_synthetic?: boolean
           name?: string
           phone?: string | null
           updated_at?: string
@@ -1136,6 +1139,7 @@ export type Database = {
           gym_id: string | null
           host_gym: string | null
           id: string
+          is_synthetic: boolean
           max_age: number | null
           max_athletes: number | null
           max_teams: number | null
@@ -1164,6 +1168,7 @@ export type Database = {
           gym_id?: string | null
           host_gym?: string | null
           id?: string
+          is_synthetic?: boolean
           max_age?: number | null
           max_athletes?: number | null
           max_teams?: number | null
@@ -1192,6 +1197,7 @@ export type Database = {
           gym_id?: string | null
           host_gym?: string | null
           id?: string
+          is_synthetic?: boolean
           max_age?: number | null
           max_athletes?: number | null
           max_teams?: number | null

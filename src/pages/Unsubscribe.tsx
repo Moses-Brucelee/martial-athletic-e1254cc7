@@ -51,8 +51,8 @@ export default function Unsubscribe() {
       <div className="max-w-md w-full border border-border rounded-lg p-8 text-center space-y-4 bg-card">
         <h1 className="text-2xl font-bold text-foreground">Email preferences</h1>
         {state === "loading" && <p className="text-muted-foreground">Checking your link…</p>}
-        {state === "invalid" && <p className="text-muted-foreground">This unsubscribe link is invalid or expired.</p>}
-        {state === "already" && <p className="text-muted-foreground">You're already unsubscribed.</p>}
+        {state === "invalid" && <p className="text-muted-foreground">This link is invalid or expired.</p>}
+        {state === "already" && <p className="text-muted-foreground">You're already off the list.</p>}
         {state === "valid" && (
           <>
             <p className="text-muted-foreground">
@@ -63,8 +63,8 @@ export default function Unsubscribe() {
             </Button>
           </>
         )}
-        {state === "done" && <p className="text-muted-foreground">You've been unsubscribed.</p>}
-        {state === "error" && <p className="text-destructive">Something went wrong. Please try again.</p>}
+        {state === "done" && <p className="text-muted-foreground">You're unsubscribed.</p>}
+        {state === "error" && <p className="text-destructive">Something went wrong. Try again.</p>}
       </div>
     </div>
   );
