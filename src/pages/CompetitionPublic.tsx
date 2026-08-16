@@ -370,23 +370,36 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
   if (error || !competition) {
     // Distinguish: explicit fetch error vs. row-not-visible (RLS-filtered or truly missing)
     const isAuthRequired = !user && !competition && !error;
-    const title = error
-      ? "Unable to load competition"
-      : isAuthRequired
-        ? "Sign in to view this competition"
-        : "Competition not found";
-    const detail = error
-      ? "Something went wrong reaching the server. Please try again in a moment."
-      : isAuthRequired
-        ? "This competition may be a draft or restricted. Sign in to see if you have access."
-        : "This event doesn't exist, has been removed, or isn't published yet.";
+    const rawMessage = (error as any)?.message as string | undefined;
+    const isPermission = !!rawMessage && /permission denied|42501|not authorized/i.test(rawMessage);
+    const isNetwork = !!rawMessage && /failed to fetch|network|timeout/i.test(rawMessage);
+    const title = isPermission
+      ? "This event isn't publicly accessible"
+      : error
+        ? "Unable to load competition"
+        : isAuthRequired
+          ? "Sign in to view this competition"
+          : "Competition not found";
+    const detail = isPermission
+      ? "The organizer's access settings are blocking public visitors. Please ask them to check the event's visibility, or sign in if you were invited."
+      : isNetwork
+        ? "We couldn't reach the server. Check your connection and try again."
+        : error
+          ? "Something went wrong reaching the server. Please try again in a moment."
+          : isAuthRequired
+            ? "This competition may be a draft or restricted. Sign in to see if you have access."
+            : "This event doesn't exist, has been removed, or isn't published yet.";
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-md">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
           <p className="text-foreground font-bold text-lg">{title}</p>
           <p className="text-sm text-muted-foreground">{detail}</p>
-          <div className="flex gap-2 justify-center">
+          {rawMessage && (
+            <p className="text-[11px] text-muted-foreground/70 break-words">Details: {rawMessage}</p>
+          )}
+          <div className="flex gap-2 justify-center flex-wrap">
+            {error && <Button onClick={() => refetchCompetition()}>Try Again</Button>}
             {isAuthRequired && (
               <Button onClick={() => navigate(`/login?redirect=/event/${id}`)}>Sign In</Button>
             )}
@@ -396,6 +409,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
       </div>
     );
   }
+
 
   if (competition.status === "draft" && competition.created_by !== user?.id) {
     return (
