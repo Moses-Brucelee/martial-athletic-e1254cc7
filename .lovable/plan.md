@@ -11,6 +11,8 @@ Goal: let people sign up with Google, auto-fill what Google gives us (name, avat
 
 ## 2. Lock identity fields after completion
 
+While still editable, each of these fields shows a small "i" info icon: "This cannot be changed later — please enter it correctly." Saving the profile for the first time opens a confirmation dialog listing the entered date of birth, gender and full name, asking the user to confirm they are correct before the fields lock.
+
 Once a profile is marked complete, these become read-only everywhere in the app:
 
 - Date of birth (and the derived age)
