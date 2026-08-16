@@ -86,6 +86,29 @@ export default function CreateProfile() {
     }).catch(() => {});
   }, [profile?.id]);
 
+  const social = getSocialIdentity(user);
+  const socialProvider = providerLabel(social.provider);
+
+  // Enrich a fresh social sign-up: pull name + avatar from the provider once.
+  useEffect(() => {
+    if (!user || !profile || profile.profile_completed) return;
+    const patch: Record<string, unknown> = {};
+    if (!profile.full_name && social.fullName) patch.full_name = social.fullName;
+    if (!profile.display_name && social.displayName) patch.display_name = social.displayName;
+
+    const run = async () => {
+      if (!profile.avatar_url && social.avatarUrl) {
+        const stored = await importSocialAvatar(user.id, social.avatarUrl);
+        if (stored) patch.avatar_url = stored;
+      }
+      if (Object.keys(patch).length === 0) return;
+      const { error: err } = await supabase.from("profiles").update(patch).eq("user_id", user.id);
+      if (!err) await refetch();
+    };
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, profile?.id]);
+
   // Hydrate from existing profile so re-entry is safe.
   useEffect(() => {
     if (!profile) return;
