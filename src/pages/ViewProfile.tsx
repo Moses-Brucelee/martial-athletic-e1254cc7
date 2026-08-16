@@ -119,18 +119,23 @@ export default function ViewProfile() {
         avatarUrl = urlData.publicUrl;
       }
 
+      // Locked identity fields are never sent once the profile is complete.
+      const payload: Record<string, unknown> = {
+        display_name: fullName.trim() || profile?.display_name,
+        affiliation: affiliation.trim() || null,
+        about_me: aboutMe.trim() || null,
+        avatar_url: avatarUrl,
+      };
+      if (!identityLocked) {
+        payload.full_name = fullName.trim() || null;
+        payload.gender = gender || null;
+        payload.age = computedAge;
+        payload.date_of_birth = dobString || null;
+      }
+
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({
-          full_name: fullName.trim() || null,
-          display_name: fullName.trim() || profile?.display_name,
-          gender: gender || null,
-          age: computedAge,
-          date_of_birth: dobString || null,
-          affiliation: affiliation.trim() || null,
-          about_me: aboutMe.trim() || null,
-          avatar_url: avatarUrl,
-        })
+        .update(payload)
         .eq("user_id", user.id);
 
       if (updateError) throw updateError;
