@@ -342,6 +342,12 @@ export default function CreateProfile() {
 
                 {/* Form fields */}
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {socialProvider && (
+                    <p className="sm:col-span-2 text-xs text-muted-foreground">
+                      Details filled in from your {socialProvider} account. You can adjust them below.
+                    </p>
+                  )}
+
                   <div className="space-y-2">
                     <Label className="text-foreground font-medium">Display Name</Label>
                     <Input
@@ -358,31 +364,53 @@ export default function CreateProfile() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-foreground font-medium">Gender</Label>
-                    <Select value={gender} onValueChange={setGender} disabled={loading}>
-                      <SelectTrigger className="h-11 bg-background">
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                        <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {identityLocked ? (
+                    <LockedValue label="Gender" value={profile?.gender ? profile.gender.replace(/_/g, " ") : null} />
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <Label className="text-foreground font-medium">Gender</Label>
+                        <IdentityFieldHint />
+                      </div>
+                      <Select value={gender} onValueChange={setGender} disabled={loading}>
+                        <SelectTrigger className="h-11 bg-background">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                          <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {identityLocked ? (
+                    <LockedValue
+                      label="Date of Birth"
+                      value={profile?.date_of_birth ? new Date(profile.date_of_birth + "T00:00:00").toLocaleDateString() : null}
+                    />
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5 [&_label]:mb-0">
+                        <DateOfBirthPicker value={dobString} onChange={setDobString} disabled={loading} error={ageError ?? undefined} />
+                        <IdentityFieldHint />
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
-                    <DateOfBirthPicker value={dobString} onChange={setDobString} disabled={loading} error={ageError ?? undefined} />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-foreground font-medium">Age</Label>
+                    <div className="flex items-center gap-1.5">
+                      <Label className="text-foreground font-medium">Age</Label>
+                      <IdentityFieldHint locked={identityLocked} />
+                    </div>
                     <div className="h-11 flex items-center px-3 rounded-md border border-border bg-muted text-foreground">
                       {computedAge !== null ? computedAge : <span className="text-muted-foreground">Select DOB</span>}
                     </div>
                   </div>
+
+
 
                   {requiresParentConsent && (
                     <div className="sm:col-span-2 flex items-start gap-2 p-3 rounded-lg border border-primary/30 bg-primary/5">
