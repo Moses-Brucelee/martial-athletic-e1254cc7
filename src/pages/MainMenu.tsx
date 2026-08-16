@@ -20,8 +20,9 @@ import type { LucideIcon } from "lucide-react";
 
 import { UpcomingCompetitionsSpotlight } from "@/components/dashboard/UpcomingCompetitionsSpotlight";
 import { BrowseMarketplaceSection } from "@/components/dashboard/BrowseMarketplaceSection";
-import { ShopSpotlight } from "@/components/dashboard/ShopSpotlight";
 import { ProgramSpotlight } from "@/components/dashboard/ProgramSpotlight";
+import { FeaturedCompetitionHero } from "@/components/dashboard/FeaturedCompetitionHero";
+import { DashboardRail } from "@/components/dashboard/DashboardRail";
 import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -67,7 +68,7 @@ export default function MainMenu() {
   const { profile, loading: profileLoading, error: profileError } = useProfile();
   const { canAccess, loading: subLoading } = useSubscription();
   const { flags, loading: flagsLoading } = useFeatureFlags();
-  const { isAtLeast, loading: tierLoading } = useTier();
+  const { tier, isAtLeast, loading: tierLoading } = useTier();
   const [hasCompetitions, setHasCompetitions] = useState(false);
   const [compLoading, setCompLoading] = useState(true);
 
