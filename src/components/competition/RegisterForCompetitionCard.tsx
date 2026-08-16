@@ -85,8 +85,7 @@ export function RegisterForCompetitionCard({ competitionId, competition, registr
     [divisions, divisionId],
   );
   const teamSize = Number((selectedDivision as any)?.team_size ?? 1);
-  // Any division that supports more than one athlete makes team registration possible.
-  const anyTeamDivision = divisions.some((d) => Number((d as any).team_size ?? 1) > 1);
+  // With divisions configured, the selected division's team size decides the form.
   // With divisions configured, the selected division's team size decides the form.
   // Without divisions, the athlete picks individual vs team manually.
   const showModeToggle = divisions.length === 0;
