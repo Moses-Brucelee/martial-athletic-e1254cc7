@@ -74,6 +74,9 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
     [divisions],
   );
   const teamsEnabled = divisions.length === 0 || teamDivisions.length > 0;
+  useEffect(() => {
+    if (!teamsEnabled && regMode === "team") setRegMode("individual");
+  }, [teamsEnabled, regMode]);
   const teamDivisionIds = useMemo(() => new Set(teamDivisions.map((d) => d.id)), [teamDivisions]);
   const requiresTeammates = teamSize > 1;
   const additionalTeammateSlots = Math.max(0, teamSize - 1);
