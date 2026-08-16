@@ -40,7 +40,7 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { data: competition, isLoading, error } = useCompetition(id);
+  const { data: competition, isLoading, error, refetch: refetchCompetition } = useCompetition(id);
   const { data: teams = [] } = useTeams(id);
   const { data: divisions = [] } = useDivisions(id);
   const { data: workouts = [] } = useWorkouts(id);
