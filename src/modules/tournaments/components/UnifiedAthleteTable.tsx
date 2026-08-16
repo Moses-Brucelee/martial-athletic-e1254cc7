@@ -565,16 +565,19 @@ function AddForm({
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label className="text-xs font-medium">Team</Label>
-          <Select value={newTeamId || "__none__"} onValueChange={(v) => setNewTeamId(v === "__none__" ? "" : v)}>
-            <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">None</SelectItem>
-              {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        {teams.length > 0 && (
+          <div>
+            <Label className="text-xs font-medium">Team</Label>
+            <Select value={newTeamId || "__none__"} onValueChange={(v) => setNewTeamId(v === "__none__" ? "" : v)}>
+              <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">None</SelectItem>
+                {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.team_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
