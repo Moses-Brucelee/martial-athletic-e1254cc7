@@ -20,8 +20,9 @@ import type { LucideIcon } from "lucide-react";
 
 import { UpcomingCompetitionsSpotlight } from "@/components/dashboard/UpcomingCompetitionsSpotlight";
 import { BrowseMarketplaceSection } from "@/components/dashboard/BrowseMarketplaceSection";
-import { ShopSpotlight } from "@/components/dashboard/ShopSpotlight";
 import { ProgramSpotlight } from "@/components/dashboard/ProgramSpotlight";
+import { FeaturedCompetitionHero } from "@/components/dashboard/FeaturedCompetitionHero";
+import { DashboardRail } from "@/components/dashboard/DashboardRail";
 import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -67,7 +68,7 @@ export default function MainMenu() {
   const { profile, loading: profileLoading, error: profileError } = useProfile();
   const { canAccess, loading: subLoading } = useSubscription();
   const { flags, loading: flagsLoading } = useFeatureFlags();
-  const { isAtLeast, loading: tierLoading } = useTier();
+  const { tier, isAtLeast, loading: tierLoading } = useTier();
   const [hasCompetitions, setHasCompetitions] = useState(false);
   const [compLoading, setCompLoading] = useState(true);
 
@@ -200,6 +201,14 @@ export default function MainMenu() {
     navigate(item.route);
   };
 
+  const railItems = accessibleItems.map((item) => ({
+    id: item.id,
+    label: item.label,
+    description: item.description,
+    icon: ICON_MAP[item.icon_name] ?? User,
+    onClick: () => handleItemClick(item),
+  }));
+
   return (
     <div className="min-h-dvh bg-background flex flex-col">
       {/* Header */}
@@ -224,41 +233,38 @@ export default function MainMenu() {
         </div>
       </header>
 
-      <main className="flex-1 px-4 py-8 max-w-lg mx-auto w-full space-y-8">
+      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 lg:pb-12 space-y-6">
         <ProfileCompletionBanner />
 
-        {/* Welcome */}
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">
-            Hey, {firstName} 👋
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight uppercase">
+            Hey, {firstName}
           </h1>
-          <p className="text-sm text-muted-foreground">What would you like to do today?</p>
+          <p className="text-sm text-muted-foreground">
+            Here's what's running right now.
+          </p>
         </div>
 
-        {/* Menu items */}
-        <div className="space-y-2">
-          {accessibleItems.map((item) => {
-            const Icon = ICON_MAP[item.icon_name] ?? User;
-            return (
-              <MenuItem
-                key={item.id}
-                label={item.label}
-                description={item.description}
-                icon={Icon}
-                onClick={() => handleItemClick(item)}
-              />
-            );
-          })}
+        {/* Featured + rail */}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+          <FeaturedCompetitionHero />
+          <DashboardRail
+            name={profile?.display_name ?? firstName}
+            initials={initials}
+            avatarUrl={profile?.avatar_url}
+            tierLabel={tier?.display_name}
+            items={railItems}
+          />
         </div>
 
-        {/* Spotlight sections */}
-        <div className="space-y-6 pt-2">
+        {/* Rows */}
+        <div className="space-y-8">
           <UpcomingCompetitionsSpotlight />
-          <BrowseMarketplaceSection />
-          <ShopSpotlight />
           <ProgramSpotlight />
+          <BrowseMarketplaceSection />
         </div>
       </main>
     </div>
   );
 }
+
