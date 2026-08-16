@@ -28,6 +28,7 @@ import SuperDashboard from "./pages/SuperDashboard";
 import MembersPage from "./modules/members/components/MembersPage";
 import { RouteMeta } from "@/components/RouteMeta";
 import NotFound from "./pages/NotFound";
+import OAuthConsent from "./pages/OAuthConsent";
 import Guide from "./pages/Guide";
 import Affiliation from "./pages/Affiliation";
 import GymWebsite from "./pages/GymWebsite";
@@ -89,6 +90,7 @@ const App = () => (
               <Route path="/programs/session/:id" element={<ProtectedRoute><WorkoutSessionPage /></ProtectedRoute>} />
               <Route path="/programs/:id" element={<ProtectedRoute><ProgramDetail /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </Suspense>

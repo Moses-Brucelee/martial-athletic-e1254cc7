@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,21 @@ function mapAuthErrorToField(message: string): { field: FieldKey | "form"; messa
 export default function Register() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+
+  const safeRedirect = (raw: string | null): string => {
+    if (!raw) return "/dashboard";
+    try {
+      const decoded = decodeURIComponent(raw).trim();
+      if (decoded.startsWith("/") && !decoded.startsWith("//") && !/^javascript:/i.test(decoded)) {
+        return decoded;
+      }
+    } catch {
+      /* fall through */
+    }
+    return "/dashboard";
+  };
+  const redirectTarget = safeRedirect(searchParams.get("redirectTo"));
 
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -96,7 +111,7 @@ export default function Register() {
 
   // If the user is signed in (incl. immediately after successful signUp), go to dashboard.
   useEffect(() => {
-    if (user) navigate("/dashboard", { replace: true });
+    if (user) navigate(redirectTarget, { replace: true });
   }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,7 +131,7 @@ export default function Register() {
       email: result.data.email,
       password: result.data.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: `${window.location.origin}${redirectTarget}`,
         data: { display_name: result.data.display_name },
       },
     });
@@ -144,7 +159,7 @@ export default function Register() {
 
     // Auto sign-in via the session returned from signUp; AuthProvider will
     // pick it up and the redirect effect above will navigate to /dashboard.
-    navigate("/dashboard", { replace: true });
+    navigate(redirectTarget, { replace: true });
   };
 
   const showError = (key: FieldKey) =>
