@@ -228,29 +228,58 @@ export default function ViewProfile() {
               </div>
 
               <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {identityLocked ? (
+                  <LockedValue label="Name and Surname" value={profile?.full_name} />
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <Label className="text-foreground font-medium">Name and Surname</Label>
+                      <IdentityFieldHint />
+                    </div>
+                    <Input placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} onBlur={() => setTouched((p) => ({ ...p, fullName: true }))} disabled={saving} className="h-11 bg-background" maxLength={100} />
+                    {touched.fullName && fieldErrors.fullName && <p className="text-xs text-destructive">{fieldErrors.fullName}</p>}
+                    {!touched.fullName && !fullName && <p className="text-xs text-muted-foreground">Required</p>}
+                  </div>
+                )}
+                {identityLocked ? (
+                  <LockedValue label="Gender" value={profile?.gender ? profile.gender.replace(/_/g, " ") : null} />
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <Label className="text-foreground font-medium">Gender</Label>
+                      <IdentityFieldHint />
+                    </div>
+                    <Select value={gender} onValueChange={(v) => { setGender(v); setTouched((p) => ({ ...p, gender: true })); }} disabled={saving}>
+                      <SelectTrigger className="h-11 bg-background"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {touched.gender && fieldErrors.gender && <p className="text-xs text-destructive">{fieldErrors.gender}</p>}
+                    {!touched.gender && !gender && <p className="text-xs text-muted-foreground">Required</p>}
+                  </div>
+                )}
+                {identityLocked ? (
+                  <LockedValue
+                    label="Date of Birth"
+                    value={profile?.date_of_birth ? new Date(profile.date_of_birth + "T00:00:00").toLocaleDateString() : null}
+                  />
+                ) : (
+                  <div className="space-y-2">
+                    <DateOfBirthPicker value={dobString} onChange={setDobString} disabled={saving} />
+                    <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <IdentityFieldHint /> Cannot be changed later.
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
-                  <Label className="text-foreground font-medium">Name and Surname</Label>
-                  <Input placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} onBlur={() => setTouched((p) => ({ ...p, fullName: true }))} disabled={saving} className="h-11 bg-background" maxLength={100} />
-                  {touched.fullName && fieldErrors.fullName && <p className="text-xs text-destructive">{fieldErrors.fullName}</p>}
-                  {!touched.fullName && !fullName && <p className="text-xs text-muted-foreground">Required</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-foreground font-medium">Gender</Label>
-                  <Select value={gender} onValueChange={(v) => { setGender(v); setTouched((p) => ({ ...p, gender: true })); }} disabled={saving}>
-                    <SelectTrigger className="h-11 bg-background"><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                      <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {touched.gender && fieldErrors.gender && <p className="text-xs text-destructive">{fieldErrors.gender}</p>}
-                  {!touched.gender && !gender && <p className="text-xs text-muted-foreground">Required</p>}
-                </div>
-                <DateOfBirthPicker value={dobString} onChange={setDobString} disabled={saving} />
-                <div className="space-y-2">
-                  <Label className="text-foreground font-medium">Age</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label className="text-foreground font-medium">Age</Label>
+                    <IdentityFieldHint locked={identityLocked} />
+                  </div>
                   <div className="h-11 flex items-center px-3 rounded-md border border-border bg-muted text-foreground">
                     {computedAge !== null ? computedAge : <span className="text-muted-foreground">Select DOB</span>}
                   </div>
