@@ -26,13 +26,13 @@ export function FeaturedCompetitionHero() {
   }, [paused, items.length]);
 
   if (isLoading) {
-    return <Skeleton className="w-full aspect-[4/3] sm:aspect-[16/7] rounded-2xl" />;
+    return <Skeleton className="w-full aspect-[4/3] sm:aspect-[16/7] rounded-none" />;
   }
 
   if (isError || items.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-8 text-center space-y-3">
-        <Trophy className="h-8 w-8 text-muted-foreground/40 mx-auto" />
+      <div className="border-l-2 border-primary bg-card p-8 space-y-3">
+        <Trophy className="h-8 w-8 text-muted-foreground/40" />
         <p className="text-sm text-muted-foreground">
           Nothing on the calendar yet. Set up the first event and it lands here.
         </p>
@@ -59,7 +59,7 @@ export function FeaturedCompetitionHero() {
         tabIndex={0}
         onClick={() => navigate(`/competition/${c.id}`)}
         onKeyDown={(e) => e.key === "Enter" && navigate(`/competition/${c.id}`)}
-        className="relative w-full aspect-[4/3] sm:aspect-[16/7] rounded-2xl overflow-hidden border border-border bg-card cursor-pointer group"
+        className="relative w-full aspect-[4/3] sm:aspect-[16/7] overflow-hidden border border-border bg-card cursor-pointer group"
       >
         {c.poster_url ? (
           <img
@@ -116,7 +116,7 @@ export function FeaturedCompetitionHero() {
       {items.length > 1 && (
         <>
           {/* Desktop / tablet thumbnails */}
-          <div className="hidden sm:flex gap-2">
+          <div className="hidden sm:flex">
             {items.map((it, i) => (
               <button
                 key={it.id}
@@ -124,16 +124,16 @@ export function FeaturedCompetitionHero() {
                 onClick={() => setActive(i)}
                 aria-label={it.name}
                 className={cn(
-                  "flex-1 min-w-0 rounded-lg border px-3 py-2 text-left transition-colors",
+                  "flex-1 min-w-0 border-t-2 px-3 py-2 text-left transition-colors",
                   i === active
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-card hover:border-primary/40"
+                    ? "border-primary bg-secondary/60"
+                    : "border-border hover:border-primary/40"
                 )}
               >
                 <span className="block text-[11px] font-bold uppercase truncate text-foreground">
                   {it.name}
                 </span>
-                <span className="block text-[10px] text-muted-foreground truncate">
+                <span className="block text-[10px] text-muted-foreground truncate tabular-nums">
                   {it.date ? format(new Date(it.date), "dd MMM") : "Date TBC"}
                 </span>
               </button>

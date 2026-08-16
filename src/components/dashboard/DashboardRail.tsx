@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User } from "lucide-react";
+
 import type { LucideIcon } from "lucide-react";
 
 export interface RailItem {
