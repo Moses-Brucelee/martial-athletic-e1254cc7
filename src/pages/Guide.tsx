@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import { SEO } from "@/components/SEO";
+import { useAuth } from "@/components/AuthProvider";
 
 const sections = [
   {
@@ -305,6 +306,8 @@ const sections = [
 ];
 export default function Guide() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const backPath = user ? "/dashboard" : "/";
 
   const faqJsonLd = {
     "@context": "https://schema.org",
@@ -365,8 +368,8 @@ export default function Guide() {
         </Accordion>
 
         <div className="mt-10 text-center">
-          <Button variant="outline" onClick={() => navigate("/dashboard")}>
-            Back to Menu
+          <Button variant="outline" onClick={() => navigate(backPath)}>
+            {user ? "Back to Menu" : "Back to Home"}
           </Button>
         </div>
       </main>
