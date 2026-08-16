@@ -290,9 +290,11 @@ export function UnifiedAthleteTable({ competitionId, canAdmin }: Props) {
               <UserPlus className="h-4 w-4 mr-1" /> Add Athlete
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => setShowCreateTeam(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Create Team
-          </Button>
+          {teamsEnabled && (
+            <Button size="sm" variant="outline" onClick={() => setShowCreateTeam(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Create Team
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
             <Upload className="h-4 w-4 mr-1" /> Import
           </Button>
