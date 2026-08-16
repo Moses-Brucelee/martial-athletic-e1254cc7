@@ -1027,19 +1027,22 @@ export default function CompetitionPublic({ embedded = false }: { embedded?: boo
             </Button>
           ) : (
             <div className="space-y-4">
-              {/* Mode tabs */}
-              <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
-                <button
-                  type="button"
-                  onClick={() => { setRegMode("individual"); setRegStep(0); }}
-                  className={`py-2 text-sm font-semibold rounded-md transition-colors ${regMode === "individual" ? "bg-card text-foreground shadow" : "text-muted-foreground"}`}
-                >Individual</button>
-                <button
-                  type="button"
-                  onClick={() => { setRegMode("team"); setRegStep(0); }}
-                  className={`py-2 text-sm font-semibold rounded-md transition-colors ${regMode === "team" ? "bg-card text-foreground shadow" : "text-muted-foreground"}`}
-                >Team</button>
-              </div>
+              {/* Mode tabs — only when a division supports teams */}
+              {teamsEnabled && (
+                <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => { setRegMode("individual"); setRegStep(0); }}
+                    className={`py-2 text-sm font-semibold rounded-md transition-colors ${regMode === "individual" ? "bg-card text-foreground shadow" : "text-muted-foreground"}`}
+                  >Individual</button>
+                  <button
+                    type="button"
+                    onClick={() => { setRegMode("team"); setRegStep(0); }}
+                    className={`py-2 text-sm font-semibold rounded-md transition-colors ${regMode === "team" ? "bg-card text-foreground shadow" : "text-muted-foreground"}`}
+                  >Team</button>
+                </div>
+              )}
+
 
               {/* Step indicator (individual only) */}
               {regMode === "individual" && (
