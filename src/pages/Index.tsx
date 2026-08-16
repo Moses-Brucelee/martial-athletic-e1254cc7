@@ -116,6 +116,12 @@ const Index = () => {
               <button onClick={() => navigate("/browse")} className="hover:text-foreground transition-colors uppercase tracking-wider">
                 Browse
               </button>
+              <button onClick={() => navigate("/privacy")} className="hover:text-foreground transition-colors uppercase tracking-wider">
+                Privacy
+              </button>
+              <button onClick={() => navigate("/terms")} className="hover:text-foreground transition-colors uppercase tracking-wider">
+                Terms
+              </button>
               <button onClick={() => navigate("/login")} className="hover:text-foreground transition-colors uppercase tracking-wider">
                 Sign In
               </button>

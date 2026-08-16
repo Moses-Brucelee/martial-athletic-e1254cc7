@@ -366,6 +366,18 @@ export default function Register() {
               Sign in
             </Link>
           </p>
+
+          <p className="text-center mt-3 text-xs text-muted-foreground">
+            By creating an account you agree to our{" "}
+            <Link to="/terms" className="hover:text-foreground underline underline-offset-2">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link to="/privacy" className="hover:text-foreground underline underline-offset-2">
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </div>
       </main>
     </div>

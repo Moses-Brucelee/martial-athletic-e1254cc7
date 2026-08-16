@@ -266,6 +266,16 @@ export default function Login() {
               Sign up
             </Link>
           </p>
+
+          <p className="text-center mt-3 text-xs text-muted-foreground">
+            <Link to="/privacy" className="hover:text-foreground underline underline-offset-2">
+              Privacy Policy
+            </Link>
+            {" · "}
+            <Link to="/terms" className="hover:text-foreground underline underline-offset-2">
+              Terms of Service
+            </Link>
+          </p>
         </div>
       </main>
     </div>

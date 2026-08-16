@@ -16,6 +16,8 @@ const OWN_SEO_ROUTES = [
   "/browse",
   "/programs",
   "/event/:id",
+  "/privacy",
+  "/terms",
 ];
 
 interface RouteMetaEntry {
