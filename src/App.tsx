@@ -26,6 +26,7 @@ import ResetPassword from "./pages/ResetPassword";
 
 import SuperDashboard from "./pages/SuperDashboard";
 import MembersPage from "./modules/members/components/MembersPage";
+import { RouteMeta } from "@/components/RouteMeta";
 import NotFound from "./pages/NotFound";
 import Guide from "./pages/Guide";
 import Affiliation from "./pages/Affiliation";
