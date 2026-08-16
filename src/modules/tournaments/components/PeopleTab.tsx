@@ -42,12 +42,17 @@ export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabP
   const { data: teams = [] } = useTeams(competitionId);
   const { data: heats = [] } = useHeats(competitionId);
   const { data: competition } = useCompetition(competitionId);
+  const { data: divisions = [] } = useDivisions(competitionId);
+
+  // Teams only make sense when at least one division allows more than one athlete.
+  const teamsEnabled = divisions.some((d) => Number((d as any).team_size ?? 1) > 1);
 
   const approvedCount = registrations.filter(
     (r) => r.status === "approved" || r.status === "confirmed"
   ).length;
 
   const showShareLink = derivedStatus === "published" || derivedStatus === "live";
+
 
   return (
     <div className="space-y-4">
