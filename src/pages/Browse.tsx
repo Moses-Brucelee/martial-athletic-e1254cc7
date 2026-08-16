@@ -222,32 +222,23 @@ export default function Browse() {
           </Button>
         </section>
 
-        {/* Coming soon */}
-        <section className="space-y-4">
-          <h2 className="text-xs font-bold tracking-widest uppercase text-muted-foreground">
-            Coming soon
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-              <span className="flex items-center gap-2 text-sm font-bold text-foreground uppercase tracking-wide">
-                <Shirt className="h-4 w-4 text-primary" /> Apparel
-              </span>
-              <p className="text-xs text-muted-foreground">
-                Event and gym apparel sold directly by host affiliates, with sizing collected at
-                registration.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-              <span className="flex items-center gap-2 text-sm font-bold text-foreground uppercase tracking-wide">
-                <Package className="h-4 w-4 text-primary" /> Equipment
-              </span>
-              <p className="text-xs text-muted-foreground">
-                Training equipment listings from partner suppliers, filtered by discipline and gym
-                setup.
-              </p>
-            </div>
-          </div>
-        </section>
+        {/* Apparel */}
+        <MarketplaceSection
+          icon={<Shirt className="h-4 w-4 text-primary" />}
+          title="Apparel"
+          emptyCopy="Event and gym apparel sold directly by host affiliates, with sizing collected at registration."
+          items={itemsQuery.data?.filter((i) => i.category === "apparel") ?? []}
+          isLoading={itemsQuery.isLoading}
+        />
+
+        {/* Equipment */}
+        <MarketplaceSection
+          icon={<Package className="h-4 w-4 text-primary" />}
+          title="Equipment"
+          emptyCopy="Training equipment listings from partner suppliers, filtered by discipline and gym setup."
+          items={itemsQuery.data?.filter((i) => i.category === "equipment") ?? []}
+          isLoading={itemsQuery.isLoading}
+        />
 
         <div className="pt-2">
           <Button variant="outline" onClick={() => navigate(backPath)}>
