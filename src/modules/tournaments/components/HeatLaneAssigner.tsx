@@ -2,13 +2,53 @@ import { useMemo } from "react";
 import { useHeatAssignments, useAssignTeamToHeat, useAssignAthleteToHeat } from "@/modules/tournaments/hooks-engine";
 import { removeHeatAssignment } from "@/modules/tournaments/api-engine";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, X, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRegistrations } from "@/modules/athletes/hooks";
 import type { Team } from "@/domain/competition";
+
+export interface DivisionGroup {
+  label: string;
+  teams: Team[];
+}
+
+/** Pure helper: group teams by their display division. Unassigned teams are placed last under a fallback label. */
+export function groupTeamsByDivision(teams: Team[]): DivisionGroup[] {
+  const map = new Map<string, Team[]>();
+  for (const t of teams) {
+    const key = t.division?.trim() || "__unassigned__";
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(t);
+  }
+
+  const groups: DivisionGroup[] = [];
+  const unassigned = map.get("__unassigned__");
+
+  for (const [key, groupTeams] of map) {
+    if (key === "__unassigned__") continue;
+    groups.push({ label: key, teams: groupTeams });
+  }
+
+  groups.sort((a, b) => a.label.localeCompare(b.label));
+
+  if (unassigned && unassigned.length > 0) {
+    groups.push({ label: "Other / Unassigned", teams: unassigned });
+  }
+
+  return groups;
+}
 
 interface HeatLaneAssignerProps {
   heatId: string;
@@ -54,6 +94,8 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
   const availableTeams = teams.filter(
     (t) => !assignedTeamIds.has(t.id) && !(excludeTeamIds?.has(t.id))
   );
+
+  const groupedTeams = useMemo(() => groupTeamsByDivision(availableTeams), [availableTeams]);
 
   // Get approved athletes per team for display
   const approvedRegs = useMemo(
@@ -173,21 +215,29 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
                       <SelectItem value="_none" disabled>Nobody available</SelectItem>
                     ) : (
                       <>
-                        {availableTeams.map((t) => {
-                          const tAthletes = getTeamAthletes(t.id);
-                          return (
-                            <SelectItem key={t.id} value={`team::${t.id}`}>
-                              <div className="flex items-center gap-2">
-                                <span>{t.team_name}</span>
-                                {tAthletes.length > 0 && (
-                                  <span className="text-muted-foreground text-[10px]">
-                                    ({tAthletes.length} athletes)
-                                  </span>
-                                )}
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
+                        {groupedTeams.map((group, groupIndex) => (
+                          <SelectGroup key={group.label}>
+                            <SelectLabel className="bg-primary/10 text-primary text-[10px] uppercase tracking-wider rounded px-2 py-1 my-1">
+                              {group.label}
+                            </SelectLabel>
+                            {group.teams.map((t) => {
+                              const tAthletes = getTeamAthletes(t.id);
+                              return (
+                                <SelectItem key={t.id} value={`team::${t.id}`}>
+                                  <div className="flex items-center gap-2">
+                                    <span>{t.team_name}</span>
+                                    {tAthletes.length > 0 && (
+                                      <span className="text-muted-foreground text-[10px]">
+                                        ({tAthletes.length} athletes)
+                                      </span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
+                            {groupIndex < groupedTeams.length - 1 && <SelectSeparator className="bg-muted/50" />}
+                          </SelectGroup>
+                        ))}
                         {availableSoloAthletes.map((r) => (
                           <SelectItem key={r.id} value={`ath::${r.id}`}>
                             <div className="flex items-center gap-2">
