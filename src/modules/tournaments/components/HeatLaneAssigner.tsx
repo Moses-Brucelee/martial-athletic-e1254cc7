@@ -213,21 +213,29 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
                       <SelectItem value="_none" disabled>Nobody available</SelectItem>
                     ) : (
                       <>
-                        {availableTeams.map((t) => {
-                          const tAthletes = getTeamAthletes(t.id);
-                          return (
-                            <SelectItem key={t.id} value={`team::${t.id}`}>
-                              <div className="flex items-center gap-2">
-                                <span>{t.team_name}</span>
-                                {tAthletes.length > 0 && (
-                                  <span className="text-muted-foreground text-[10px]">
-                                    ({tAthletes.length} athletes)
-                                  </span>
-                                )}
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
+                        {groupedTeams.map((group, groupIndex) => (
+                          <SelectGroup key={group.label}>
+                            <SelectLabel className="bg-primary/10 text-primary text-[10px] uppercase tracking-wider rounded px-2 py-1 my-1">
+                              {group.label}
+                            </SelectLabel>
+                            {group.teams.map((t) => {
+                              const tAthletes = getTeamAthletes(t.id);
+                              return (
+                                <SelectItem key={t.id} value={`team::${t.id}`}>
+                                  <div className="flex items-center gap-2">
+                                    <span>{t.team_name}</span>
+                                    {tAthletes.length > 0 && (
+                                      <span className="text-muted-foreground text-[10px]">
+                                        ({tAthletes.length} athletes)
+                                      </span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
+                            {groupIndex < groupedTeams.length - 1 && <SelectSeparator className="bg-muted/50" />}
+                          </SelectGroup>
+                        ))}
                         {availableSoloAthletes.map((r) => (
                           <SelectItem key={r.id} value={`ath::${r.id}`}>
                             <div className="flex items-center gap-2">
