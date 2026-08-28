@@ -110,8 +110,8 @@ export function useUpdateHeatStatus() {
 export function useUpdateHeatSchedule() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ heatId, scheduledStart, competitionId }: { heatId: string; scheduledStart: string | null; competitionId: string }) =>
-      engineApi.updateHeatSchedule(heatId, scheduledStart),
+    mutationFn: ({ heatId, scheduledStart, durationMinutes }: { heatId: string; scheduledStart: string | null; competitionId: string; durationMinutes?: number }) =>
+      engineApi.updateHeatSchedule(heatId, scheduledStart, durationMinutes),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["heats", variables.competitionId] });
     },
