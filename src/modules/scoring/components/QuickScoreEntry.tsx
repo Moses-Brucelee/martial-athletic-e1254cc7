@@ -63,6 +63,8 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string>("");
   const [selectedHeatId, setSelectedHeatId] = useState<string>("");
   const [localScores, setLocalScores] = useState<Record<string, string>>({});
+  const [localWork, setLocalWork] = useState<Record<string, string>>({});
+  const [localTieBreak, setLocalTieBreak] = useState<Record<string, string>>({});
 
   const workoutHeats = useMemo(() => {
     if (!selectedWorkoutId) return [];
@@ -115,6 +117,11 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
   const selectedWorkout = workouts.find((w) => w.id === selectedWorkoutId);
   const scoringType: ScoringType = normalizeScoringType(selectedWorkout?.scoring_type);
   const meta = TYPE_META[scoringType];
+  const targetWorkRaw = (selectedWorkout as any)?.target_work;
+  const targetWork =
+    scoringType === "time" && targetWorkRaw != null ? Number(targetWorkRaw) : null;
+  const targetUnit = (selectedWorkout as any)?.target_unit || "reps";
+  const hasTieBreaker = (selectedWorkout as any)?.tie_breaker_type === "time";
 
   // Sync existing scores into local state (read the right raw field)
   useEffect(() => {
@@ -127,7 +134,17 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
         map[s.team_id] = raw != null ? String(raw) : s.score != null ? String(s.score) : "";
       }
     });
+    const workMap: Record<string, string> = {};
+    const tbMap: Record<string, string> = {};
+    scoreRows.forEach((s: any) => {
+      if (s.workout_id === selectedWorkoutId) {
+        workMap[s.team_id] = s.work_completed != null ? String(s.work_completed) : "";
+        tbMap[s.team_id] = s.tie_breaker_seconds != null ? String(s.tie_breaker_seconds) : "0";
+      }
+    });
     setLocalScores(map);
+    setLocalWork(workMap);
+    setLocalTieBreak(tbMap);
   }, [scoreRows, selectedWorkoutId, scoringType]);
 
   const updateScore = (teamId: string, value: string) => {
@@ -137,6 +154,18 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
   const handleSave = async () => {
     if (!selectedWorkoutId) return;
     const field = rawFieldFor(scoringType);
+
+    if (targetWork != null) {
+      const invalid = Object.entries(localWork).find(([, v]) => {
+        if (v === "") return false;
+        const n = Number(v);
+        return isNaN(n) || n < 0 || n > targetWork;
+      });
+      if (invalid) {
+        toast.error(`Work completed must be between 0 and ${targetWork}`);
+        return;
+      }
+    }
 
     const upserts = Object.entries(localScores)
       .filter(([, val]) => val !== "" && !isNaN(Number(val)))
@@ -148,6 +177,12 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
         judge_id: judgeId || null,
         [field]: Number(val),
         heat_id: selectedHeatId || null,
+        work_completed:
+          targetWork != null && localWork[team_id] !== undefined && localWork[team_id] !== ""
+            ? Number(localWork[team_id])
+            : null,
+        tie_breaker_seconds:
+          hasTieBreaker && localTieBreak[team_id] ? Number(localTieBreak[team_id]) : null,
       }));
 
     try {
@@ -289,6 +324,40 @@ export function QuickScoreEntry({ competitionId, canScore, judgeId }: QuickScore
                     <p className="text-[10px] text-muted-foreground">{team.division}</p>
                   )}
                 </div>
+                {canScore && (targetWork != null || hasTieBreaker) && (
+                  <div className="flex items-center gap-3 shrink-0">
+                    {targetWork != null && (
+                      <div className="flex flex-col items-center">
+                        <Input
+                          type="number"
+                          min={0}
+                          max={targetWork}
+                          value={localWork[team.id] ?? ""}
+                          onChange={(e) =>
+                            setLocalWork((p) => ({ ...p, [team.id]: e.target.value }))
+                          }
+                          placeholder="0"
+                          className="h-9 w-20 text-center text-sm bg-background font-bold"
+                        />
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
+                          / {targetWork} {targetUnit}
+                        </span>
+                      </div>
+                    )}
+                    {hasTieBreaker && (
+                      <div className="flex flex-col items-center">
+                        <TimeCaptureField
+                          value={localTieBreak[team.id] || "0"}
+                          onChange={(v) => setLocalTieBreak((p) => ({ ...p, [team.id]: v }))}
+                          size="sm"
+                        />
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
+                          Tie break
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {canScore ? (
                   scoringType === "time" ? (
                     <TimeCaptureField
