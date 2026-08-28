@@ -221,16 +221,33 @@ function CompetitionEditForm({ comp, setComp }: { comp: Competition; setComp: (c
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label>Start Date</Label>
-          <DateTimePicker value={comp.start_date ? new Date(comp.start_date) : undefined} onChange={(d) => update("start_date", d?.toISOString() ?? null)} placeholder="Start" />
+          <DateTimePicker
+            value={comp.start_date ? new Date(comp.start_date) : undefined}
+            onChange={(d) => update("start_date", d?.toISOString() ?? null)}
+            placeholder="Start"
+            defaultMonth={comp.start_date ? new Date(comp.start_date) : undefined}
+          />
         </div>
         <div className="space-y-2">
           <Label>End Date</Label>
-          <DateTimePicker value={comp.end_date ? new Date(comp.end_date) : undefined} onChange={(d) => update("end_date", d?.toISOString() ?? null)} placeholder="End" />
+          <DateTimePicker
+            value={comp.end_date ? new Date(comp.end_date) : undefined}
+            onChange={(d) => update("end_date", d?.toISOString() ?? null)}
+            placeholder="End"
+            minDate={comp.start_date ? new Date(comp.start_date) : undefined}
+            defaultMonth={comp.end_date ? new Date(comp.end_date) : comp.start_date ? new Date(comp.start_date) : undefined}
+          />
         </div>
       </div>
       <div className="space-y-2">
         <Label>Registration Deadline</Label>
-        <DateTimePicker value={comp.registration_deadline ? new Date(comp.registration_deadline) : undefined} onChange={(d) => update("registration_deadline", d?.toISOString() ?? null)} placeholder="Deadline" />
+        <DateTimePicker
+          value={comp.registration_deadline ? new Date(comp.registration_deadline) : undefined}
+          onChange={(d) => update("registration_deadline", d?.toISOString() ?? null)}
+          placeholder="Deadline"
+          maxDate={comp.start_date ? new Date(new Date(comp.start_date).getTime() - 60_000) : undefined}
+          defaultMonth={comp.registration_deadline ? new Date(comp.registration_deadline) : comp.start_date ? new Date(comp.start_date) : undefined}
+        />
       </div>
       <div className="space-y-2">
         <Label>Max Athletes</Label>

@@ -56,11 +56,14 @@ export function validateCompetitionDates(
       errors.endDate = "Competition cannot last longer than one month";
     }
   }
-  if (startDate && regDeadline && regDeadline.getTime() >= startDate.getTime()) {
+  if (regDeadline && regDeadline.getTime() < Date.now()) {
+    errors.regDeadline = "Registration deadline cannot be in the past";
+  } else if (startDate && regDeadline && regDeadline.getTime() >= startDate.getTime()) {
     errors.regDeadline = "Registration deadline must be before the competition start";
   }
   return errors;
 }
+
 
 export function hasErrors(e: CompetitionDatesErrors): boolean {
   return !!(e.startDate || e.endDate || e.regDeadline);

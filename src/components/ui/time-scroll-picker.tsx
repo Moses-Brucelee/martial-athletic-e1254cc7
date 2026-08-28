@@ -11,6 +11,10 @@ interface TimeScrollPickerProps {
   minutes: number;
   onChange: (hours: number, minutes: number) => void;
   disabled?: boolean;
+  /** Earliest selectable time of day, in minutes from midnight. */
+  minMinutes?: number;
+  /** Latest selectable time of day, in minutes from midnight. */
+  maxMinutes?: number;
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -22,19 +26,42 @@ export function TimeScrollPicker({
   minutes,
   onChange,
   disabled = false,
+  minMinutes,
+  maxMinutes,
 }: TimeScrollPickerProps) {
+  const lo = minMinutes ?? 0;
+  const hi = maxMinutes ?? 24 * 60 - 1;
+
+  const hourAllowed = (h: number) => h * 60 + 59 >= lo && h * 60 <= hi;
+  const minuteAllowed = (m: number) => {
+    const total = hours * 60 + m;
+    return total >= lo && total <= hi;
+  };
+
+  const availableHours = HOURS.filter(hourAllowed);
+  const availableMinutes = MINUTES.filter(minuteAllowed);
+
+  const handleHour = (h: number) => {
+    // Snap the minute into the allowed window for the newly chosen hour
+    let m = minutes;
+    const total = h * 60 + m;
+    if (total < lo) m = Math.min(59, lo - h * 60);
+    if (total > hi) m = Math.max(0, hi - h * 60);
+    onChange(h, m);
+  };
+
   return (
     <div className="flex items-center justify-center gap-2 py-3 px-4">
       <Select
         value={String(hours)}
-        onValueChange={(v) => onChange(Number(v), minutes)}
+        onValueChange={(v) => handleHour(Number(v))}
         disabled={disabled}
       >
         <SelectTrigger className="w-20 h-11 bg-background text-center font-bold tabular-nums">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="max-h-52 z-50 bg-popover">
-          {HOURS.map((h) => (
+          {availableHours.map((h) => (
             <SelectItem key={h} value={String(h)}>
               {pad(h)}
             </SelectItem>
@@ -53,7 +80,7 @@ export function TimeScrollPicker({
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="max-h-52 z-50 bg-popover">
-          {MINUTES.map((m) => (
+          {availableMinutes.map((m) => (
             <SelectItem key={m} value={String(m)}>
               {pad(m)}
             </SelectItem>

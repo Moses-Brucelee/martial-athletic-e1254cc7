@@ -173,15 +173,21 @@ export function CompetitionEditPanel({ competition, canEdit }: CompetitionEditPa
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground font-medium">Start</Label>
-          <DateTimePicker value={startDate} onChange={setStartDate} placeholder="Start" />
+          <DateTimePicker value={startDate} onChange={setStartDate} placeholder="Start" defaultMonth={startDate} />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground font-medium">End</Label>
-          <DateTimePicker value={endDate} onChange={setEndDate} placeholder="End" minDate={startDate} />
+          <DateTimePicker value={endDate} onChange={setEndDate} placeholder="End" minDate={startDate} defaultMonth={endDate ?? startDate} />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground font-medium">Reg. Deadline</Label>
-          <DateTimePicker value={regDeadline} onChange={setRegDeadline} placeholder="Deadline" maxDate={startDate} />
+          <DateTimePicker
+            value={regDeadline}
+            onChange={setRegDeadline}
+            placeholder="Deadline"
+            maxDate={startDate ? new Date(startDate.getTime() - 60_000) : undefined}
+            defaultMonth={regDeadline ?? startDate}
+          />
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { format, isValid } from "date-fns";
+import { format, isValid, isSameDay } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,10 +23,21 @@ interface DateTimePickerProps {
   minDate?: Date;
   /** Max selectable date */
   maxDate?: Date;
+  /**
+   * Date the calendar opens on when nothing is selected yet.
+   * Falls back to minDate, then today.
+   */
+  defaultMonth?: Date;
   className?: string;
 }
 
 export type { DateTimePickerProps };
+
+const startOfDay = (d: Date) => {
+  const c = new Date(d);
+  c.setHours(0, 0, 0, 0);
+  return c;
+};
 
 export function DateTimePicker({
   value,
@@ -36,6 +47,7 @@ export function DateTimePicker({
   dateOnly = false,
   minDate,
   maxDate,
+  defaultMonth,
   className,
 }: DateTimePickerProps) {
   const isMobile = useIsMobile();
@@ -95,13 +107,38 @@ export function DateTimePicker({
     );
   }
 
+  // Time-of-day bounds only apply on the boundary days
+  const minMinutes =
+    !dateOnly && minDate && value && isSameDay(value, minDate)
+      ? minDate.getHours() * 60 + minDate.getMinutes()
+      : undefined;
+  const maxMinutes =
+    !dateOnly && maxDate && value && isSameDay(value, maxDate)
+      ? maxDate.getHours() * 60 + maxDate.getMinutes()
+      : undefined;
+
+  const clampToBounds = (d: Date): Date => {
+    const next = new Date(d);
+    if (!dateOnly && minDate && isSameDay(next, minDate) && next.getTime() < minDate.getTime()) {
+      next.setHours(minDate.getHours(), minDate.getMinutes(), 0, 0);
+    }
+    if (!dateOnly && maxDate && isSameDay(next, maxDate) && next.getTime() > maxDate.getTime()) {
+      next.setHours(maxDate.getHours(), maxDate.getMinutes(), 0, 0);
+    }
+    return next;
+  };
+
   // Desktop: custom popover picker
   const handleDateSelect = (day: Date | undefined) => {
     if (!day) { onChange(undefined); return; }
-    if (value) day.setHours(value.getHours(), value.getMinutes());
-    onChange(day);
+    const next = new Date(day);
+    if (value) next.setHours(value.getHours(), value.getMinutes(), 0, 0);
+    else if (minDate) next.setHours(minDate.getHours(), minDate.getMinutes(), 0, 0);
+    onChange(clampToBounds(next));
     if (dateOnly) setOpen(false);
   };
+
+  const openMonth = value ?? defaultMonth ?? minDate ?? undefined;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -131,10 +168,11 @@ export function DateTimePicker({
         <Calendar
           mode="single"
           selected={value}
+          defaultMonth={openMonth}
           onSelect={handleDateSelect}
           disabled={(date) => {
-            if (minDate && date < minDate) return true;
-            if (maxDate && date > maxDate) return true;
+            if (minDate && startOfDay(date) < startOfDay(minDate)) return true;
+            if (maxDate && startOfDay(date) > startOfDay(maxDate)) return true;
             return false;
           }}
           initialFocus
@@ -145,10 +183,12 @@ export function DateTimePicker({
             <TimeScrollPicker
               hours={value ? value.getHours() : 0}
               minutes={value ? value.getMinutes() : 0}
+              minMinutes={minMinutes}
+              maxMinutes={maxMinutes}
               onChange={(h, m) => {
                 const next = value ? new Date(value) : new Date();
                 next.setHours(h, m, 0, 0);
-                onChange(next);
+                onChange(clampToBounds(next));
               }}
               disabled={disabled}
             />

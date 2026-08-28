@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Zap, Users } from "lucide-react";
 import { toast } from "sonner";
-import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
+import { useTeams, useWorkouts, useCompetition } from "@/modules/tournaments/hooks";
+import { parseWindow, nextHeatStart, addMinutes, validateWithinCompetition, DEFAULT_HEAT_DURATION_MINUTES } from "@/lib/scheduling";
 import { useAddHeat, useHeats } from "@/modules/tournaments/hooks-engine";
 import { assignTeamToHeat } from "@/modules/tournaments/api-engine";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,11 +19,13 @@ export function AutoHeatGenerator({ competitionId }: AutoHeatGeneratorProps) {
   const { data: teams = [] } = useTeams(competitionId);
   const { data: workouts = [] } = useWorkouts(competitionId);
   const { data: existingHeats = [] } = useHeats(competitionId);
+  const { data: competition } = useCompetition(competitionId);
   const addHeatMutation = useAddHeat();
   const qc = useQueryClient();
 
   const [selectedWorkoutId, setSelectedWorkoutId] = useState("");
   const [laneCount, setLaneCount] = useState("10");
+  const [heatMinutes, setHeatMinutes] = useState(String(DEFAULT_HEAT_DURATION_MINUTES));
   const [generating, setGenerating] = useState(false);
 
   const lanes = parseInt(laneCount) || 10;
@@ -45,6 +48,23 @@ export function AutoHeatGenerator({ competitionId }: AutoHeatGeneratorProps) {
       return;
     }
 
+    const window = parseWindow((competition as any)?.start_date, (competition as any)?.end_date);
+    const duration = Math.max(1, parseInt(heatMinutes) || DEFAULT_HEAT_DURATION_MINUTES);
+    const firstStart = nextHeatStart(existingHeats, window, duration);
+
+    // Heats run back-to-back — make sure the whole block fits the competition
+    if (firstStart) {
+      const lastRange = {
+        start: addMinutes(firstStart, duration * (heatCount - 1)),
+        end: addMinutes(firstStart, duration * heatCount),
+      };
+      const err = validateWithinCompetition(lastRange, window);
+      if (err) {
+        toast.error(`${heatCount} heats × ${duration} min do not fit the competition schedule.`);
+        return;
+      }
+    }
+
     setGenerating(true);
     try {
       const shuffled = [...teams].sort(() => Math.random() - 0.5);
@@ -57,6 +77,10 @@ export function AutoHeatGenerator({ competitionId }: AutoHeatGeneratorProps) {
           workout_id: selectedWorkoutId,
           heat_number: heatIdx + 1,
           lane_count: lanes,
+          duration_minutes: duration,
+          scheduled_start: firstStart
+            ? addMinutes(firstStart, duration * heatIdx).toISOString()
+            : undefined,
         });
 
         // Assign teams to lanes
@@ -81,7 +105,7 @@ export function AutoHeatGenerator({ competitionId }: AutoHeatGeneratorProps) {
         <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Auto-Generate Heats</h3>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Workout</Label>
           <Select value={selectedWorkoutId} onValueChange={setSelectedWorkoutId}>
@@ -97,6 +121,11 @@ export function AutoHeatGenerator({ competitionId }: AutoHeatGeneratorProps) {
           <Label className="text-xs text-muted-foreground">Lanes per Heat</Label>
           <Input type="number" value={laneCount} onChange={(e) => setLaneCount(e.target.value)}
             className="h-9 bg-background text-sm" min={1} max={50} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Minutes per Heat</Label>
+          <Input type="number" value={heatMinutes} onChange={(e) => setHeatMinutes(e.target.value)}
+            className="h-9 bg-background text-sm" min={1} max={240} />
         </div>
         <div className="flex items-end">
           <Button onClick={handleGenerate} disabled={generating || !selectedWorkoutId || teams.length === 0}

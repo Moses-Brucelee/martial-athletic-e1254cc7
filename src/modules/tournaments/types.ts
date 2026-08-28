@@ -105,6 +105,7 @@ export interface AddHeatInput {
   heat_number: number;
   lane_count?: number;
   scheduled_start?: string | null;
+  duration_minutes?: number;
 }
 
 export interface AssignJudgeInput {
