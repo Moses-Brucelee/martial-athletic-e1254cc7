@@ -13,6 +13,11 @@ export async function fetchCompetitionLeaderboard(competitionId: string): Promis
     team_id: row.team_id,
     team_name: row.team_name,
     total_points: Number(row.total_points),
+    overall_rank: row.overall_rank != null ? Number(row.overall_rank) : undefined,
+    wins: row.wins != null ? Number(row.wins) : undefined,
+    placement_counts: Array.isArray(row.placement_counts)
+      ? row.placement_counts.map((n: any) => Number(n))
+      : undefined,
   }));
 }
 

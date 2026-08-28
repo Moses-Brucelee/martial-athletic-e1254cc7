@@ -80,6 +80,8 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
   const upsertMutation = useUpsertScores();
 
   const [localScores, setLocalScores] = useState<Record<string, string>>({});
+  const [localWork, setLocalWork] = useState<Record<string, string>>({});
+  const [localTieBreak, setLocalTieBreak] = useState<Record<string, string>>({});
   const [filterDivision, setFilterDivision] = useState<string>("all");
 
   // Build scoring type map from workouts
@@ -98,8 +100,31 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
       const scoringType = workoutScoringMap[s.workout_id] || "points";
       map[`${s.team_id}::${s.workout_id}`] = getDisplayValue(s, scoringType);
     });
+    const work: Record<string, string> = {};
+    const tb: Record<string, string> = {};
+    scoreRows.forEach((s: any) => {
+      const k = `${s.team_id}::${s.workout_id}`;
+      work[k] = s.work_completed != null ? String(s.work_completed) : "";
+      tb[k] = s.tie_breaker_seconds != null ? String(s.tie_breaker_seconds) : "0";
+    });
     setLocalScores(map);
+    setLocalWork(work);
+    setLocalTieBreak(tb);
   }, [scoreRows, workoutScoringMap]);
+
+  // Per-workout tie breaker / target configuration
+  const workoutConfigMap = useMemo(() => {
+    const map: Record<string, { target: number | null; unit: string; tieBreaker: boolean }> = {};
+    workouts.forEach((w: any) => {
+      const st = normalizeScoringType(w.scoring_type);
+      map[w.id] = {
+        target: st === "time" && w.target_work != null ? Number(w.target_work) : null,
+        unit: w.target_unit || "reps",
+        tieBreaker: w.tie_breaker_type === "time",
+      };
+    });
+    return map;
+  }, [workouts]);
 
   // Get unique divisions for filter
   const divisions = useMemo(() => {
@@ -117,6 +142,18 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
   };
 
   const saveScores = async () => {
+    for (const [key, val] of Object.entries(localWork)) {
+      if (val === "") continue;
+      const [, workout_id] = key.split("::");
+      const target = workoutConfigMap[workout_id]?.target;
+      if (target == null) continue;
+      const n = Number(val);
+      if (isNaN(n) || n < 0 || n > target) {
+        toast.error(`Work completed must be between 0 and ${target}`);
+        return;
+      }
+    }
+
     const upserts = Object.entries(localScores)
       .filter(([, val]) => val !== "" && !isNaN(Number(val)))
       .map(([key, val]) => {
@@ -132,6 +169,14 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
           score: buildCanonicalScore(numVal, scoringType),
           judge_id: judgeId || null,
           [rawField]: numVal,
+          work_completed:
+            workoutConfigMap[workout_id]?.target != null && localWork[key]
+              ? Number(localWork[key])
+              : null,
+          tie_breaker_seconds:
+            workoutConfigMap[workout_id]?.tieBreaker && localTieBreak[key]
+              ? Number(localTieBreak[key])
+              : null,
         };
       });
 
@@ -254,6 +299,36 @@ export function ScoresPanel({ competitionId, canScore, judgeId }: ScoresPanelPro
                               : localScores[key]
                             : "—"}
                         </span>
+                      )}
+                      {canScore && !isLocked && (workoutConfigMap[w.id]?.target != null || workoutConfigMap[w.id]?.tieBreaker) && (
+                        <div className="mt-1 flex flex-col items-center gap-1">
+                          {workoutConfigMap[w.id]?.target != null && (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                min={0}
+                                max={workoutConfigMap[w.id]!.target!}
+                                value={localWork[key] ?? ""}
+                                onChange={(e) => setLocalWork((p) => ({ ...p, [key]: e.target.value }))}
+                                placeholder="0"
+                                className="h-7 w-16 text-center text-xs bg-background"
+                              />
+                              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                                / {workoutConfigMap[w.id]!.target} {workoutConfigMap[w.id]!.unit}
+                              </span>
+                            </div>
+                          )}
+                          {workoutConfigMap[w.id]?.tieBreaker && (
+                            <div className="flex items-center gap-1">
+                              <TimeCaptureField
+                                value={localTieBreak[key] || "0"}
+                                onChange={(v) => setLocalTieBreak((p) => ({ ...p, [key]: v }))}
+                                size="sm"
+                              />
+                              <span className="text-[10px] text-muted-foreground">TB</span>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </td>
                   );

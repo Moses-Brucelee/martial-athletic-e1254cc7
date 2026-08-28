@@ -62,6 +62,12 @@ export interface Workout {
   visibility: string;
   scheduled_reveal_at: string | null;
   round_id: string | null;
+  /** Optional workout tie breaker: 'none' | 'time'. */
+  tie_breaker_type?: string | null;
+  /** Prescribed work for a "For Time" workout (e.g. 300). */
+  target_work?: number | null;
+  /** Unit for target_work: reps | rounds | distance | calories. */
+  target_unit?: string | null;
   created_at: string;
 }
 
@@ -163,6 +169,8 @@ export interface CompetitionSettings {
   settings_json: unknown;
   ranking_direction: string;
   setup_mode: string;
+  /** 'none' | 'most_wins_placements' */
+  global_tie_breaker?: string | null;
   created_at: string;
   updated_at: string;
 }

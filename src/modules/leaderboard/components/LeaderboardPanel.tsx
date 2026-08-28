@@ -295,7 +295,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                     <tr key={entry.team_id}
                       className={`border-b border-border/50 transition-colors ${i < 3 ? "bg-primary/5" : ""}`}>
                       <td className={`py-4 px-4 text-2xl font-black ${i < 3 ? medalColors[i] : "text-muted-foreground"}`}>
-                        {i + 1}
+                        {entry.overall_rank ?? i + 1}
                       </td>
                       <td className="py-4 px-4 text-xl font-bold text-foreground">{entry.team_name}</td>
                       {workouts.map((w) => (
@@ -375,7 +375,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                       i < 3 ? "border-primary/30 bg-primary/5" : "border-border bg-background"
                     }`}>
                     <span className={`text-lg font-black w-8 text-center ${i < 3 ? medalColors[i] : "text-muted-foreground"}`}>
-                      {i + 1}
+                      {entry.overall_rank ?? i + 1}
                     </span>
                     <div className="flex-1">
                       <p className="font-bold text-foreground text-sm">{entry.team_name}</p>
@@ -423,7 +423,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                 {sortedEntries.map((entry, i) => (
                   <tr key={entry.team_id} className="border-b border-border/50">
                     <td className={`py-2 px-2 font-black text-xs ${i < 3 ? medalColors[i] : "text-muted-foreground"}`}>
-                      {i + 1}
+                      {entry.overall_rank ?? i + 1}
                     </td>
                     <td className="py-2 px-2 font-semibold text-foreground text-xs">
                       {entry.team_name}

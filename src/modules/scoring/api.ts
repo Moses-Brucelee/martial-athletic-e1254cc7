@@ -13,6 +13,8 @@ export interface ScoreRow {
   time_seconds: number | null;
   load_value: number | null;
   points_awarded: number | null;
+  tie_breaker_seconds: number | null;
+  work_completed: number | null;
   validation_status: string | null;
   normalized_score: number | null;
   rank: number | null;
@@ -40,6 +42,8 @@ export interface ScoreUpsert {
   time_seconds?: number | null;
   load_value?: number | null;
   points_awarded?: number | null;
+  tie_breaker_seconds?: number | null;
+  work_completed?: number | null;
 }
 
 export async function upsertScores(scores: ScoreUpsert[]): Promise<void> {
@@ -57,6 +61,8 @@ export async function upsertScores(scores: ScoreUpsert[]): Promise<void> {
         time_seconds: s.time_seconds ?? null,
         load_value: s.load_value ?? null,
         points_awarded: s.points_awarded ?? null,
+        tie_breaker_seconds: s.tie_breaker_seconds ?? null,
+        work_completed: s.work_completed ?? null,
       })),
       { onConflict: "team_id,workout_id" }
     );
