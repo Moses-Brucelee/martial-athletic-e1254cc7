@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dumbbell, Plus, Trash2, Eye, EyeOff, Clock, Calendar,
   Timer, Repeat, Weight, Trophy, ArrowUp, Undo2, Check
@@ -83,6 +84,13 @@ const SCORING_TYPES = [
   },
 ] as const;
 
+export const TARGET_UNITS = [
+  { value: "reps", label: "Repetitions" },
+  { value: "rounds", label: "Rounds" },
+  { value: "distance", label: "Distance (m)" },
+  { value: "calories", label: "Calories" },
+] as const;
+
 type ScoringTypeValue = (typeof SCORING_TYPES)[number]["value"];
 
 function getScoringConfig(value: string) {
@@ -157,6 +165,9 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
   const [editScoring, setEditScoring] = useState<ScoringTypeValue>("points");
   const [editTimeCap, setEditTimeCap] = useState("");
   const [editNumber, setEditNumber] = useState<number | null>(null);
+  const [editTieBreaker, setEditTieBreaker] = useState<"none" | "time">("none");
+  const [editTargetWork, setEditTargetWork] = useState("");
+  const [editTargetUnit, setEditTargetUnit] = useState("reps");
 
 
   const [saving, setSaving] = useState(false);
@@ -225,7 +236,22 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
         description: editDesc.trim() || null,
         video_url: editVideo.trim() || null,
         time_cap_seconds: editTimeCap ? parseInt(editTimeCap) * 60 : null,
+        tie_breaker_type: editTieBreaker,
       };
+      const effectiveScoring = isAutoMode ? editScoring : "points";
+      if (effectiveScoring === "time") {
+        const target = editTargetWork.trim() === "" ? null : Number(editTargetWork);
+        if (target != null && (!isFinite(target) || target <= 0)) {
+          toast.error("Target work must be a positive number");
+          setSaving(false);
+          return;
+        }
+        update.target_work = target;
+        update.target_unit = target != null ? editTargetUnit : null;
+      } else {
+        update.target_work = null;
+        update.target_unit = null;
+      }
       if (isAutoMode) {
         update.scoring_type = editScoring;
         update.measurement_type = measurementTypeFromScoring(editScoring);
@@ -357,6 +383,9 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
     setEditScoring((w.scoring_type || "points") as ScoringTypeValue);
     setEditTimeCap(w.time_cap_seconds ? String(Math.round(w.time_cap_seconds / 60)) : "");
     setEditNumber(w.workout_number ?? null);
+    setEditTieBreaker((w.tie_breaker_type === "time" ? "time" : "none"));
+    setEditTargetWork(w.target_work != null ? String(w.target_work) : "");
+    setEditTargetUnit(w.target_unit || "reps");
   };
 
   // Cleanup timer
@@ -880,6 +909,59 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
                 />
               </div>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Tie breaker</Label>
+                <Select value={editTieBreaker} onValueChange={(v) => setEditTieBreaker(v as "none" | "time")}>
+                  <SelectTrigger className="h-11 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="time">Time — quickest tie breaker time wins</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Only used when two teams record the same primary score.
+                </p>
+              </div>
+            </div>
+
+            {(isAutoMode ? editScoring : "points") === "time" && (
+              <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-foreground">
+                    Additional scoring opportunity
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Set the prescribed work so teams that hit the time cap can still be scored on how much they completed.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="wod-target" className="text-xs uppercase tracking-wider text-muted-foreground">Target amount</Label>
+                    <Input
+                      id="wod-target"
+                      value={editTargetWork}
+                      onChange={(e) => setEditTargetWork(e.target.value.replace(/[^0-9.]/g, ""))}
+                      placeholder="e.g. 300"
+                      className="h-11 bg-background"
+                      inputMode="decimal"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Unit</Label>
+                    <Select value={editTargetUnit} onValueChange={setEditTargetUnit}>
+                      <SelectTrigger className="h-11 bg-background"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {TARGET_UNITS.map((u) => (
+                          <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {editVideo.trim() && <WorkoutVideo url={editVideo.trim()} />}
           </div>
