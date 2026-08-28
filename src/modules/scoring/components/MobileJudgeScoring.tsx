@@ -75,6 +75,8 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
   const [currentTeamIndex, setCurrentTeamIndex] = useState(0);
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string>("");
   const [dnfTeams, setDnfTeams] = useState<Set<string>>(new Set());
+  const [localWork, setLocalWork] = useState<Record<string, string>>({});
+  const [localTieBreak, setLocalTieBreak] = useState<Record<string, string>>({});
 
   const workoutScoringMap = useMemo(() => {
     const map: Record<string, ScoringType> = {};
@@ -95,8 +97,30 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
       const st = workoutScoringMap[s.workout_id] || "points";
       map[`${s.team_id}::${s.workout_id}`] = getDisplayValue(s, st);
     });
+    const work: Record<string, string> = {};
+    const tb: Record<string, string> = {};
+    scoreRows.forEach((s: any) => {
+      const k = `${s.team_id}::${s.workout_id}`;
+      work[k] = s.work_completed != null ? String(s.work_completed) : "";
+      tb[k] = s.tie_breaker_seconds != null ? String(s.tie_breaker_seconds) : "0";
+    });
     setLocalScores(map);
+    setLocalWork(work);
+    setLocalTieBreak(tb);
   }, [scoreRows, workoutScoringMap]);
+
+  const workoutConfigMap = useMemo(() => {
+    const map: Record<string, { target: number | null; unit: string; tieBreaker: boolean }> = {};
+    workouts.forEach((w: any) => {
+      const st = normalizeScoringType(w.scoring_type);
+      map[w.id] = {
+        target: st === "time" && w.target_work != null ? Number(w.target_work) : null,
+        unit: w.target_unit || "reps",
+        tieBreaker: w.tie_breaker_type === "time",
+      };
+    });
+    return map;
+  }, [workouts]);
 
   const currentTeam = teams[currentTeamIndex];
   const selectedWorkout = workouts.find((w) => w.id === selectedWorkoutId);
@@ -135,6 +159,18 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
   };
 
   const saveAllScores = async () => {
+    for (const [key, val] of Object.entries(localWork)) {
+      if (val === "") continue;
+      const [, workout_id] = key.split("::");
+      const target = workoutConfigMap[workout_id]?.target;
+      if (target == null) continue;
+      const n = Number(val);
+      if (isNaN(n) || n < 0 || n > target) {
+        toast.error(`Work completed must be between 0 and ${target}`);
+        return;
+      }
+    }
+
     const upserts = Object.entries(localScores)
       .filter(([, val]) => val !== "" && !isNaN(Number(val)))
       .map(([key, val]) => {
@@ -149,6 +185,14 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
           score: numVal,
           judge_id: judgeId || null,
           [rawField]: numVal,
+          work_completed:
+            workoutConfigMap[workout_id]?.target != null && localWork[key]
+              ? Number(localWork[key])
+              : null,
+          tie_breaker_seconds:
+            workoutConfigMap[workout_id]?.tieBreaker && localTieBreak[key]
+              ? Number(localTieBreak[key])
+              : null,
         };
       });
 
@@ -170,6 +214,8 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
 
   const currentScore = currentTeam ? (localScores[`${currentTeam.id}::${selectedWorkoutId}`] || "0") : "0";
   const isDnf = currentTeam ? dnfTeams.has(`${currentTeam.id}::${selectedWorkoutId}`) : false;
+
+  const currentConfig = selectedWorkoutId ? workoutConfigMap[selectedWorkoutId] : undefined;
 
   const quickAdjusts = currentScoringType === "load" ? [5, 10, 25] :
                         currentScoringType === "time" ? [5, 15, 30] :
@@ -277,6 +323,43 @@ export function MobileJudgeScoring({ competitionId, judgeId }: MobileJudgeScorin
                   </div>
                   <Button variant="outline" size="icon" className="h-14 w-14 text-xl font-bold shrink-0"
                     onClick={() => adjustScore(1)} aria-label="Increase score">+</Button>
+                </div>
+              )}
+
+              {(currentConfig?.target != null || currentConfig?.tieBreaker) && currentTeam && (
+                <div className="space-y-3 pt-2 border-t border-border">
+                  {currentConfig?.target != null && (
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
+                        Work completed (of {currentConfig.target} {currentConfig.unit})
+                      </p>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={currentConfig.target}
+                        value={localWork[`${currentTeam.id}::${selectedWorkoutId}`] ?? ""}
+                        onChange={(e) =>
+                          setLocalWork((p) => ({ ...p, [`${currentTeam.id}::${selectedWorkoutId}`]: e.target.value }))
+                        }
+                        placeholder="0"
+                        className="h-12 text-center text-lg font-bold bg-background"
+                      />
+                    </div>
+                  )}
+                  {currentConfig?.tieBreaker && (
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Tie breaker time</p>
+                      <div className="flex justify-center">
+                        <TimeCaptureField
+                          value={localTieBreak[`${currentTeam.id}::${selectedWorkoutId}`] || "0"}
+                          onChange={(v) =>
+                            setLocalTieBreak((p) => ({ ...p, [`${currentTeam.id}::${selectedWorkoutId}`]: v }))
+                          }
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
