@@ -19,9 +19,35 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRegistrations } from "@/modules/athletes/hooks";
 import type { Team } from "@/domain/competition";
 
-interface DivisionGroup {
+export interface DivisionGroup {
   label: string;
   teams: Team[];
+}
+
+/** Pure helper: group teams by their display division. Unassigned teams are placed last under a fallback label. */
+export function groupTeamsByDivision(teams: Team[]): DivisionGroup[] {
+  const map = new Map<string, Team[]>();
+  for (const t of teams) {
+    const key = t.division?.trim() || "__unassigned__";
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(t);
+  }
+
+  const groups: DivisionGroup[] = [];
+  const unassigned = map.get("__unassigned__");
+
+  for (const [key, groupTeams] of map) {
+    if (key === "__unassigned__") continue;
+    groups.push({ label: key, teams: groupTeams });
+  }
+
+  groups.sort((a, b) => a.label.localeCompare(b.label));
+
+  if (unassigned && unassigned.length > 0) {
+    groups.push({ label: "Other / Unassigned", teams: unassigned });
+  }
+
+  return groups;
 }
 
 interface HeatLaneAssignerProps {
