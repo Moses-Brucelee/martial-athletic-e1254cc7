@@ -2,13 +2,27 @@ import { useMemo } from "react";
 import { useHeatAssignments, useAssignTeamToHeat, useAssignAthleteToHeat } from "@/modules/tournaments/hooks-engine";
 import { removeHeatAssignment } from "@/modules/tournaments/api-engine";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, X, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRegistrations } from "@/modules/athletes/hooks";
 import type { Team } from "@/domain/competition";
+
+interface DivisionGroup {
+  label: string;
+  teams: Team[];
+}
 
 interface HeatLaneAssignerProps {
   heatId: string;
