@@ -117,6 +117,7 @@ export async function addHeat(input: AddHeatInput): Promise<Heat> {
       heat_number: input.heat_number,
       lane_count: input.lane_count ?? 10,
       scheduled_start: input.scheduled_start ?? null,
+      duration_minutes: input.duration_minutes ?? 10,
     })
     .select("*")
     .single();
@@ -132,10 +133,18 @@ export async function updateHeatStatus(heatId: string, status: string): Promise<
   if (error) throw error;
 }
 
-export async function updateHeatSchedule(heatId: string, scheduledStart: string | null): Promise<void> {
+export async function updateHeatSchedule(
+  heatId: string,
+  scheduledStart: string | null,
+  durationMinutes?: number,
+): Promise<void> {
   const { error } = await supabase
     .from("heat_schedule")
-    .update({ scheduled_start: scheduledStart })
+    .update(
+      durationMinutes != null
+        ? { scheduled_start: scheduledStart, duration_minutes: durationMinutes }
+        : { scheduled_start: scheduledStart },
+    )
     .eq("id", heatId);
   if (error) throw error;
 }
