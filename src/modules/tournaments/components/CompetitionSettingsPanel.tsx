@@ -97,7 +97,7 @@ export function CompetitionSettingsPanel({
           </h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div className="space-y-1.5">
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">
               Scoring model
@@ -122,29 +122,6 @@ export function CompetitionSettingsPanel({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-              Tie breaker
-            </Label>
-            <Select
-              value={tieBreaker}
-              disabled={!canAdmin || upsert.isPending}
-              onValueChange={(v) => save({ tie_breaker_policy: v })}
-            >
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TIE_BREAKERS.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Applied when two teams finish on the same total.
-            </p>
-          </div>
-
-          <div className="space-y-1.5 md:col-span-2">
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">
               Global tie breaker
             </Label>
