@@ -13,6 +13,8 @@ export interface Score {
   time_seconds: number | null;
   load_value: number | null;
   points_awarded: number | null;
+  tie_breaker_seconds: number | null;
+  work_completed: number | null;
   heat_id: string | null;
   round_id: string | null;
   normalized_score: number | null;
@@ -45,6 +47,12 @@ export interface LeaderboardEntry {
   team_id: string;
   team_name: string;
   total_points: number;
+  /** Shared placement — tied teams get the same rank. */
+  overall_rank?: number;
+  /** Number of 1st-place workout finishes. */
+  wins?: number;
+  /** Count of 1st places at index 0, 2nd places at index 1, and so on. */
+  placement_counts?: number[];
 }
 
 export interface SeasonRanking {
