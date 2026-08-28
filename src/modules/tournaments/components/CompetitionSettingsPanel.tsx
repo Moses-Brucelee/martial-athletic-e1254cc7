@@ -71,6 +71,7 @@ export function CompetitionSettingsPanel({
 
   const scoringModel = (settings as any)?.scoring_model ?? "points";
   const tieBreaker = settings?.tie_breaker_policy ?? "best_final_round";
+  const globalTieBreaker = (settings as any)?.global_tie_breaker ?? "none";
 
   const save = async (patch: Record<string, unknown>) => {
     try {
@@ -147,6 +148,29 @@ export function CompetitionSettingsPanel({
             </Select>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               Applied when two teams finish on the same total.
+            </p>
+          </div>
+
+          <div className="space-y-1.5 md:col-span-2">
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+              Global tie breaker
+            </Label>
+            <Select
+              value={globalTieBreaker}
+              disabled={!canAdmin || upsert.isPending}
+              onValueChange={(v) => save({ global_tie_breaker: v })}
+            >
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {GLOBAL_TIE_BREAKERS.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {GLOBAL_TIE_BREAKERS.find((t) => t.value === globalTieBreaker)?.desc}
             </p>
           </div>
         </div>
