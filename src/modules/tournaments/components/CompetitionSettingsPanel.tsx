@@ -64,7 +64,6 @@ export function CompetitionSettingsPanel({
   const [deleting, setDeleting] = useState(false);
 
   const scoringModel = (settings as any)?.scoring_model ?? "points";
-  const tieBreaker = settings?.tie_breaker_policy ?? "best_final_round";
   const globalTieBreaker = (settings as any)?.global_tie_breaker ?? "none";
 
   const save = async (patch: Record<string, unknown>) => {
