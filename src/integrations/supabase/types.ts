@@ -1745,6 +1745,7 @@ export type Database = {
         Row: {
           competition_id: string
           created_at: string
+          duration_minutes: number
           heat_number: number
           id: string
           lane_count: number
@@ -1756,6 +1757,7 @@ export type Database = {
         Insert: {
           competition_id: string
           created_at?: string
+          duration_minutes?: number
           heat_number: number
           id?: string
           lane_count?: number
@@ -1767,6 +1769,7 @@ export type Database = {
         Update: {
           competition_id?: string
           created_at?: string
+          duration_minutes?: number
           heat_number?: number
           id?: string
           lane_count?: number
