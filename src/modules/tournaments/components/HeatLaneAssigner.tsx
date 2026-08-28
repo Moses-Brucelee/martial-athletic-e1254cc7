@@ -69,6 +69,32 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
     (t) => !assignedTeamIds.has(t.id) && !(excludeTeamIds?.has(t.id))
   );
 
+  /** Group available teams by their assigned division. Unassigned teams fall under a single fallback group. */
+  const groupedTeams = useMemo((): DivisionGroup[] => {
+    const map = new Map<string, Team[]>();
+    for (const t of availableTeams) {
+      const key = t.division?.trim() || "__unassigned__";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    }
+
+    const groups: DivisionGroup[] = [];
+    const unassigned = map.get("__unassigned__");
+
+    for (const [key, groupTeams] of map) {
+      if (key === "__unassigned__") continue;
+      groups.push({ label: key, teams: groupTeams });
+    }
+
+    groups.sort((a, b) => a.label.localeCompare(b.label));
+
+    if (unassigned && unassigned.length > 0) {
+      groups.push({ label: "Other / Unassigned", teams: unassigned });
+    }
+
+    return groups;
+  }, [availableTeams]);
+
   // Get approved athletes per team for display
   const approvedRegs = useMemo(
     () => registrations.filter((r) => r.status === "approved" || r.status === "confirmed"),
