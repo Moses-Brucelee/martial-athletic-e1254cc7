@@ -747,11 +747,13 @@ export type Database = {
           round_id: string | null
           score: number
           team_id: string
+          tie_breaker_seconds: number | null
           time_seconds: number | null
           updated_at: string
           validation_status: string | null
           video_url: string | null
           video_verified: boolean | null
+          work_completed: number | null
           workout_id: string
         }
         Insert: {
@@ -774,11 +776,13 @@ export type Database = {
           round_id?: string | null
           score?: number
           team_id: string
+          tie_breaker_seconds?: number | null
           time_seconds?: number | null
           updated_at?: string
           validation_status?: string | null
           video_url?: string | null
           video_verified?: boolean | null
+          work_completed?: number | null
           workout_id: string
         }
         Update: {
@@ -801,11 +805,13 @@ export type Database = {
           round_id?: string | null
           score?: number
           team_id?: string
+          tie_breaker_seconds?: number | null
           time_seconds?: number | null
           updated_at?: string
           validation_status?: string | null
           video_url?: string | null
           video_verified?: boolean | null
+          work_completed?: number | null
           workout_id?: string
         }
         Relationships: [
@@ -852,6 +858,7 @@ export type Database = {
           auto_publish_leaderboard: boolean
           competition_id: string
           created_at: string
+          global_tie_breaker: string
           id: string
           ranking_direction: string
           require_video_verification: boolean
@@ -868,6 +875,7 @@ export type Database = {
           auto_publish_leaderboard?: boolean
           competition_id: string
           created_at?: string
+          global_tie_breaker?: string
           id?: string
           ranking_direction?: string
           require_video_verification?: boolean
@@ -884,6 +892,7 @@ export type Database = {
           auto_publish_leaderboard?: boolean
           competition_id?: string
           created_at?: string
+          global_tie_breaker?: string
           id?: string
           ranking_direction?: string
           require_video_verification?: boolean
@@ -1067,6 +1076,9 @@ export type Database = {
           round_id: string | null
           scheduled_reveal_at: string | null
           scoring_type: string
+          target_unit: string | null
+          target_work: number | null
+          tie_breaker_type: string
           time_cap_seconds: number | null
           video_url: string | null
           visibility: string
@@ -1085,6 +1097,9 @@ export type Database = {
           round_id?: string | null
           scheduled_reveal_at?: string | null
           scoring_type?: string
+          target_unit?: string | null
+          target_work?: number | null
+          tie_breaker_type?: string
           time_cap_seconds?: number | null
           video_url?: string | null
           visibility?: string
@@ -1103,6 +1118,9 @@ export type Database = {
           round_id?: string | null
           scheduled_reveal_at?: string | null
           scoring_type?: string
+          target_unit?: string | null
+          target_work?: number | null
+          tie_breaker_type?: string
           time_cap_seconds?: number | null
           video_url?: string | null
           visibility?: string
@@ -3358,9 +3376,12 @@ export type Database = {
         Returns: {
           division_id: string
           division_name: string
+          overall_rank: number
+          placement_counts: number[]
           team_id: string
           team_name: string
           total_points: number
+          wins: number
         }[]
       }
       get_competition_status: {
