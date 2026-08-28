@@ -37,22 +37,16 @@ const SCORING_MODELS = [
   },
 ];
 
-const TIE_BREAKERS = [
-  { value: "best_final_round", label: "Best placement in the final workout" },
-  { value: "best_single_workout", label: "Best single workout placement" },
-  { value: "earliest_submission", label: "Earliest score submission" },
-];
-
 const GLOBAL_TIE_BREAKERS = [
   {
     value: "none",
     label: "No global tie breaker",
-    desc: "Teams on the same overall score stay tied and share a position (1st, 1st, 3rd).",
+    desc: "Teams with the same overall score remain tied and share the applicable position.",
   },
   {
     value: "most_wins_placements",
     label: "Most wins, then top placements",
-    desc: "On an equal overall score, the team with more workout wins ranks higher. Still level? Compare 1st places, then 2nds, then 3rds.",
+    desc: "When teams are tied on the overall score: Most 1st-place finishes wins. If still tied, compare the number of 2nd-place finishes. Then 3rd-place finishes, and so on.",
   },
 ];
 
