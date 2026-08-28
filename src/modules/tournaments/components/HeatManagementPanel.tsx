@@ -1,6 +1,17 @@
 import { useState, useMemo, useEffect } from "react";
 import { useHeats, useAddHeat, useUpdateHeatStatus, useUpdateHeatSchedule, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
-import { useTeams, useWorkouts } from "@/modules/tournaments/hooks";
+import { useTeams, useWorkouts, useCompetition } from "@/modules/tournaments/hooks";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
+import {
+  parseWindow,
+  nextHeatStart,
+  heatRange,
+  addMinutes,
+  findLaneConflict,
+  validateWithinCompetition,
+  DEFAULT_HEAT_DURATION_MINUTES,
+  type LaneUsage,
+} from "@/lib/scheduling";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +45,7 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const { data: workouts = [] } = useWorkouts(competitionId);
   const { data: teams = [] } = useTeams(competitionId);
   const { data: allAssignments = [] } = useAllHeatAssignments(competitionId);
+  const { data: competition } = useCompetition(competitionId);
   const addHeatMutation = useAddHeat();
   const updateStatusMutation = useUpdateHeatStatus();
   const updateScheduleMutation = useUpdateHeatSchedule();
@@ -79,7 +91,8 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
 
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string>("");
   const [laneCount, setLaneCount] = useState("10");
-  const [scheduledStart, setScheduledStart] = useState("");
+  const [scheduledStart, setScheduledStart] = useState<Date | undefined>();
+  const [durationMinutes, setDurationMinutes] = useState(String(DEFAULT_HEAT_DURATION_MINUTES));
   const [expandedHeatId, setExpandedHeatId] = useState<string | null>(null);
   const [whiteboardMode, setWhiteboardMode] = useState(false);
 
@@ -129,28 +142,68 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
     return m;
   }, [workouts]);
 
-  // Remember the last scheduled start across heat creations so users don't
-  // have to re-enter the date/time for each consecutive heat.
-  // Pre-fill with the latest heat's scheduled_start for the selected workout.
+  // Competition schedule window — heats must live inside it
+  const window = useMemo(
+    () => parseWindow((competition as any)?.start_date, (competition as any)?.end_date),
+    [competition],
+  );
+
+  // heat id → lane numbers currently occupied
+  const laneUsage: LaneUsage = useMemo(() => {
+    const m = new Map<string, number[]>();
+    for (const a of allAssignments) {
+      if (a.lane_number == null) continue;
+      if (!m.has(a.heat_id)) m.set(a.heat_id, []);
+      m.get(a.heat_id)!.push(a.lane_number);
+    }
+    // A heat with no assignments yet still reserves its lanes
+    for (const h of heats) {
+      if (!m.has(h.id)) {
+        m.set(h.id, Array.from({ length: h.lane_count || 0 }, (_, i) => i + 1));
+      }
+    }
+    return m;
+  }, [allAssignments, heats]);
+
+  const parsedDuration = Math.max(1, parseInt(durationMinutes) || DEFAULT_HEAT_DURATION_MINUTES);
+
+  // Smart default: first heat starts at the competition start, later heats
+  // pick up where the latest scheduled heat ends.
   useEffect(() => {
     if (scheduledStart) return;
-    if (!selectedWorkoutId) return;
-    const workoutHeats = heats
-      .filter((h) => h.workout_id === selectedWorkoutId && h.scheduled_start)
-      .sort(
-        (a, b) =>
-          new Date(b.scheduled_start as string).getTime() -
-          new Date(a.scheduled_start as string).getTime(),
-      );
-    const latest = workoutHeats[0]?.scheduled_start;
-    if (latest) {
-      // Convert ISO → "YYYY-MM-DDTHH:mm" for datetime-local
-      const d = new Date(latest);
-      const pad = (n: number) => String(n).padStart(2, "0");
-      const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      setScheduledStart(local);
+    const suggestion = nextHeatStart(heats, window, parsedDuration);
+    if (suggestion) setScheduledStart(suggestion);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heats, window.start?.getTime(), window.end?.getTime()]);
+
+  const heatMinDate = window.start ?? undefined;
+  const heatMaxDate = window.end
+    ? new Date(window.end.getTime() - parsedDuration * 60_000)
+    : undefined;
+
+  /** Shared guard used by both create and inline edit. */
+  const validateHeatSlot = (
+    start: Date,
+    minutes: number,
+    laneCount: number,
+    excludeHeatId?: string,
+  ): string | null => {
+    const range = { start, end: addMinutes(start, minutes) };
+    const windowErr = validateWithinCompetition(range, window);
+    if (windowErr) return windowErr;
+    const conflict = findLaneConflict({
+      range,
+      lanes: Array.from({ length: laneCount }, (_, i) => i + 1),
+      heats,
+      laneUsage,
+      excludeHeatId,
+    });
+    if (conflict) {
+      const t = conflict.range.start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      return `Lane ${conflict.lane} is already used by Heat #${conflict.heatNumber ?? "?"} at ${t}. Pick another time or free up lanes.`;
     }
-  }, [selectedWorkoutId, heats, scheduledStart]);
+    return null;
+  };
 
   const handleAddHeat = async () => {
     if (!selectedWorkoutId) {
@@ -159,18 +212,28 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
     }
     const workoutHeats = heats.filter((h) => h.workout_id === selectedWorkoutId);
     const nextNumber = workoutHeats.length + 1;
+    const lanes = parseInt(laneCount) || 10;
+
+    if (scheduledStart) {
+      const err = validateHeatSlot(scheduledStart, parsedDuration, lanes);
+      if (err) {
+        toast.error(err);
+        return;
+      }
+    }
 
     try {
       await addHeatMutation.mutateAsync({
         competition_id: competitionId,
         workout_id: selectedWorkoutId,
         heat_number: nextNumber,
-        lane_count: parseInt(laneCount) || 10,
-        scheduled_start: scheduledStart ? new Date(scheduledStart).toISOString() : undefined,
+        lane_count: lanes,
+        scheduled_start: scheduledStart ? scheduledStart.toISOString() : undefined,
+        duration_minutes: parsedDuration,
       });
       toast.success(`Heat #${nextNumber} created`);
-      // Keep the scheduledStart value so the next heat reuses the same time
-      // (the admin can simply bump the time as needed).
+      // Advance the suggested start to the end of the heat just created
+      if (scheduledStart) setScheduledStart(addMinutes(scheduledStart, parsedDuration));
     } catch (err) {
       toast.error((err as Error).message);
     }
@@ -184,21 +247,30 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
     }
   };
 
-  const handleScheduleChange = async (heatId: string, value: string) => {
+  const handleScheduleChange = async (
+    heatId: string,
+    date: Date | undefined,
+    minutes: number,
+    laneCount: number,
+  ) => {
+    if (date) {
+      const err = validateHeatSlot(date, minutes, laneCount, heatId);
+      if (err) {
+        toast.error(err);
+        return;
+      }
+    }
     try {
-      const iso = value ? new Date(value).toISOString() : null;
-      await updateScheduleMutation.mutateAsync({ heatId, scheduledStart: iso, competitionId });
+      await updateScheduleMutation.mutateAsync({
+        heatId,
+        scheduledStart: date ? date.toISOString() : null,
+        durationMinutes: minutes,
+        competitionId,
+      });
       toast.success("Heat time updated");
     } catch (err) {
       toast.error((err as Error).message);
     }
-  };
-
-  const toLocalInput = (iso: string | null | undefined) => {
-    if (!iso) return "";
-    const d = new Date(iso);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
   const getStatusConfig = (status: string) =>
@@ -239,7 +311,7 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
             <Flame className="h-5 w-5 text-primary" />
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Add Heat Manually</h3>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Workout</Label>
               <Select value={selectedWorkoutId} onValueChange={setSelectedWorkoutId}>
@@ -258,8 +330,20 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Start Time</Label>
-              <Input type="datetime-local" value={scheduledStart} onChange={(e) => setScheduledStart(e.target.value)}
-                className="h-9 bg-background text-sm" />
+              <DateTimePicker
+                value={scheduledStart}
+                onChange={setScheduledStart}
+                minDate={heatMinDate}
+                maxDate={heatMaxDate}
+                defaultMonth={scheduledStart ?? heatMinDate}
+                placeholder={window.start ? "Within competition dates" : "Pick a time"}
+                className="h-9 text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Duration (min)</Label>
+              <Input type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)}
+                className="h-9 bg-background text-sm" min={1} max={240} />
             </div>
             <div className="flex items-end">
               <Button onClick={handleAddHeat} disabled={addHeatMutation.isPending || !selectedWorkoutId}
@@ -332,7 +416,11 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                                   className="font-mono font-black tracking-wider text-lg leading-none"
                                   style={{ color: color.text }}
                                 >
-                                  {new Date(heat.scheduled_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                  {(() => {
+                                    const r = heatRange(heat as any);
+                                    const fmt = (d: Date) => d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                                    return r ? `${fmt(r.start)}–${fmt(r.end)}` : "";
+                                  })()}
                                 </span>
                               )}
                             </div>
@@ -475,17 +563,52 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                               <Clock className="h-4 w-4 text-primary" />
                               Start Time
                             </Label>
-                            <Input
-                              type="datetime-local"
-                              defaultValue={toLocalInput(heat.scheduled_start)}
-                              onBlur={(e) => {
-                                const next = e.target.value;
-                                if (next !== toLocalInput(heat.scheduled_start)) {
-                                  handleScheduleChange(heat.id, next);
-                                }
-                              }}
-                              className="h-9 bg-background text-sm w-full sm:w-64"
-                            />
+                            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                              <div className="w-full sm:w-64">
+                                <DateTimePicker
+                                  value={heat.scheduled_start ? new Date(heat.scheduled_start) : undefined}
+                                  onChange={(d) =>
+                                    handleScheduleChange(
+                                      heat.id,
+                                      d,
+                                      heat.duration_minutes || DEFAULT_HEAT_DURATION_MINUTES,
+                                      heat.lane_count,
+                                    )
+                                  }
+                                  minDate={heatMinDate}
+                                  maxDate={
+                                    window.end
+                                      ? new Date(
+                                          window.end.getTime() -
+                                            (heat.duration_minutes || DEFAULT_HEAT_DURATION_MINUTES) * 60_000,
+                                        )
+                                      : undefined
+                                  }
+                                  defaultMonth={heat.scheduled_start ? new Date(heat.scheduled_start) : heatMinDate}
+                                  className="h-9 text-sm"
+                                />
+                              </div>
+                              <Input
+                                type="number"
+                                min={1}
+                                max={240}
+                                defaultValue={heat.duration_minutes || DEFAULT_HEAT_DURATION_MINUTES}
+                                onBlur={(e) => {
+                                  const mins = Math.max(1, parseInt(e.target.value) || DEFAULT_HEAT_DURATION_MINUTES);
+                                  if (mins !== (heat.duration_minutes || DEFAULT_HEAT_DURATION_MINUTES)) {
+                                    handleScheduleChange(
+                                      heat.id,
+                                      heat.scheduled_start ? new Date(heat.scheduled_start) : undefined,
+                                      mins,
+                                      heat.lane_count,
+                                    );
+                                  }
+                                }}
+                                className="h-9 bg-background text-sm w-full sm:w-28"
+                                aria-label="Heat duration in minutes"
+                              />
+                              <span className="text-[11px] text-muted-foreground">minutes</span>
+                            </div>
                           </div>
                         )}
 
