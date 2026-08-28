@@ -123,6 +123,7 @@ export function StepDetails({
   const shownRegErr = (touched.reg || (startDate && regDeadline)) ? dateErrors.regDeadline : undefined;
 
   // Constrain pickers so invalid selections cannot be made in the first place
+  const nowRef = new Date();
   const endMin = startDate ?? today;
   const endMax = startDate
     ? new Date(startDate.getTime() + 31 * 24 * 60 * 60 * 1000)
@@ -295,6 +296,15 @@ export function StepDetails({
               onChange={(d) => {
                 setStartDate(d);
                 setTouched((t) => ({ ...t, start: true }));
+                // Smart default: seed the end date with the start so same-day
+                // events need no scrolling. Never overwrite a valid end date.
+                if (d && (!endDate || endDate.getTime() <= d.getTime())) {
+                  setEndDate(new Date(d.getTime() + 60 * 60 * 1000));
+                }
+                // Drop a registration deadline that is no longer valid
+                if (d && regDeadline && regDeadline.getTime() >= d.getTime()) {
+                  setRegDeadline(undefined);
+                }
               }}
               placeholder="Select start"
               disabled={disabled}
@@ -314,6 +324,7 @@ export function StepDetails({
               disabled={disabled || !startDate}
               minDate={endMin}
               maxDate={endMax}
+              defaultMonth={startDate}
             />
             <p className="text-[11px] text-muted-foreground">
               May end on the same day if the end time is later. Max duration: 1 month.
@@ -330,8 +341,9 @@ export function StepDetails({
               }}
               placeholder={startDate ? "Last day to register" : "Pick competition start first"}
               disabled={disabled || !startDate}
-              minDate={today}
+              minDate={nowRef}
               maxDate={regMax}
+              defaultMonth={regDeadline ?? startDate}
             />
             <p className="text-[11px] text-muted-foreground">
               {startDate
