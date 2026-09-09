@@ -522,6 +522,23 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                           ) : (
                             <Badge variant="outline" className={sc.color}>{sc.label}</Badge>
                           )}
+                          {canAdmin && (
+                            <button
+                              type="button"
+                              title={`Delete Heat #${heat.heat_number}`}
+                              aria-label={`Delete Heat #${heat.heat_number}`}
+                              disabled={removeHeatMutation.isPending}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteHeat(heat.id, heat.heat_number);
+                              }}
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                            <Badge variant="outline" className={sc.color}>{sc.label}</Badge>
+                          )}
                         </div>
                       </div>
 
