@@ -565,15 +565,14 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                       {/* Inline lane strip — team + judge per lane */}
                       {(() => {
                         const heatAssignments = assignmentsByHeat.get(heat.id) ?? [];
-                        const heatJs = heatJudgesByHeat.get(heat.id) ?? [];
                         if (heat.lane_count === 0) return null;
                         const lanes = Array.from({ length: heat.lane_count }, (_, i) => i + 1);
                         return (
                           <div className="px-4 pb-4 grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(180px, 1fr))` }}>
-                            {lanes.map((laneNum, idx) => {
+                            {lanes.map((laneNum) => {
                               const a = heatAssignments.find((x) => x.lane_number === laneNum);
                               const teamName = a ? teamNameById.get(a.team_id) : undefined;
-                              const hj = heatJs[idx % Math.max(heatJs.length, 1)];
+                              const hj = laneJudge(heat.id, laneNum);
                               const judge = hj ? (judges.find((j) => j.id === hj.judge_id)) : undefined;
                               const judgeName = judge ? judgeLabel(judge) : hj?.display_name;
                               return (
