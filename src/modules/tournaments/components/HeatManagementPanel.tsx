@@ -606,13 +606,11 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                                   </div>
                                   <div className="min-w-0 flex-1">
                                     <p className="text-xs font-bold text-foreground truncate leading-tight">
-                                      {teamName || <span className="italic text-muted-foreground font-normal">Empty lane</span>}
+                                      {occupant || <span className="italic text-muted-foreground font-normal">Unassigned</span>}
                                     </p>
-                                    {judgeName && (
-                                      <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground truncate mt-0.5">
-                                        Judge: {judgeName}
-                                      </p>
-                                    )}
+                                    <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground truncate mt-0.5">
+                                      Judge: {judgeName || "Unassigned"}
+                                    </p>
                                   </div>
                                 </div>
                               );
