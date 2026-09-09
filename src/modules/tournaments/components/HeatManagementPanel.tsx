@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useHeats, useAddHeat, useUpdateHeatStatus, useUpdateHeatSchedule, useRemoveHeat, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useTeams, useWorkouts, useCompetition } from "@/modules/tournaments/hooks";
+import { useRegistrations } from "@/modules/athletes/hooks";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
   parseWindow,
@@ -46,6 +47,7 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const { data: workouts = [] } = useWorkouts(competitionId);
   const { data: teams = [] } = useTeams(competitionId);
   const { data: allAssignments = [] } = useAllHeatAssignments(competitionId);
+  const { data: registrations = [] } = useRegistrations(competitionId);
   const { data: competition } = useCompetition(competitionId);
   const addHeatMutation = useAddHeat();
   const updateStatusMutation = useUpdateHeatStatus();
@@ -228,6 +230,13 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
     for (const t of teams) m.set(t.id, t.team_name);
     return m;
   }, [teams]);
+
+  /** Registration id → athlete name, for solo lane assignments. */
+  const athleteNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of registrations) m.set(r.id, r.athlete_name);
+    return m;
+  }, [registrations]);
 
   const workoutMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -571,10 +580,15 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                           <div className="px-4 pb-4 grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(180px, 1fr))` }}>
                             {lanes.map((laneNum) => {
                               const a = heatAssignments.find((x) => x.lane_number === laneNum);
-                              const teamName = a ? teamNameById.get(a.team_id) : undefined;
+                              const occupant = a
+                                ? (a.team_id ? teamNameById.get(a.team_id) : undefined) ??
+                                  ((a as any).athlete_registration_id
+                                    ? athleteNameById.get((a as any).athlete_registration_id)
+                                    : undefined)
+                                : undefined;
                               const hj = laneJudge(heat.id, laneNum);
                               const judge = hj ? (judges.find((j) => j.id === hj.judge_id)) : undefined;
-                              const judgeName = judge ? judgeLabel(judge) : hj?.display_name;
+                              const judgeName = (judge ? judgeLabel(judge) : hj?.display_name?.trim()) || "";
                               return (
                                 <div
                                   key={laneNum}
@@ -592,13 +606,11 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                                   </div>
                                   <div className="min-w-0 flex-1">
                                     <p className="text-xs font-bold text-foreground truncate leading-tight">
-                                      {teamName || <span className="italic text-muted-foreground font-normal">Empty lane</span>}
+                                      {occupant || <span className="italic text-muted-foreground font-normal">Unassigned</span>}
                                     </p>
-                                    {judgeName && (
-                                      <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground truncate mt-0.5">
-                                        Judge: {judgeName}
-                                      </p>
-                                    )}
+                                    <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground truncate mt-0.5">
+                                      Judge: {judgeName || "Unassigned"}
+                                    </p>
                                   </div>
                                 </div>
                               );
