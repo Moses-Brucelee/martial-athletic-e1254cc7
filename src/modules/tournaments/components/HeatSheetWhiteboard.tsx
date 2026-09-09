@@ -84,7 +84,7 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
     return m;
   }, [registrations]);
 
-  // Build [division → workout → heats] structure
+  // Build a single board: [workout → heats], lanes hold every division together
   const grouped = useMemo(() => {
     const assignmentByHeat = new Map<string, typeof assignments>();
     for (const a of assignments) {
@@ -92,59 +92,60 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
       assignmentByHeat.get(a.heat_id)!.push(a);
     }
 
-    type Row = { heat: (typeof heats)[number]; lanes: Map<number, string> };
-    const structure = new Map<string /* divisionId or _all */, Map<string /* workoutId */, Row[]>>();
+    type Entry = { label: string; divisionId: string };
+    type Row = { heat: (typeof heats)[number]; lanes: Map<number, Entry> };
+    const byWorkout = new Map<string /* workoutId */, Row[]>();
 
     for (const heat of heats) {
       const wid = heat.workout_id || "_unassigned";
       const heatAssignments = [...(assignmentByHeat.get(heat.id) ?? [])].sort(
         (a, b) => (a.lane_number ?? 9999) - (b.lane_number ?? 9999),
       );
-      const laneByDiv = new Map<string, Map<number, string>>();
-      // Track next free lane per division for assignments without an explicit lane
-      const nextFree = new Map<string, number>();
+
+      const lanes = new Map<number, Entry>();
+      let nextFree = 1;
 
       for (const a of heatAssignments) {
         const team = a.team_id ? teamById.get(a.team_id) : undefined;
         const athlete = a.athlete_registration_id ? athleteById.get(a.athlete_registration_id) : undefined;
         const label = team?.team_name || athlete?.athlete_name || "—";
-        const divId = team?.division_id || (athlete as any)?.division_id || "_nodiv";
-        if (!laneByDiv.has(divId)) laneByDiv.set(divId, new Map());
-        const lanes = laneByDiv.get(divId)!;
+        const divisionId = team?.division_id || (athlete as any)?.division_id || "_nodiv";
 
         let lane = a.lane_number ?? 0;
         if (!lane || lanes.has(lane)) {
-          // fall back to the first unoccupied lane for this division
-          let candidate = nextFree.get(divId) ?? 1;
+          let candidate = nextFree;
           while (lanes.has(candidate)) candidate += 1;
           lane = candidate;
         }
-        nextFree.set(divId, lane + 1);
-        lanes.set(lane, label);
+        nextFree = lane + 1;
+        lanes.set(lane, { label, divisionId });
       }
 
-      if (laneByDiv.size === 0) laneByDiv.set("_nodiv", new Map());
-
-      for (const [divId, lanes] of laneByDiv) {
-        if (!structure.has(divId)) structure.set(divId, new Map());
-        const byW = structure.get(divId)!;
-        if (!byW.has(wid)) byW.set(wid, []);
-        byW.get(wid)!.push({ heat, lanes });
-      }
+      if (!byWorkout.has(wid)) byWorkout.set(wid, []);
+      byWorkout.get(wid)!.push({ heat, lanes });
     }
 
-    // Sort heats within each workout by heat_number
-    for (const byW of structure.values()) {
-      for (const rows of byW.values()) rows.sort((a, b) => a.heat.heat_number - b.heat.heat_number);
-    }
-    return structure;
+    for (const rows of byWorkout.values()) rows.sort((a, b) => a.heat.heat_number - b.heat.heat_number);
+    return byWorkout;
   }, [heats, assignments, teamById, athleteById]);
 
-  const visibleDivisions = useMemo(() => {
-    const ids = Array.from(grouped.keys());
-    if (selectedDivision === "all") return ids;
-    return ids.filter((d) => d === selectedDivision);
+  // Division filter narrows which lane entries are highlighted/kept, but never splits the board
+  const visibleWorkouts = useMemo(() => {
+    const entries = Array.from(grouped.entries());
+    if (selectedDivision === "all") return entries;
+    return entries
+      .map(([wid, rows]) => {
+        const filtered = rows
+          .map((r) => ({
+            heat: r.heat,
+            lanes: new Map(Array.from(r.lanes.entries()).filter(([, e]) => e.divisionId === selectedDivision)),
+          }))
+          .filter((r) => r.lanes.size > 0);
+        return [wid, filtered] as const;
+      })
+      .filter(([, rows]) => rows.length > 0);
   }, [grouped, selectedDivision]);
+
 
   const handleDownload = async (format: "png" | "jpeg") => {
     if (!boardRef.current) return;
@@ -212,104 +213,101 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
             </h1>
           </div>
 
-          {visibleDivisions.length === 0 && (
+          {visibleWorkouts.length === 0 && (
             <p className="text-muted-foreground text-sm">No heats scheduled yet.</p>
           )}
 
-          {visibleDivisions.map((divId) => {
-            const byWorkout = grouped.get(divId)!;
-            const divLabel = divId === "_nodiv" ? "No division" : (divisionById.get(divId) || "Division");
+          {visibleWorkouts.map(([wid, rows], eventIdx) => {
+            const w = workouts.find((x) => x.id === wid);
+            const color = getWorkoutColor(wid === "_unassigned" ? null : wid);
+            const wName = wid === "_unassigned" ? "Unassigned" : (w?.name || `WOD #${w?.workout_number ?? ""}`);
+            const laneCount = Math.max(
+              1,
+              ...rows.map((r) =>
+                Math.max(
+                  r.heat.lane_count || 0,
+                  ...(r.lanes.size ? Array.from(r.lanes.keys()) : [0]),
+                ),
+              ),
+            );
+            const lanes = Array.from({ length: laneCount }, (_, i) => i + 1);
+
             return (
-              <section key={divId} className="mb-10">
-                <h2 className="text-lg md:text-xl font-black text-primary uppercase tracking-widest mb-3">
-                  {divLabel}
-                </h2>
+              <div key={wid} className="mb-8 last:mb-0">
+                <h3 className="text-sm md:text-base font-black uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <span className="text-foreground">Event {eventIdx + 1}:</span>
+                  <span style={{ color: color.text }}>{wName}</span>
+                </h3>
 
-                {Array.from(byWorkout.entries()).map(([wid, rows], eventIdx) => {
-                  const w = workouts.find((x) => x.id === wid);
-                  const color = getWorkoutColor(wid === "_unassigned" ? null : wid);
-                  const wName = wid === "_unassigned" ? "Unassigned" : (w?.name || `WOD #${w?.workout_number ?? ""}`);
-                  // Lane count is per event group: widest of each heat's configured
-                  // lane_count and the highest lane actually occupied.
-                  const laneCount = Math.max(
-                    1,
-                    ...rows.map((r) =>
-                      Math.max(
-                        r.heat.lane_count || 0,
-                        ...(r.lanes.size ? Array.from(r.lanes.keys()) : [0]),
-                      ),
-                    ),
-                  );
-                  const lanes = Array.from({ length: laneCount }, (_, i) => i + 1);
-
-                  return (
-                    <div key={wid} className="mb-6 last:mb-0">
-                      <h3 className="text-sm md:text-base font-black uppercase tracking-wider mb-2 flex items-center gap-2">
-                        <span className="text-foreground">Event {eventIdx + 1}:</span>
-                        <span style={{ color: color.text }}>{wName}</span>
-                      </h3>
-
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="border-b-2" style={{ borderColor: color.solid }}>
-                              <th className="text-left py-2 px-3 text-xs md:text-sm font-black text-foreground uppercase tracking-wider w-20">Time</th>
-                              <th className="text-left py-2 px-3 text-xs md:text-sm font-black text-foreground uppercase tracking-wider w-24">Heats</th>
-                              {lanes.map((n) => (
-                                <th key={n} className="text-center py-2 px-3 text-xs md:text-sm font-black text-foreground uppercase tracking-wider">
-                                  Lane {n}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {rows.map(({ heat, lanes: laneMap }, i) => {
-                              const time = heat.scheduled_start
-                                ? new Date(heat.scheduled_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                                : "—";
-                              const judgesForHeat = heatJudgeNames.get(heat.id) ?? [];
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b-2" style={{ borderColor: color.solid }}>
+                        <th className="text-left py-2 px-3 text-xs md:text-sm font-black text-foreground uppercase tracking-wider w-20">Time</th>
+                        <th className="text-left py-2 px-3 text-xs md:text-sm font-black text-foreground uppercase tracking-wider w-24">Heats</th>
+                        {lanes.map((n) => (
+                          <th key={n} className="text-center py-2 px-3 text-xs md:text-sm font-black text-foreground uppercase tracking-wider">
+                            Lane {n}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map(({ heat, lanes: laneMap }, i) => {
+                        const time = heat.scheduled_start
+                          ? new Date(heat.scheduled_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                          : "—";
+                        const judgesForHeat = heatJudgeNames.get(heat.id) ?? [];
+                        return (
+                          <tr key={heat.id} className={i % 2 === 0 ? "bg-muted/20" : ""}>
+                            <td className="py-3 px-3 font-mono font-black text-sm md:text-base tabular-nums" style={{ color: color.text }}>
+                              {time}
+                            </td>
+                            <td className="py-3 px-3 text-xs md:text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                              Heat {heat.heat_number}
+                            </td>
+                            {lanes.map((n, laneIdx) => {
+                              const entry = laneMap.get(n);
+                              const judge = judgesForHeat[laneIdx % Math.max(judgesForHeat.length, 1)];
+                              const divLabel = entry
+                                ? entry.divisionId === "_nodiv"
+                                  ? ""
+                                  : divisionById.get(entry.divisionId) || ""
+                                : "";
                               return (
-                                <tr key={heat.id} className={i % 2 === 0 ? "bg-muted/20" : ""}>
-                                  <td className="py-3 px-3 font-mono font-black text-sm md:text-base tabular-nums" style={{ color: color.text }}>
-                                    {time}
-                                  </td>
-                                  <td className="py-3 px-3 text-xs md:text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                                    Heat {heat.heat_number}
-                                  </td>
-                                  {lanes.map((n, laneIdx) => {
-                                    const teamName = laneMap.get(n);
-                                    const judge = judgesForHeat[laneIdx % Math.max(judgesForHeat.length, 1)];
-                                    return (
-                                      <td key={n} className="py-3 px-3 text-center align-middle">
-                                        {teamName ? (
-                                          <div className="flex flex-col items-center leading-tight">
-                                            <span className="text-xs md:text-sm font-black uppercase tracking-wider" style={{ color: color.text }}>
-                                              {teamName}
-                                            </span>
-                                            {judge && (
-                                              <span className="text-[9px] font-semibold uppercase text-muted-foreground mt-0.5">
-                                                J: {judge}
-                                              </span>
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <span className="text-xs text-muted-foreground/40">—</span>
-                                        )}
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
+                                <td key={n} className="py-3 px-3 text-center align-middle">
+                                  {entry ? (
+                                    <div className="flex flex-col items-center leading-tight">
+                                      <span className="text-xs md:text-sm font-black uppercase tracking-wider" style={{ color: color.text }}>
+                                        {entry.label}
+                                      </span>
+                                      {divLabel && (
+                                        <span className="text-[9px] font-bold uppercase text-muted-foreground/80 mt-0.5 tracking-wider">
+                                          {divLabel}
+                                        </span>
+                                      )}
+                                      {judge && (
+                                        <span className="text-[9px] font-semibold uppercase text-muted-foreground mt-0.5">
+                                          J: {judge}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground/40">—</span>
+                                  )}
+                                </td>
                               );
                             })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  );
-                })}
-              </section>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             );
           })}
+
         </div>
       </div>
     </div>
