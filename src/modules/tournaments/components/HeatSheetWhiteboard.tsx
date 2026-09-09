@@ -252,7 +252,7 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
                     const time = heat.scheduled_start
                       ? new Date(heat.scheduled_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
                       : "—";
-                    const spare = unlanedJudges.get(heat.id) ?? [];
+                    
                     return (
                       <tr key={heat.id} className={i % 2 === 0 ? "bg-muted/20" : ""}>
                         <td className="py-3 px-3 font-mono font-black text-sm md:text-base tabular-nums" style={{ color: color.text }}>
