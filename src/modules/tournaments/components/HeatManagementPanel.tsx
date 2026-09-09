@@ -740,6 +740,40 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                           teams={teams}
                           canAdmin={canAdmin}
                           excludeTeamIds={heat.workout_id ? teamsAssignedByWorkout.get(heat.workout_id) : undefined}
+                          renderLaneJudge={(lane) => {
+                            const hj = laneJudge(heat.id, lane);
+                            const j = hj ? judges.find((x) => x.id === hj.judge_id) : undefined;
+                            const name = j ? judgeLabel(j) : hj?.display_name;
+                            return (
+                              <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                                <Gavel className="h-3 w-3 text-muted-foreground shrink-0" />
+                                {name ? (
+                                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 gap-1">
+                                    {name}
+                                    {canAdmin && hj && (
+                                      <button
+                                        onClick={() => handleUnassignJudge(hj.id)}
+                                        className="text-muted-foreground hover:text-destructive"
+                                        aria-label={`Remove judge from lane ${lane}`}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    )}
+                                  </Badge>
+                                ) : canAdmin ? (
+                                  <JudgeSearchInput
+                                    competitionId={competitionId}
+                                    disabled={savingJudgeFor === `${heat.id}::${lane}`}
+                                    assignedUserIds={assignedUserIdsFor(heat.id)}
+                                    assignedNames={assignedNamesFor(heat.id)}
+                                    onSelect={(sel) => handleAddJudgeFromSearch(heat.id, sel, lane)}
+                                  />
+                                ) : (
+                                  <span className="text-[10px] text-muted-foreground italic">No judge</span>
+                                )}
+                              </div>
+                            );
+                          }}
                         />
                       </div>
                     )}
