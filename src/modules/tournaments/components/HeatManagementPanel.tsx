@@ -53,7 +53,10 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const removeHeatMutation = useRemoveHeat();
 
   const handleDeleteHeat = (heatId: string, heatNumber: number) => {
-    if (!window.confirm(`Delete Heat #${heatNumber}? Lane assignments and judge links for this heat will be removed. This cannot be undone.`)) return;
+    const confirmed = (window as unknown as { confirm: (msg: string) => boolean }).confirm(
+      `Delete Heat #${heatNumber}? Lane assignments and judge links for this heat will be removed. This cannot be undone.`
+    );
+    if (!confirmed) return;
     removeHeatMutation.mutate(
       { heatId, competitionId },
       {
