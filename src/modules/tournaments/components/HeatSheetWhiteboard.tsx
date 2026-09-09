@@ -213,104 +213,101 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
             </h1>
           </div>
 
-          {visibleDivisions.length === 0 && (
+          {visibleWorkouts.length === 0 && (
             <p className="text-muted-foreground text-sm">No heats scheduled yet.</p>
           )}
 
-          {visibleDivisions.map((divId) => {
-            const byWorkout = grouped.get(divId)!;
-            const divLabel = divId === "_nodiv" ? "No division" : (divisionById.get(divId) || "Division");
+          {visibleWorkouts.map(([wid, rows], eventIdx) => {
+            const w = workouts.find((x) => x.id === wid);
+            const color = getWorkoutColor(wid === "_unassigned" ? null : wid);
+            const wName = wid === "_unassigned" ? "Unassigned" : (w?.name || `WOD #${w?.workout_number ?? ""}`);
+            const laneCount = Math.max(
+              1,
+              ...rows.map((r) =>
+                Math.max(
+                  r.heat.lane_count || 0,
+                  ...(r.lanes.size ? Array.from(r.lanes.keys()) : [0]),
+                ),
+              ),
+            );
+            const lanes = Array.from({ length: laneCount }, (_, i) => i + 1);
+
             return (
-              <section key={divId} className="mb-10">
-                <h2 className="text-lg md:text-xl font-black text-primary uppercase tracking-widest mb-3">
-                  {divLabel}
-                </h2>
+              <div key={wid} className="mb-8 last:mb-0">
+                <h3 className="text-sm md:text-base font-black uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <span className="text-foreground">Event {eventIdx + 1}:</span>
+                  <span style={{ color: color.text }}>{wName}</span>
+                </h3>
 
-                {Array.from(byWorkout.entries()).map(([wid, rows], eventIdx) => {
-                  const w = workouts.find((x) => x.id === wid);
-                  const color = getWorkoutColor(wid === "_unassigned" ? null : wid);
-                  const wName = wid === "_unassigned" ? "Unassigned" : (w?.name || `WOD #${w?.workout_number ?? ""}`);
-                  // Lane count is per event group: widest of each heat's configured
-                  // lane_count and the highest lane actually occupied.
-                  const laneCount = Math.max(
-                    1,
-                    ...rows.map((r) =>
-                      Math.max(
-                        r.heat.lane_count || 0,
-                        ...(r.lanes.size ? Array.from(r.lanes.keys()) : [0]),
-                      ),
-                    ),
-                  );
-                  const lanes = Array.from({ length: laneCount }, (_, i) => i + 1);
-
-                  return (
-                    <div key={wid} className="mb-6 last:mb-0">
-                      <h3 className="text-sm md:text-base font-black uppercase tracking-wider mb-2 flex items-center gap-2">
-                        <span className="text-foreground">Event {eventIdx + 1}:</span>
-                        <span style={{ color: color.text }}>{wName}</span>
-                      </h3>
-
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="border-b-2" style={{ borderColor: color.solid }}>
-                              <th className="text-left py-2 px-3 text-xs md:text-sm font-black text-foreground uppercase tracking-wider w-20">Time</th>
-                              <th className="text-left py-2 px-3 text-xs md:text-sm font-black text-foreground uppercase tracking-wider w-24">Heats</th>
-                              {lanes.map((n) => (
-                                <th key={n} className="text-center py-2 px-3 text-xs md:text-sm font-black text-foreground uppercase tracking-wider">
-                                  Lane {n}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {rows.map(({ heat, lanes: laneMap }, i) => {
-                              const time = heat.scheduled_start
-                                ? new Date(heat.scheduled_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                                : "—";
-                              const judgesForHeat = heatJudgeNames.get(heat.id) ?? [];
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b-2" style={{ borderColor: color.solid }}>
+                        <th className="text-left py-2 px-3 text-xs md:text-sm font-black text-foreground uppercase tracking-wider w-20">Time</th>
+                        <th className="text-left py-2 px-3 text-xs md:text-sm font-black text-foreground uppercase tracking-wider w-24">Heats</th>
+                        {lanes.map((n) => (
+                          <th key={n} className="text-center py-2 px-3 text-xs md:text-sm font-black text-foreground uppercase tracking-wider">
+                            Lane {n}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map(({ heat, lanes: laneMap }, i) => {
+                        const time = heat.scheduled_start
+                          ? new Date(heat.scheduled_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                          : "—";
+                        const judgesForHeat = heatJudgeNames.get(heat.id) ?? [];
+                        return (
+                          <tr key={heat.id} className={i % 2 === 0 ? "bg-muted/20" : ""}>
+                            <td className="py-3 px-3 font-mono font-black text-sm md:text-base tabular-nums" style={{ color: color.text }}>
+                              {time}
+                            </td>
+                            <td className="py-3 px-3 text-xs md:text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                              Heat {heat.heat_number}
+                            </td>
+                            {lanes.map((n, laneIdx) => {
+                              const entry = laneMap.get(n);
+                              const judge = judgesForHeat[laneIdx % Math.max(judgesForHeat.length, 1)];
+                              const divLabel = entry
+                                ? entry.divisionId === "_nodiv"
+                                  ? ""
+                                  : divisionById.get(entry.divisionId) || ""
+                                : "";
                               return (
-                                <tr key={heat.id} className={i % 2 === 0 ? "bg-muted/20" : ""}>
-                                  <td className="py-3 px-3 font-mono font-black text-sm md:text-base tabular-nums" style={{ color: color.text }}>
-                                    {time}
-                                  </td>
-                                  <td className="py-3 px-3 text-xs md:text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                                    Heat {heat.heat_number}
-                                  </td>
-                                  {lanes.map((n, laneIdx) => {
-                                    const teamName = laneMap.get(n);
-                                    const judge = judgesForHeat[laneIdx % Math.max(judgesForHeat.length, 1)];
-                                    return (
-                                      <td key={n} className="py-3 px-3 text-center align-middle">
-                                        {teamName ? (
-                                          <div className="flex flex-col items-center leading-tight">
-                                            <span className="text-xs md:text-sm font-black uppercase tracking-wider" style={{ color: color.text }}>
-                                              {teamName}
-                                            </span>
-                                            {judge && (
-                                              <span className="text-[9px] font-semibold uppercase text-muted-foreground mt-0.5">
-                                                J: {judge}
-                                              </span>
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <span className="text-xs text-muted-foreground/40">—</span>
-                                        )}
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
+                                <td key={n} className="py-3 px-3 text-center align-middle">
+                                  {entry ? (
+                                    <div className="flex flex-col items-center leading-tight">
+                                      <span className="text-xs md:text-sm font-black uppercase tracking-wider" style={{ color: color.text }}>
+                                        {entry.label}
+                                      </span>
+                                      {divLabel && (
+                                        <span className="text-[9px] font-bold uppercase text-muted-foreground/80 mt-0.5 tracking-wider">
+                                          {divLabel}
+                                        </span>
+                                      )}
+                                      {judge && (
+                                        <span className="text-[9px] font-semibold uppercase text-muted-foreground mt-0.5">
+                                          J: {judge}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground/40">—</span>
+                                  )}
+                                </td>
                               );
                             })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  );
-                })}
-              </section>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             );
           })}
+
         </div>
       </div>
     </div>
