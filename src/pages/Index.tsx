@@ -81,7 +81,6 @@ const Index = () => {
             </div>
 
             <p className="mt-5 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              Free to join ·{" "}
               <button onClick={() => navigate("/tutorial")} className="underline hover:text-foreground">
                 See how it works
               </button>
