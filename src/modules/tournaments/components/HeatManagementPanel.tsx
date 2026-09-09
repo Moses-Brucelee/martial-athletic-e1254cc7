@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useHeats, useAddHeat, useUpdateHeatStatus, useUpdateHeatSchedule, useRemoveHeat, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useTeams, useWorkouts, useCompetition } from "@/modules/tournaments/hooks";
+import { useRegistrations } from "@/modules/athletes/hooks";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
   parseWindow,
@@ -46,6 +47,7 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const { data: workouts = [] } = useWorkouts(competitionId);
   const { data: teams = [] } = useTeams(competitionId);
   const { data: allAssignments = [] } = useAllHeatAssignments(competitionId);
+  const { data: registrations = [] } = useRegistrations(competitionId);
   const { data: competition } = useCompetition(competitionId);
   const addHeatMutation = useAddHeat();
   const updateStatusMutation = useUpdateHeatStatus();
