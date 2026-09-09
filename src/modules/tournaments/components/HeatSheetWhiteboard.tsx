@@ -117,19 +117,14 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
         (a, b) => (a.lane_number ?? 9999) - (b.lane_number ?? 9999),
       );
       const lanes = new Map<number, Entry>();
-      let nextFree = 1;
       for (const a of heatAssignments) {
+        // Only place an entry in the lane it is actually assigned to — never guess.
+        const lane = a.lane_number ?? 0;
+        if (!lane || lanes.has(lane)) continue;
         const team = a.team_id ? teamById.get(a.team_id) : undefined;
         const athlete = a.athlete_registration_id ? athleteById.get(a.athlete_registration_id) : undefined;
-        const label = team?.team_name || athlete?.athlete_name || "—";
+        const label = team?.team_name || athlete?.athlete_name || "Unassigned";
         const divisionId = team?.division_id || (athlete as any)?.division_id || "_nodiv";
-        let lane = a.lane_number ?? 0;
-        if (!lane || lanes.has(lane)) {
-          let candidate = nextFree;
-          while (lanes.has(candidate)) candidate += 1;
-          lane = candidate;
-        }
-        nextFree = lane + 1;
         lanes.set(lane, { label, divisionId });
       }
       return { heat, lanes };
