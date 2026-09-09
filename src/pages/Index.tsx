@@ -101,7 +101,10 @@ const Index = () => {
         {/* Numbers */}
         {stats.length > 0 && (
           <section className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-            <div className="grid grid-cols-2 divide-border rounded-lg border border-border bg-card sm:grid-cols-3 sm:divide-x">
+            <div
+              className="grid grid-cols-2 divide-border rounded-lg border border-border bg-card sm:divide-x"
+              style={{ gridTemplateColumns: `repeat(${Math.min(stats.length, 2)}, minmax(0, 1fr))` }}
+            >
               {stats.map((s) => (
                 <div key={s.label} className="px-5 py-6 sm:px-7">
                   <div className="text-3xl font-bold tabular-nums tracking-tight text-foreground sm:text-4xl">
