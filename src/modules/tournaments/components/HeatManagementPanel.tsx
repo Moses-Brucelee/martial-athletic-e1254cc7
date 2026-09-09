@@ -625,6 +625,9 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                               const j = judges.find((x) => x.id === hj.judge_id);
                               return (
                                 <Badge key={hj.id} variant="outline" className="text-[11px] gap-1 pr-1">
+                                  {hj.lane_number ? (
+                                    <span className="font-black text-primary">L{hj.lane_number}</span>
+                                  ) : null}
                                   {j ? judgeLabel(j) : hj.display_name || "Judge"}
                                   {canAdmin && (
                                     <button
