@@ -24,7 +24,7 @@ import { HeatLaneAssigner } from "./HeatLaneAssigner";
 import { AutoHeatGenerator } from "./AutoHeatGenerator";
 import { HeatSheetWhiteboard } from "./HeatSheetWhiteboard";
 import { getWorkoutColor } from "@/lib/workoutColors";
-import { fetchJudges } from "@/data/judges";
+import { fetchJudges, addGuestJudge } from "@/data/judges";
 import { fetchHeatJudges, assignHeatJudge, unassignHeatJudge } from "@/data/heatJudges";
 
 interface HeatManagementPanelProps {
