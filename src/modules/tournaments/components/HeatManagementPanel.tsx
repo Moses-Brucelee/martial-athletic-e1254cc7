@@ -537,8 +537,6 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                               <Trash2 className="h-4 w-4" />
                             </button>
                           )}
-                            <Badge variant="outline" className={sc.color}>{sc.label}</Badge>
-                          )}
                         </div>
                       </div>
 
