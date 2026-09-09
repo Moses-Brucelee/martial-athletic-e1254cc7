@@ -151,6 +151,9 @@ export async function updateHeatSchedule(
 
 
 export async function removeHeat(heatId: string): Promise<void> {
+  // Remove dependent rows first in case FK cascades are not configured
+  await supabase.from("heat_judges").delete().eq("heat_id", heatId);
+  await supabase.from("heat_assignments").delete().eq("heat_id", heatId);
   const { error } = await supabase
     .from("heat_schedule")
     .delete()
