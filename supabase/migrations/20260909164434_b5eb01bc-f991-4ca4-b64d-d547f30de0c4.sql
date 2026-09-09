@@ -1,0 +1,2 @@
+ALTER TABLE public.heat_judges ADD COLUMN IF NOT EXISTS lane_number integer;
+CREATE UNIQUE INDEX IF NOT EXISTS heat_judges_heat_lane_unique ON public.heat_judges (heat_id, lane_number) WHERE lane_number IS NOT NULL;

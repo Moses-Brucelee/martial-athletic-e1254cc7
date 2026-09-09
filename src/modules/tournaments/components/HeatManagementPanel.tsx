@@ -91,9 +91,9 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const judgeLabel = (j: { user_id: string | null; display_name?: string | null }) =>
     j.display_name?.trim() || (j.user_id ? `${j.user_id.slice(0, 6)}…` : "Unnamed");
 
-  const handleAssignJudge = async (heatId: string, judgeId: string) => {
+  const handleAssignJudge = async (heatId: string, judgeId: string, laneNumber?: number | null) => {
     try {
-      await assignHeatJudge(heatId, judgeId);
+      await assignHeatJudge(heatId, judgeId, laneNumber ?? null);
       qc.invalidateQueries({ queryKey: ["heat-judges", competitionId] });
     } catch (err) {
       toast.error((err as Error).message);
@@ -116,14 +116,19 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
         .filter(Boolean)
     );
 
-  /** Link an account-backed or guest judge to the heat, reusing existing judge records. */
+  /** Judge assigned to a specific lane of a heat, if any. */
+  const laneJudge = (heatId: string, lane: number) =>
+    (heatJudgesByHeat.get(heatId) ?? []).find((hj) => hj.lane_number === lane);
+
+  /** Link an account-backed or guest judge to the heat (optionally to one lane), reusing judge records. */
   const handleAddJudgeFromSearch = async (
     heatId: string,
-    sel: { userId: string | null; displayName: string }
+    sel: { userId: string | null; displayName: string },
+    laneNumber?: number | null
   ) => {
     const name = sel.displayName.trim();
     if (!name) return;
-    setSavingJudgeFor(heatId);
+    setSavingJudgeFor(laneNumber ? `${heatId}::${laneNumber}` : heatId);
     try {
       const existing = judges.find((j) =>
         sel.userId
@@ -135,12 +140,25 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
         (sel.userId
           ? await addJudge(competitionId, sel.userId)
           : await addGuestJudge(competitionId, name));
-      const alreadyOnHeat = (heatJudgesByHeat.get(heatId) ?? []).some((x) => x.judge_id === judge.id);
-      if (alreadyOnHeat) {
-        toast.info(`${name} is already on this heat`);
+
+      if (laneNumber) {
+        // One judge per lane — replace whoever is currently on it.
+        const current = laneJudge(heatId, laneNumber);
+        if (current?.judge_id === judge.id) {
+          toast.info(`${name} already judges lane ${laneNumber}`);
+        } else {
+          if (current) await unassignHeatJudge(current.id);
+          await assignHeatJudge(heatId, judge.id, laneNumber);
+          toast.success(`${name} judging lane ${laneNumber}`);
+        }
       } else {
-        await assignHeatJudge(heatId, judge.id);
-        toast.success(`${name} assigned to this heat`);
+        const alreadyOnHeat = (heatJudgesByHeat.get(heatId) ?? []).some((x) => x.judge_id === judge.id);
+        if (alreadyOnHeat) {
+          toast.info(`${name} is already on this heat`);
+        } else {
+          await assignHeatJudge(heatId, judge.id, null);
+          toast.success(`${name} assigned to this heat`);
+        }
       }
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["judges", competitionId] }),
@@ -152,6 +170,7 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
       setSavingJudgeFor(null);
     }
   };
+
 
 
   const handleUnassignJudge = async (id: string) => {
@@ -546,15 +565,14 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                       {/* Inline lane strip — team + judge per lane */}
                       {(() => {
                         const heatAssignments = assignmentsByHeat.get(heat.id) ?? [];
-                        const heatJs = heatJudgesByHeat.get(heat.id) ?? [];
                         if (heat.lane_count === 0) return null;
                         const lanes = Array.from({ length: heat.lane_count }, (_, i) => i + 1);
                         return (
                           <div className="px-4 pb-4 grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(180px, 1fr))` }}>
-                            {lanes.map((laneNum, idx) => {
+                            {lanes.map((laneNum) => {
                               const a = heatAssignments.find((x) => x.lane_number === laneNum);
                               const teamName = a ? teamNameById.get(a.team_id) : undefined;
-                              const hj = heatJs[idx % Math.max(heatJs.length, 1)];
+                              const hj = laneJudge(heat.id, laneNum);
                               const judge = hj ? (judges.find((j) => j.id === hj.judge_id)) : undefined;
                               const judgeName = judge ? judgeLabel(judge) : hj?.display_name;
                               return (
@@ -607,6 +625,9 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                               const j = judges.find((x) => x.id === hj.judge_id);
                               return (
                                 <Badge key={hj.id} variant="outline" className="text-[11px] gap-1 pr-1">
+                                  {hj.lane_number ? (
+                                    <span className="font-black text-primary">L{hj.lane_number}</span>
+                                  ) : null}
                                   {j ? judgeLabel(j) : hj.display_name || "Judge"}
                                   {canAdmin && (
                                     <button
@@ -719,6 +740,41 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                           teams={teams}
                           canAdmin={canAdmin}
                           excludeTeamIds={heat.workout_id ? teamsAssignedByWorkout.get(heat.workout_id) : undefined}
+                          renderLaneJudge={(lane) => {
+                            const hj = laneJudge(heat.id, lane);
+                            const j = hj ? judges.find((x) => x.id === hj.judge_id) : undefined;
+                            const name = j ? judgeLabel(j) : hj?.display_name;
+                            return (
+                              <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                                <Gavel className="h-3 w-3 text-muted-foreground shrink-0" />
+                                {name ? (
+                                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 gap-1">
+                                    {name}
+                                    {canAdmin && hj && (
+                                      <button
+                                        onClick={() => handleUnassignJudge(hj.id)}
+                                        className="text-muted-foreground hover:text-destructive"
+                                        aria-label={`Remove judge from lane ${lane}`}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    )}
+                                  </Badge>
+                                ) : canAdmin ? (
+                                  <JudgeSearchInput
+                                    competitionId={competitionId}
+                                    className="relative flex-1 min-w-[140px]"
+                                    disabled={savingJudgeFor === `${heat.id}::${lane}`}
+                                    assignedUserIds={assignedUserIdsFor(heat.id)}
+                                    assignedNames={assignedNamesFor(heat.id)}
+                                    onSelect={(sel) => handleAddJudgeFromSearch(heat.id, sel, lane)}
+                                  />
+                                ) : (
+                                  <span className="text-[10px] text-muted-foreground italic">No judge</span>
+                                )}
+                              </div>
+                            );
+                          }}
                         />
                       </div>
                     )}

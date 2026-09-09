@@ -1729,18 +1729,21 @@ export type Database = {
           heat_id: string
           id: string
           judge_id: string
+          lane_number: number | null
         }
         Insert: {
           created_at?: string
           heat_id: string
           id?: string
           judge_id: string
+          lane_number?: number | null
         }
         Update: {
           created_at?: string
           heat_id?: string
           id?: string
           judge_id?: string
+          lane_number?: number | null
         }
         Relationships: [
           {
