@@ -536,23 +536,49 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                             const assignedIds = new Set((heatJudgesByHeat.get(heat.id) ?? []).map((x) => x.judge_id));
                             const available = judges.filter((j) => !assignedIds.has(j.id));
                             return (
-                              <Select onValueChange={(v) => handleAssignJudge(heat.id, v)}>
-                                <SelectTrigger className="h-8 text-xs bg-background w-56">
-                                  <SelectValue placeholder="Assign judge…" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {available.length === 0 ? (
-                                    <SelectItem value="_none" disabled>No judges available</SelectItem>
-                                  ) : (
-                                    available.map((j) => (
-                                      <SelectItem key={j.id} value={j.id}>
-                                        {judgeLabel(j)}
-                                        {!j.user_id && <span className="ml-1 text-[9px] text-muted-foreground uppercase">guest</span>}
-                                      </SelectItem>
-                                    ))
-                                  )}
-                                </SelectContent>
-                              </Select>
+                              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                <Select value="" onValueChange={(v) => handleAssignJudge(heat.id, v)}>
+                                  <SelectTrigger className="h-8 text-xs bg-background w-full sm:w-56">
+                                    <SelectValue placeholder="Assign existing judge…" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {available.length === 0 ? (
+                                      <SelectItem value="_none" disabled>No judges available</SelectItem>
+                                    ) : (
+                                      available.map((j) => (
+                                        <SelectItem key={j.id} value={j.id}>
+                                          {judgeLabel(j)}
+                                          {!j.user_id && <span className="ml-1 text-[9px] text-muted-foreground uppercase">guest</span>}
+                                        </SelectItem>
+                                      ))
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                                <div className="flex gap-2">
+                                  <Input
+                                    value={judgeNameDrafts[heat.id] ?? ""}
+                                    onChange={(e) => setJudgeNameDrafts((p) => ({ ...p, [heat.id]: e.target.value }))}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        handleAddNamedJudge(heat.id);
+                                      }
+                                    }}
+                                    placeholder="Or type judge name…"
+                                    className="h-8 text-xs w-full sm:w-48"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 text-xs"
+                                    disabled={savingJudgeFor === heat.id || !(judgeNameDrafts[heat.id] ?? "").trim()}
+                                    onClick={() => handleAddNamedJudge(heat.id)}
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Add
+                                  </Button>
+                                </div>
+                              </div>
                             );
                           })()}
                         </div>
