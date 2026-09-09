@@ -763,6 +763,7 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                                 ) : canAdmin ? (
                                   <JudgeSearchInput
                                     competitionId={competitionId}
+                                    className="relative flex-1 min-w-[140px]"
                                     disabled={savingJudgeFor === `${heat.id}::${lane}`}
                                     assignedUserIds={assignedUserIdsFor(heat.id)}
                                     assignedNames={assignedNamesFor(heat.id)}
