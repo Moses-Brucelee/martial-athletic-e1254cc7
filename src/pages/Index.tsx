@@ -102,8 +102,9 @@ const Index = () => {
         {stats.length > 0 && (
           <section className="mx-auto w-full max-w-6xl px-4 sm:px-6">
             <div
-              className="grid grid-cols-2 divide-border rounded-lg border border-border bg-card sm:divide-x"
-              style={{ gridTemplateColumns: `repeat(${Math.min(stats.length, 2)}, minmax(0, 1fr))` }}
+              className={`grid grid-cols-2 divide-border rounded-lg border border-border bg-card sm:divide-x ${
+                stats.length >= 4 ? "sm:grid-cols-4" : stats.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"
+              }`}
             >
               {stats.map((s) => (
                 <div key={s.label} className="px-5 py-6 sm:px-7">
