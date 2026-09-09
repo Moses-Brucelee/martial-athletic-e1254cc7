@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useHeats, useAddHeat, useUpdateHeatStatus, useUpdateHeatSchedule, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
+import { useHeats, useAddHeat, useUpdateHeatStatus, useUpdateHeatSchedule, useRemoveHeat, useAllHeatAssignments } from "@/modules/tournaments/hooks-engine";
 import { useTeams, useWorkouts, useCompetition } from "@/modules/tournaments/hooks";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Play, CheckCircle2, Clock, Users, Flame, Lock, Gavel, X, Maximize2 } from "lucide-react";
+import { Plus, Play, CheckCircle2, Clock, Users, Flame, Lock, Gavel, X, Maximize2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { HeatLaneAssigner } from "./HeatLaneAssigner";
@@ -50,6 +50,21 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
   const addHeatMutation = useAddHeat();
   const updateStatusMutation = useUpdateHeatStatus();
   const updateScheduleMutation = useUpdateHeatSchedule();
+  const removeHeatMutation = useRemoveHeat();
+
+  const handleDeleteHeat = (heatId: string, heatNumber: number) => {
+    if (!window.confirm(`Delete Heat #${heatNumber}? Lane assignments and judge links for this heat will be removed. This cannot be undone.`)) return;
+    removeHeatMutation.mutate(
+      { heatId, competitionId },
+      {
+        onSuccess: () => {
+          toast.success(`Heat #${heatNumber} deleted`);
+          setExpandedHeatId((prev) => (prev === heatId ? null : prev));
+        },
+        onError: (err) => toast.error((err as Error).message),
+      }
+    );
+  };
 
   const qc = useQueryClient();
 
