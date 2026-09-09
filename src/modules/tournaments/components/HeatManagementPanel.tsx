@@ -80,6 +80,38 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
       toast.error((err as Error).message);
     }
   };
+  const [judgeNameDrafts, setJudgeNameDrafts] = useState<Record<string, string>>({});
+  const [savingJudgeFor, setSavingJudgeFor] = useState<string | null>(null);
+
+  /** Create (or reuse) a named judge on this competition and link them to the heat. */
+  const handleAddNamedJudge = async (heatId: string) => {
+    const name = (judgeNameDrafts[heatId] ?? "").trim();
+    if (!name) return;
+    setSavingJudgeFor(heatId);
+    try {
+      const existing = judges.find(
+        (j) => (j.display_name ?? "").trim().toLowerCase() === name.toLowerCase()
+      );
+      const judge = existing ?? (await addGuestJudge(competitionId, name));
+      const alreadyOnHeat = (heatJudgesByHeat.get(heatId) ?? []).some((x) => x.judge_id === judge.id);
+      if (alreadyOnHeat) {
+        toast.info(`${name} is already on this heat`);
+      } else {
+        await assignHeatJudge(heatId, judge.id);
+        toast.success(`${name} assigned to this heat`);
+      }
+      setJudgeNameDrafts((p) => ({ ...p, [heatId]: "" }));
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["judges", competitionId] }),
+        qc.invalidateQueries({ queryKey: ["heat-judges", competitionId] }),
+      ]);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSavingJudgeFor(null);
+    }
+  };
+
   const handleUnassignJudge = async (id: string) => {
     try {
       await unassignHeatJudge(id);
