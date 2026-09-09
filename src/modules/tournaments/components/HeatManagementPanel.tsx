@@ -24,7 +24,7 @@ import { HeatLaneAssigner } from "./HeatLaneAssigner";
 import { AutoHeatGenerator } from "./AutoHeatGenerator";
 import { HeatSheetWhiteboard } from "./HeatSheetWhiteboard";
 import { getWorkoutColor } from "@/lib/workoutColors";
-import { fetchJudges } from "@/data/judges";
+import { fetchJudges, addGuestJudge } from "@/data/judges";
 import { fetchHeatJudges, assignHeatJudge, unassignHeatJudge } from "@/data/heatJudges";
 
 interface HeatManagementPanelProps {
@@ -80,6 +80,38 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
       toast.error((err as Error).message);
     }
   };
+  const [judgeNameDrafts, setJudgeNameDrafts] = useState<Record<string, string>>({});
+  const [savingJudgeFor, setSavingJudgeFor] = useState<string | null>(null);
+
+  /** Create (or reuse) a named judge on this competition and link them to the heat. */
+  const handleAddNamedJudge = async (heatId: string) => {
+    const name = (judgeNameDrafts[heatId] ?? "").trim();
+    if (!name) return;
+    setSavingJudgeFor(heatId);
+    try {
+      const existing = judges.find(
+        (j) => (j.display_name ?? "").trim().toLowerCase() === name.toLowerCase()
+      );
+      const judge = existing ?? (await addGuestJudge(competitionId, name));
+      const alreadyOnHeat = (heatJudgesByHeat.get(heatId) ?? []).some((x) => x.judge_id === judge.id);
+      if (alreadyOnHeat) {
+        toast.info(`${name} is already on this heat`);
+      } else {
+        await assignHeatJudge(heatId, judge.id);
+        toast.success(`${name} assigned to this heat`);
+      }
+      setJudgeNameDrafts((p) => ({ ...p, [heatId]: "" }));
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["judges", competitionId] }),
+        qc.invalidateQueries({ queryKey: ["heat-judges", competitionId] }),
+      ]);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSavingJudgeFor(null);
+    }
+  };
+
   const handleUnassignJudge = async (id: string) => {
     try {
       await unassignHeatJudge(id);
@@ -536,23 +568,49 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                             const assignedIds = new Set((heatJudgesByHeat.get(heat.id) ?? []).map((x) => x.judge_id));
                             const available = judges.filter((j) => !assignedIds.has(j.id));
                             return (
-                              <Select onValueChange={(v) => handleAssignJudge(heat.id, v)}>
-                                <SelectTrigger className="h-8 text-xs bg-background w-56">
-                                  <SelectValue placeholder="Assign judge…" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {available.length === 0 ? (
-                                    <SelectItem value="_none" disabled>No judges available</SelectItem>
-                                  ) : (
-                                    available.map((j) => (
-                                      <SelectItem key={j.id} value={j.id}>
-                                        {judgeLabel(j)}
-                                        {!j.user_id && <span className="ml-1 text-[9px] text-muted-foreground uppercase">guest</span>}
-                                      </SelectItem>
-                                    ))
-                                  )}
-                                </SelectContent>
-                              </Select>
+                              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                <Select value="" onValueChange={(v) => handleAssignJudge(heat.id, v)}>
+                                  <SelectTrigger className="h-8 text-xs bg-background w-full sm:w-56">
+                                    <SelectValue placeholder="Assign existing judge…" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {available.length === 0 ? (
+                                      <SelectItem value="_none" disabled>No judges available</SelectItem>
+                                    ) : (
+                                      available.map((j) => (
+                                        <SelectItem key={j.id} value={j.id}>
+                                          {judgeLabel(j)}
+                                          {!j.user_id && <span className="ml-1 text-[9px] text-muted-foreground uppercase">guest</span>}
+                                        </SelectItem>
+                                      ))
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                                <div className="flex gap-2">
+                                  <Input
+                                    value={judgeNameDrafts[heat.id] ?? ""}
+                                    onChange={(e) => setJudgeNameDrafts((p) => ({ ...p, [heat.id]: e.target.value }))}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        handleAddNamedJudge(heat.id);
+                                      }
+                                    }}
+                                    placeholder="Or type judge name…"
+                                    className="h-8 text-xs w-full sm:w-48"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 text-xs"
+                                    disabled={savingJudgeFor === heat.id || !(judgeNameDrafts[heat.id] ?? "").trim()}
+                                    onClick={() => handleAddNamedJudge(heat.id)}
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Add
+                                  </Button>
+                                </div>
+                              </div>
                             );
                           })()}
                         </div>
