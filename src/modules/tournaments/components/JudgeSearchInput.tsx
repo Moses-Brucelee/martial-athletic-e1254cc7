@@ -15,6 +15,7 @@ interface JudgeSearchInputProps {
   /** lowercase display names already judging this heat. */
   assignedNames: Set<string>;
   disabled?: boolean;
+  className?: string;
   onSelect: (selection: JudgeSearchSelection) => void | Promise<void>;
 }
 
@@ -23,6 +24,7 @@ export function JudgeSearchInput({
   assignedUserIds,
   assignedNames,
   disabled,
+  className,
   onSelect,
 }: JudgeSearchInputProps) {
   const [value, setValue] = useState("");
@@ -75,7 +77,7 @@ export function JudgeSearchInput({
   const firstFree = results.find((r) => !assignedUserIds.has(r.user_id));
 
   return (
-    <div ref={wrapRef} className="relative w-full sm:w-72">
+    <div ref={wrapRef} className={className ?? "relative w-full sm:w-72"}>
       <div className="relative">
         <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
