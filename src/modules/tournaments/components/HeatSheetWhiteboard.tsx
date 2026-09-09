@@ -84,7 +84,7 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
     return m;
   }, [registrations]);
 
-  // Build [division → workout → heats] structure
+  // Build a single board: [workout → heats], lanes hold every division together
   const grouped = useMemo(() => {
     const assignmentByHeat = new Map<string, typeof assignments>();
     for (const a of assignments) {
@@ -92,59 +92,60 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
       assignmentByHeat.get(a.heat_id)!.push(a);
     }
 
-    type Row = { heat: (typeof heats)[number]; lanes: Map<number, string> };
-    const structure = new Map<string /* divisionId or _all */, Map<string /* workoutId */, Row[]>>();
+    type Entry = { label: string; divisionId: string };
+    type Row = { heat: (typeof heats)[number]; lanes: Map<number, Entry> };
+    const byWorkout = new Map<string /* workoutId */, Row[]>();
 
     for (const heat of heats) {
       const wid = heat.workout_id || "_unassigned";
       const heatAssignments = [...(assignmentByHeat.get(heat.id) ?? [])].sort(
         (a, b) => (a.lane_number ?? 9999) - (b.lane_number ?? 9999),
       );
-      const laneByDiv = new Map<string, Map<number, string>>();
-      // Track next free lane per division for assignments without an explicit lane
-      const nextFree = new Map<string, number>();
+
+      const lanes = new Map<number, Entry>();
+      let nextFree = 1;
 
       for (const a of heatAssignments) {
         const team = a.team_id ? teamById.get(a.team_id) : undefined;
         const athlete = a.athlete_registration_id ? athleteById.get(a.athlete_registration_id) : undefined;
         const label = team?.team_name || athlete?.athlete_name || "—";
-        const divId = team?.division_id || (athlete as any)?.division_id || "_nodiv";
-        if (!laneByDiv.has(divId)) laneByDiv.set(divId, new Map());
-        const lanes = laneByDiv.get(divId)!;
+        const divisionId = team?.division_id || (athlete as any)?.division_id || "_nodiv";
 
         let lane = a.lane_number ?? 0;
         if (!lane || lanes.has(lane)) {
-          // fall back to the first unoccupied lane for this division
-          let candidate = nextFree.get(divId) ?? 1;
+          let candidate = nextFree;
           while (lanes.has(candidate)) candidate += 1;
           lane = candidate;
         }
-        nextFree.set(divId, lane + 1);
-        lanes.set(lane, label);
+        nextFree = lane + 1;
+        lanes.set(lane, { label, divisionId });
       }
 
-      if (laneByDiv.size === 0) laneByDiv.set("_nodiv", new Map());
-
-      for (const [divId, lanes] of laneByDiv) {
-        if (!structure.has(divId)) structure.set(divId, new Map());
-        const byW = structure.get(divId)!;
-        if (!byW.has(wid)) byW.set(wid, []);
-        byW.get(wid)!.push({ heat, lanes });
-      }
+      if (!byWorkout.has(wid)) byWorkout.set(wid, []);
+      byWorkout.get(wid)!.push({ heat, lanes });
     }
 
-    // Sort heats within each workout by heat_number
-    for (const byW of structure.values()) {
-      for (const rows of byW.values()) rows.sort((a, b) => a.heat.heat_number - b.heat.heat_number);
-    }
-    return structure;
+    for (const rows of byWorkout.values()) rows.sort((a, b) => a.heat.heat_number - b.heat.heat_number);
+    return byWorkout;
   }, [heats, assignments, teamById, athleteById]);
 
-  const visibleDivisions = useMemo(() => {
-    const ids = Array.from(grouped.keys());
-    if (selectedDivision === "all") return ids;
-    return ids.filter((d) => d === selectedDivision);
+  // Division filter narrows which lane entries are highlighted/kept, but never splits the board
+  const visibleWorkouts = useMemo(() => {
+    const entries = Array.from(grouped.entries());
+    if (selectedDivision === "all") return entries;
+    return entries
+      .map(([wid, rows]) => {
+        const filtered = rows
+          .map((r) => ({
+            heat: r.heat,
+            lanes: new Map(Array.from(r.lanes.entries()).filter(([, e]) => e.divisionId === selectedDivision)),
+          }))
+          .filter((r) => r.lanes.size > 0);
+        return [wid, filtered] as const;
+      })
+      .filter(([, rows]) => rows.length > 0);
   }, [grouped, selectedDivision]);
+
 
   const handleDownload = async (format: "png" | "jpeg") => {
     if (!boardRef.current) return;
