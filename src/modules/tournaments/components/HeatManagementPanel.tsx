@@ -586,30 +586,13 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                                     )}
                                   </SelectContent>
                                 </Select>
-                                <div className="flex gap-2">
-                                  <Input
-                                    value={judgeNameDrafts[heat.id] ?? ""}
-                                    onChange={(e) => setJudgeNameDrafts((p) => ({ ...p, [heat.id]: e.target.value }))}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        handleAddNamedJudge(heat.id);
-                                      }
-                                    }}
-                                    placeholder="Or type judge name…"
-                                    className="h-8 text-xs w-full sm:w-48"
-                                  />
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-8 text-xs"
-                                    disabled={savingJudgeFor === heat.id || !(judgeNameDrafts[heat.id] ?? "").trim()}
-                                    onClick={() => handleAddNamedJudge(heat.id)}
-                                  >
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    Add
-                                  </Button>
-                                </div>
+                                <JudgeSearchInput
+                                  competitionId={competitionId}
+                                  disabled={savingJudgeFor === heat.id}
+                                  assignedUserIds={assignedUserIdsFor(heat.id)}
+                                  assignedNames={assignedNamesFor(heat.id)}
+                                  onSelect={(sel) => handleAddJudgeFromSearch(heat.id, sel)}
+                                />
                               </div>
                             );
                           })()}
