@@ -171,8 +171,6 @@ const Index = () => {
           </div>
         </section>
 
-        <PricingSection />
-
         {/* Closing */}
         <section className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6 sm:pb-24">
           <div className="flex flex-col items-start gap-6 rounded-lg border border-primary/40 bg-card p-7 sm:p-10 lg:flex-row lg:items-center lg:justify-between">
