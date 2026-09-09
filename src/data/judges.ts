@@ -131,3 +131,78 @@ export async function findUserByEmail(email: string): Promise<{ user_id: string;
   if (error) throw error;
   return data;
 }
+
+export interface JudgeCandidate {
+  user_id: string;
+  display_name: string;
+  source: "Athlete" | "Gym member";
+}
+
+/**
+ * Search people connected to a competition: registered athletes with accounts
+ * plus members of the competition's affiliate gym. Deduplicated by user_id.
+ */
+export async function searchJudgeCandidates(
+  competitionId: string,
+  query: string
+): Promise<JudgeCandidate[]> {
+  const q = query.trim();
+  if (q.length < 3) return [];
+
+  const { data: comp } = await supabase
+    .from("competitions")
+    .select("gym_id")
+    .eq("id", competitionId)
+    .maybeSingle();
+  const gymId = (comp as any)?.gym_id ?? null;
+
+  const results: JudgeCandidate[] = [];
+  const seen = new Set<string>();
+
+  // 1) Registered athletes with accounts
+  try {
+    const athletes = await searchRegisteredUsers(competitionId, q);
+    for (const a of athletes) {
+      if (!a.user_id || seen.has(a.user_id)) continue;
+      seen.add(a.user_id);
+      results.push({
+        user_id: a.user_id,
+        display_name: a.display_name || a.athlete_name,
+        source: "Athlete",
+      });
+    }
+  } catch {
+    /* ignore — gym members may still match */
+  }
+
+  // 2) Members of the competition's affiliate gym
+  if (gymId) {
+    try {
+      const { data: members } = await supabase
+        .from("gym_members")
+        .select("user_id")
+        .eq("gym_id", gymId);
+      const profileIds = Array.from(
+        new Set(((members ?? []) as any[]).map((m) => m.user_id).filter(Boolean))
+      );
+      if (profileIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("public_profiles")
+          .select("id, user_id, display_name, full_name")
+          .in("id", profileIds);
+        for (const p of ((profs ?? []) as any[])) {
+          const name: string = p.display_name || p.full_name || "";
+          if (!p.user_id || !name) continue;
+          if (!name.toLowerCase().includes(q.toLowerCase())) continue;
+          if (seen.has(p.user_id)) continue;
+          seen.add(p.user_id);
+          results.push({ user_id: p.user_id, display_name: name, source: "Gym member" });
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return results.slice(0, 8);
+}
