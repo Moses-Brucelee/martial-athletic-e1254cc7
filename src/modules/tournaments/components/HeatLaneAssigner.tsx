@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useHeatAssignments, useAssignTeamToHeat, useAssignAthleteToHeat } from "@/modules/tournaments/hooks-engine";
 import { removeHeatAssignment } from "@/modules/tournaments/api-engine";
 import { Button } from "@/components/ui/button";
@@ -58,9 +58,11 @@ interface HeatLaneAssignerProps {
   canAdmin: boolean;
   /** Team IDs already assigned to other heats in the same workout — they are hidden from the dropdown. */
   excludeTeamIds?: Set<string>;
+  /** Optional per-lane judge UI rendered under each lane. */
+  renderLaneJudge?: (lane: number) => ReactNode;
 }
 
-export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canAdmin, excludeTeamIds }: HeatLaneAssignerProps) {
+export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canAdmin, excludeTeamIds, renderLaneJudge }: HeatLaneAssignerProps) {
   const { data: assignments = [], isLoading } = useHeatAssignments(heatId);
   const { data: registrations = [] } = useRegistrations(competitionId);
   const assignMutation = useAssignTeamToHeat();
@@ -204,10 +206,12 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
                       )}
                     </div>
                   )}
+                  {renderLaneJudge?.(lane)}
                 </div>
               ) : canAdmin ? (
+                <div className="flex-1 min-w-0">
                 <Select onValueChange={(value) => handleAssign(lane, value)}>
-                  <SelectTrigger className="h-7 text-xs bg-background border-dashed flex-1">
+                  <SelectTrigger className="h-7 text-xs bg-background border-dashed w-full">
                     <span className="text-muted-foreground">Assign team or athlete…</span>
                   </SelectTrigger>
                   <SelectContent>
@@ -250,7 +254,8 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
                     )}
                   </SelectContent>
                 </Select>
-
+                {renderLaneJudge?.(lane)}
+                </div>
               ) : (
                 <span className="text-xs text-muted-foreground italic">Empty</span>
               )}
