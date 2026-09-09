@@ -5,7 +5,6 @@ import logoWide from "@/assets/martial-athletic-logo-wide.png";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import { SEO } from "@/components/SEO";
 import { LandingNav } from "@/components/landing/LandingNav";
-import { PricingSection } from "@/components/landing/PricingSection";
 import { useLandingStats } from "@/components/landing/useLandingData";
 
 const FEATURES = [
