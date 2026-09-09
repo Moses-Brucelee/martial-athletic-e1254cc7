@@ -580,10 +580,15 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
                           <div className="px-4 pb-4 grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(180px, 1fr))` }}>
                             {lanes.map((laneNum) => {
                               const a = heatAssignments.find((x) => x.lane_number === laneNum);
-                              const teamName = a ? teamNameById.get(a.team_id) : undefined;
+                              const occupant = a
+                                ? (a.team_id ? teamNameById.get(a.team_id) : undefined) ??
+                                  ((a as any).athlete_registration_id
+                                    ? athleteNameById.get((a as any).athlete_registration_id)
+                                    : undefined)
+                                : undefined;
                               const hj = laneJudge(heat.id, laneNum);
                               const judge = hj ? (judges.find((j) => j.id === hj.judge_id)) : undefined;
-                              const judgeName = judge ? judgeLabel(judge) : hj?.display_name;
+                              const judgeName = (judge ? judgeLabel(judge) : hj?.display_name?.trim()) || "";
                               return (
                                 <div
                                   key={laneNum}
