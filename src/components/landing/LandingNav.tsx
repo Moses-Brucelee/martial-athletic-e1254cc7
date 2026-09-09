@@ -5,7 +5,6 @@ import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 const LINKS = [
   { href: "#features", label: "Features" },
   { href: "#how-it-runs", label: "How it runs" },
-  { href: "#pricing", label: "Pricing" },
 ];
 
 export function LandingNav() {
