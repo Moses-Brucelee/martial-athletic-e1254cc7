@@ -5,7 +5,6 @@ import logoWide from "@/assets/martial-athletic-logo-wide.png";
 import logoCompact from "@/assets/martial-athletic-logo-compact.png";
 import { SEO } from "@/components/SEO";
 import { LandingNav } from "@/components/landing/LandingNav";
-import { PricingSection } from "@/components/landing/PricingSection";
 import { useLandingStats } from "@/components/landing/useLandingData";
 
 const FEATURES = [
@@ -82,7 +81,6 @@ const Index = () => {
             </div>
 
             <p className="mt-5 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              Free to join ·{" "}
               <button onClick={() => navigate("/tutorial")} className="underline hover:text-foreground">
                 See how it works
               </button>
@@ -172,8 +170,6 @@ const Index = () => {
             </ol>
           </div>
         </section>
-
-        <PricingSection />
 
         {/* Closing */}
         <section className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6 sm:pb-24">
