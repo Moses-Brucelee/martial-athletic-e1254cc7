@@ -271,7 +271,8 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
                         </td>
                         {laneColumns.map((n) => {
                           const entry = laneMap.get(n);
-                          const judge = laneJudgeName.get(`${heat.id}::${n}`) ?? spare[(n - 1) % Math.max(spare.length, 1)];
+                          // Lane-specific judge only — never borrow another lane's or heat's judge.
+                          const judge = laneJudgeName.get(`${heat.id}::${n}`);
                           const divLabel = entry
                             ? entry.divisionId === "_nodiv"
                               ? ""
@@ -279,25 +280,22 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
                             : "";
                           return (
                             <td key={n} className="py-3 px-3 text-center align-middle">
-                              {entry ? (
-                                <div className="flex flex-col items-center leading-tight">
-                                  <span className="text-xs md:text-sm font-black uppercase tracking-wider" style={{ color: color.text }}>
-                                    {entry.label}
+                              <div className="flex flex-col items-center leading-tight">
+                                <span
+                                  className="text-xs md:text-sm font-black uppercase tracking-wider"
+                                  style={{ color: entry ? color.text : undefined }}
+                                >
+                                  {entry ? entry.label : <span className="text-muted-foreground/60">Unassigned</span>}
+                                </span>
+                                {divLabel && (
+                                  <span className="mt-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-muted text-muted-foreground">
+                                    {divLabel}
                                   </span>
-                                  {divLabel && (
-                                    <span className="mt-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-muted text-muted-foreground">
-                                      {divLabel}
-                                    </span>
-                                  )}
-                                  {judge && (
-                                    <span className="text-[9px] font-semibold uppercase text-muted-foreground mt-0.5">
-                                      Judge: {judge}
-                                    </span>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-xs text-muted-foreground/40">—</span>
-                              )}
+                                )}
+                                <span className="text-[9px] font-semibold uppercase text-muted-foreground mt-0.5">
+                                  Judge: {judge || "Unassigned"}
+                                </span>
+                              </div>
                             </td>
                           );
                         })}
