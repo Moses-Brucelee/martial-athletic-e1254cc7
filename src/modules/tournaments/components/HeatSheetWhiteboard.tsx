@@ -78,18 +78,6 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
     return m;
   }, [heatJudges, judges]);
 
-  const unlanedJudges = useMemo(() => {
-    const m = new Map<string, string[]>();
-    for (const hj of heatJudges) {
-      if (hj.lane_number) continue;
-      const j = judges.find((x) => x.id === hj.judge_id);
-      const name = j?.display_name?.trim() || hj.display_name?.trim() || "";
-      if (!name) continue;
-      if (!m.has(hj.heat_id)) m.set(hj.heat_id, []);
-      m.get(hj.heat_id)!.push(name);
-    }
-    return m;
-  }, [heatJudges, judges]);
 
   const athleteById = useMemo(() => {
     const m = new Map<string, (typeof registrations)[number]>();
