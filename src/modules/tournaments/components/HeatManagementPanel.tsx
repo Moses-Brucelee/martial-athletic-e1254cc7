@@ -231,6 +231,13 @@ export function HeatManagementPanel({ competitionId, canAdmin }: HeatManagementP
     return m;
   }, [teams]);
 
+  /** Registration id → athlete name, for solo lane assignments. */
+  const athleteNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of registrations) m.set(r.id, r.athlete_name);
+    return m;
+  }, [registrations]);
+
   const workoutMap = useMemo(() => {
     const m = new Map<string, string>();
     for (const w of workouts) m.set(w.id, w.name || `WOD #${w.workout_number}`);
