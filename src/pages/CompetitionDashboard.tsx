@@ -103,7 +103,7 @@ export default function CompetitionDashboard() {
   const { data: scores = [], isLoading: scoresLoading } = useScores(id);
   const isMobile = useIsMobile();
   const [activeOwnerTab, setActiveOwnerTab] = useState<CompetitionWorkflowSection | null>(null);
-  const [publishRequest, setPublishRequest] = useState(0);
+  const [statusActionRequest, setStatusActionRequest] = useState(0);
   const ownerNavRef = useRef<HTMLDivElement>(null);
 
   const canAdmin = V1_FULL_ACCESS ? (isOwner || isSuperUser) : (isOwner || isSuperUser);
@@ -141,21 +141,22 @@ export default function CompetitionDashboard() {
     heatCount: heats.length,
     completedScoreCount,
   });
+  const workflowLoading = workoutsLoading || divisionsLoading || teamsLoading || registrationsLoading || heatsLoading || scoresLoading;
 
   useEffect(() => {
-    if (activeOwnerTab) return;
+    if (activeOwnerTab || workflowLoading) return;
     const aliases: Record<string, CompetitionWorkflowSection> = { command: "overview", setup: "overview", scores: "scoring" };
     const requested = tabFromUrl ? aliases[tabFromUrl] ?? tabFromUrl : null;
     const validRequested = OWNER_WORKFLOW.some((item) => item.value === requested) ? requested as CompetitionWorkflowSection : null;
     setActiveOwnerTab(validRequested ?? recommendation.section);
-  }, [activeOwnerTab, tabFromUrl, recommendation.section]);
+  }, [activeOwnerTab, tabFromUrl, recommendation.section, workflowLoading]);
 
   useEffect(() => {
     if (!activeOwnerTab || !ownerNavRef.current) return;
     ownerNavRef.current.querySelector<HTMLElement>(`[data-value="${activeOwnerTab}"]`)?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
   }, [activeOwnerTab]);
 
-  if (profileLoading || compLoading || roleLoading || settingsLoading || workoutsLoading || divisionsLoading || teamsLoading || registrationsLoading || heatsLoading || scoresLoading) {
+  if (profileLoading || compLoading || roleLoading || settingsLoading || workflowLoading) {
     return (
       <div className="min-h-dvh bg-background">
         <Skeleton className="h-14 w-full" />
@@ -398,7 +399,7 @@ export default function CompetitionDashboard() {
   };
 
   const renderTabs = () => {
-    if (effectiveCanAdmin) return renderOwnerTabs();
+    if (canAdmin) return renderOwnerTabs();
     if (isJudge) return renderJudgeTabs();
     return renderViewerTabs();
   };
@@ -436,17 +437,24 @@ export default function CompetitionDashboard() {
               <p className="text-sm font-bold text-foreground">{recommendation.label}</p>
               <p className="text-xs text-muted-foreground">Recommended from the competition’s current progress.</p>
             </div>
-            <Button
-              size="sm"
-              className="shrink-0 gap-1.5"
-              onClick={() => recommendation.action === "publish" ? setPublishRequest((value) => value + 1) : setActiveOwnerTab(recommendation.section)}
-            >
-              {recommendation.actionLabel}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                className="gap-1.5"
+                onClick={() => recommendation.action === "publish" ? setStatusActionRequest((value) => value + 1) : setActiveOwnerTab(recommendation.section)}
+              >
+                {recommendation.actionLabel}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              {recommendation.action !== "publish" && (derivedStatus === "published" || derivedStatus === "live") && (
+                <Button size="sm" variant="outline" onClick={() => setStatusActionRequest((value) => value + 1)}>
+                  {derivedStatus === "published" ? "Go Live" : "Mark Completed"}
+                </Button>
+              )}
+            </div>
           </div>
         )}
-        <CompetitionStatusActions competitionId={id!} currentStatus={derivedStatus} canAdmin={canAdmin} compact openRequest={publishRequest} />
+        <CompetitionStatusActions competitionId={id!} currentStatus={derivedStatus} canAdmin={canAdmin} compact openRequest={statusActionRequest} />
 
         {compError && (
           <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-destructive/10 border border-destructive/20">
