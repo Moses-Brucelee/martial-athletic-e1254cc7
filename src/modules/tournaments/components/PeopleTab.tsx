@@ -1,16 +1,14 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Users, Gavel, Flame, Users2 } from "lucide-react";
+import { Users, Gavel, Users2 } from "lucide-react";
 import { UnifiedAthleteTable } from "@/modules/tournaments/components/UnifiedAthleteTable";
 import { TeamsListView } from "@/modules/tournaments/components/TeamsListView";
-import { HeatManagementPanel } from "@/modules/tournaments/components/HeatManagementPanel";
 import { JudgesPanel as OriginalJudgesPanel } from "@/components/competition/JudgesPanel";
 import { ShareCompetitionMenu } from "@/components/competition/ShareCompetitionMenu";
 import { useJudges } from "@/modules/admin/hooks";
 import { useRegistrations } from "@/modules/athletes/hooks";
 import { useTeams, useCompetition, useDivisions } from "@/modules/tournaments/hooks";
-import { useHeats } from "@/modules/tournaments/hooks-engine";
 import type { CompetitionStatus } from "@/modules/tournaments/stateMachine";
 
 interface PeopleTabProps {
@@ -40,7 +38,6 @@ function JudgesPanelWrapper({ competitionId, canAdmin }: { competitionId: string
 export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabProps) {
   const { data: registrations = [] } = useRegistrations(competitionId);
   const { data: teams = [] } = useTeams(competitionId);
-  const { data: heats = [] } = useHeats(competitionId);
   const { data: competition } = useCompetition(competitionId);
   const { data: divisions = [] } = useDivisions(competitionId);
 
@@ -75,9 +72,9 @@ export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabP
         </div>
       )}
 
-      {/* Inner tabs — Athletes, Teams, Judges, Heats */}
+      {/* People management stays together; heat planning lives in the main Heats section. */}
       <Tabs defaultValue="athletes" className="w-full">
-        <TabsList className={`w-full grid ${teamsEnabled ? "grid-cols-4" : "grid-cols-3"} h-10`}>
+        <TabsList className={`w-full grid ${teamsEnabled ? "grid-cols-3" : "grid-cols-2"} h-10`}>
           <TabsTrigger value="athletes" className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Users className="h-3.5 w-3.5 hidden sm:block" />
             Athletes
@@ -94,11 +91,6 @@ export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabP
             <Gavel className="h-3.5 w-3.5 hidden sm:block" />
             Judges
           </TabsTrigger>
-          <TabsTrigger value="heats" className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <Flame className="h-3.5 w-3.5 hidden sm:block" />
-            Heats
-            <Badge variant="outline" className="ml-1 h-5 px-1.5 text-[10px] bg-background">{heats.length}</Badge>
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="athletes" className="mt-4">
@@ -114,10 +106,6 @@ export function PeopleTab({ competitionId, canAdmin, derivedStatus }: PeopleTabP
 
         <TabsContent value="judges" className="mt-4">
           <JudgesPanelWrapper competitionId={competitionId} canAdmin={canAdmin} />
-        </TabsContent>
-
-        <TabsContent value="heats" className="mt-4">
-          <HeatManagementPanel competitionId={competitionId} canAdmin={canAdmin} />
         </TabsContent>
       </Tabs>
     </div>

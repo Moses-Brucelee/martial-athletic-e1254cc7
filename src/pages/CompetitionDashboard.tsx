@@ -4,17 +4,17 @@ import { useProfile } from "@/hooks/useProfile";
 import { useCompetitionRole } from "@/hooks/useCompetitionRole";
 import { useSuperUserAccess } from "@/hooks/useSuperUserAccess";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useCompetition } from "@/modules/tournaments/hooks";
-import { useCompetitionSettings } from "@/modules/tournaments/hooks-engine";
+import { useCompetition, useDivisions, useTeams, useWorkouts } from "@/modules/tournaments/hooks";
+import { useCompetitionSettings, useHeats } from "@/modules/tournaments/hooks-engine";
 import { CompetitionSettingsPanel } from "@/modules/tournaments/components/CompetitionSettingsPanel";
 
 import { CompetitionHeader } from "@/components/CompetitionHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Lock } from "lucide-react";
+import { AlertCircle, ArrowRight, Lock } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { deriveStatus, isMutable, getStatusLabel } from "@/modules/tournaments/stateMachine";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
@@ -52,6 +52,9 @@ import { SaveAsTemplate } from "@/modules/tournaments/components/SaveAsTemplate"
 // Lazy wrapper for JudgesPanel (used in Advanced mode only)
 import { JudgesPanel as OriginalJudgesPanel } from "@/components/competition/JudgesPanel";
 import { useJudges } from "@/modules/admin/hooks";
+import { useRegistrations } from "@/modules/athletes/hooks";
+import { useScores } from "@/modules/scoring/hooks";
+import { getCompetitionWorkflowRecommendation, type CompetitionWorkflowSection } from "@/modules/tournaments/competitionWorkflow";
 function JudgesPanelLazy({ competitionId, canAdmin }: { competitionId: string; canAdmin: boolean }) {
   const { data: judges = [] } = useJudges(competitionId);
   const [localJudges, setLocalJudges] = useState(judges);
@@ -70,42 +73,14 @@ function JudgesPanelLazy({ competitionId, canAdmin }: { competitionId: string; c
   );
 }
 
-// ── Quick Mode Status-Driven Tabs ─────────────────────────────────────
-
-function getQuickModeTabs(status: CompetitionStatus): { value: string; label: string }[] {
-  switch (status) {
-    case "draft":
-      return [
-        { value: "setup", label: "Setup" },
-        { value: "workouts", label: "Workouts" },
-      ];
-    case "published":
-      return [
-        { value: "setup", label: "Setup" },
-        { value: "workouts", label: "Workouts" },
-        { value: "people", label: "People" },
-      ];
-    case "live":
-      return [
-        { value: "command", label: "Command" },
-        { value: "scores", label: "Scores" },
-        { value: "leaderboard", label: "Leaderboard" },
-        { value: "people", label: "People" },
-        { value: "workouts", label: "Workouts" },
-      ];
-    case "completed":
-    case "expired":
-      return [
-        { value: "leaderboard", label: "Leaderboard" },
-        { value: "people", label: "People" },
-      ];
-    default:
-      return [
-        { value: "setup", label: "Setup" },
-        { value: "workouts", label: "Workouts" },
-      ];
-  }
-}
+const OWNER_WORKFLOW: { value: CompetitionWorkflowSection; label: string }[] = [
+  { value: "overview", label: "Overview" },
+  { value: "workouts", label: "Workouts" },
+  { value: "people", label: "People" },
+  { value: "heats", label: "Heats" },
+  { value: "scoring", label: "Scoring" },
+  { value: "leaderboard", label: "Leaderboard" },
+];
 
 export default function CompetitionDashboard() {
   const { id } = useParams<{ id: string }>();
@@ -120,7 +95,16 @@ export default function CompetitionDashboard() {
   const showRoster = tierKey !== "free" || isSuperUser;
   const { data: competition, isLoading: compLoading, error: compError, refetch: refetchComp } = useCompetition(id);
   const { data: settings, isLoading: settingsLoading } = useCompetitionSettings(id);
+  const { data: workouts = [], isLoading: workoutsLoading } = useWorkouts(id);
+  const { data: divisions = [], isLoading: divisionsLoading } = useDivisions(id);
+  const { data: teams = [], isLoading: teamsLoading } = useTeams(id);
+  const { data: registrations = [], isLoading: registrationsLoading } = useRegistrations(id);
+  const { data: heats = [], isLoading: heatsLoading } = useHeats(id);
+  const { data: scores = [], isLoading: scoresLoading } = useScores(id);
   const isMobile = useIsMobile();
+  const [activeOwnerTab, setActiveOwnerTab] = useState<CompetitionWorkflowSection | null>(null);
+  const [statusActionRequest, setStatusActionRequest] = useState(0);
+  const ownerNavRef = useRef<HTMLDivElement>(null);
 
   const canAdmin = V1_FULL_ACCESS ? (isOwner || isSuperUser) : (isOwner || isSuperUser);
   const canScore = V1_FULL_ACCESS ? (isOwner || isJudge || isSuperUser) : (isOwner || isJudge || isSuperUser);
@@ -135,7 +119,50 @@ export default function CompetitionDashboard() {
 
   const isQuickMode = settings?.setup_mode === "quick";
 
-  if (profileLoading || compLoading || roleLoading || settingsLoading) {
+  const approvedRegistrations = useMemo(
+    () => registrations.filter((registration) => registration.status === "approved" || registration.status === "confirmed"),
+    [registrations],
+  );
+  const teamDivisionIds = useMemo(
+    () => new Set(divisions.filter((division) => Number(division.team_size ?? 1) > 1).map((division) => division.id)),
+    [divisions],
+  );
+  const eligibleTeamCount = teams.filter((team) => team.division_id && teamDivisionIds.has(team.division_id)).length;
+  const eligibleSoloCount = approvedRegistrations.filter((registration) => {
+    const division = divisions.find((candidate) => candidate.id === registration.division_id);
+    return Number(division?.team_size ?? 1) <= 1;
+  }).length;
+  const eligibleEntrantCount = eligibleTeamCount + eligibleSoloCount;
+  const completedScoreCount = new Set(scores.map((score) => `${score.team_id}::${score.workout_id}`)).size;
+  const recommendation = getCompetitionWorkflowRecommendation({
+    status: derivedStatus,
+    workoutCount: workouts.length,
+    eligibleEntrantCount,
+    heatCount: heats.length,
+    completedScoreCount,
+  });
+  const workflowLoading = workoutsLoading || divisionsLoading || teamsLoading || registrationsLoading || heatsLoading || scoresLoading;
+
+  useEffect(() => {
+    if (activeOwnerTab || workflowLoading) return;
+    const aliases: Record<string, CompetitionWorkflowSection> = { command: "overview", setup: "overview", scores: "scoring" };
+    const requested = tabFromUrl ? aliases[tabFromUrl] ?? tabFromUrl : null;
+    const validRequested = OWNER_WORKFLOW.some((item) => item.value === requested) ? requested as CompetitionWorkflowSection : null;
+    setActiveOwnerTab(validRequested ?? recommendation.section);
+  }, [activeOwnerTab, tabFromUrl, recommendation.section, workflowLoading]);
+
+  useEffect(() => {
+    if (!activeOwnerTab || !ownerNavRef.current) return;
+    const navigation = ownerNavRef.current;
+    const selectedTab = navigation.querySelector<HTMLElement>(`[data-value="${activeOwnerTab}"]`);
+    if (!selectedTab) return;
+    navigation.scrollTo({
+      left: selectedTab.offsetLeft - (navigation.clientWidth - selectedTab.clientWidth) / 2,
+      behavior: "smooth",
+    });
+  }, [activeOwnerTab, isMobile]);
+
+  if (profileLoading || compLoading || roleLoading || settingsLoading || workflowLoading) {
     return (
       <div className="min-h-dvh bg-background">
         <Skeleton className="h-14 w-full" />
@@ -196,117 +223,38 @@ export default function CompetitionDashboard() {
     );
   }
 
-  // ── Quick Mode — Status-Driven Tabs ─────────────────────────────────
-
-  const renderQuickModeTabs = () => {
-    const tabs = getQuickModeTabs(derivedStatus);
-    const defaultTab = tabs[0]?.value ?? "setup";
-
-    return (
-      <Tabs defaultValue={defaultTab} className="w-full">
-        <div className="relative mb-6">
-          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
-            <TabsList className={`inline-flex w-auto min-w-full md:w-full md:grid md:grid-cols-${tabs.length} gap-1`}>
-              {tabs.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value} className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
-        </div>
-
-        <TabsContent value="command">
-          <CommandCenter competitionId={id!} />
-        </TabsContent>
-
-        <TabsContent value="setup">
-          <div className="space-y-5">
-            {/* Full-width competition details */}
-            {competition && <CompetitionEditPanel competition={competition} canEdit={effectiveCanAdmin} />}
-
-            {/* Poster + Divisions side by side */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-              {competition && (
-                <div className="lg:col-span-3 bg-card border border-border rounded-xl p-5">
-                  <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-3">Event Poster</h3>
-                  <PosterUpload
-                    competitionId={id!}
-                    currentPosterUrl={competition.poster_url}
-                    onPosterUpdated={() => refetchComp()}
-                  />
-                </div>
-              )}
-              <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
-                <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
-              </div>
-            </div>
-
-            {canAdmin && competition && (
-              <CompetitionSettingsPanel
-                competitionId={id!}
-                competitionName={competition.name}
-                canAdmin={effectiveCanAdmin}
-                canDelete={isOwner || isSuperUser}
-              />
-            )}
-          </div>
-        </TabsContent>
-
-
-        <TabsContent value="workouts">
-          <QuickWorkoutsPanel competitionId={id!} isOwner={effectiveCanAdmin} scoringMode={settings?.scoring_method === "auto" ? "auto" : "points"} />
-        </TabsContent>
-
-        <TabsContent value="people">
-          <PeopleTab competitionId={id!} canAdmin={effectiveCanAdmin} derivedStatus={derivedStatus} />
-        </TabsContent>
-
-        <TabsContent value="scores"><ScoreTab /></TabsContent>
-        <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
-      </Tabs>
-    );
-  };
-
-  // ── Advanced Mode — Full 9-Tab Owner Layout ─────────────────────────
-
   const renderOwnerTabs = () => (
-    <Tabs defaultValue="command" className="w-full">
+    <Tabs value={activeOwnerTab ?? recommendation.section} onValueChange={(value) => setActiveOwnerTab(value as CompetitionWorkflowSection)} className="w-full">
       <div className="relative mb-6">
-        <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
-          <TabsList className={`inline-flex w-auto min-w-full md:w-full md:grid ${showRoster ? "md:grid-cols-9" : "md:grid-cols-8"} gap-1`}>
-            <TabsTrigger value="command" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Command</TabsTrigger>
-            <TabsTrigger value="setup" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Setup</TabsTrigger>
-            <TabsTrigger value="registrations" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Registrations</TabsTrigger>
-            <TabsTrigger value="judges" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Judges</TabsTrigger>
-            <TabsTrigger value="heats" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Heats</TabsTrigger>
-            <TabsTrigger value="brackets" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Brackets</TabsTrigger>
-            <TabsTrigger value="scores" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Scores</TabsTrigger>
-            <TabsTrigger value="leaderboard" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Leaderboard</TabsTrigger>
-            {showRoster && <TabsTrigger value="roster" className="whitespace-nowrap min-h-[44px] px-3 text-xs sm:text-sm">Roster</TabsTrigger>}
+        <div ref={ownerNavRef} className="overflow-x-auto scrollbar-hide -mx-4 px-4">
+          <TabsList className="inline-grid min-w-max w-full grid-cols-6 gap-1 h-auto p-1.5">
+            {OWNER_WORKFLOW.map((item) => (
+              <TabsTrigger
+                key={item.value}
+                value={item.value}
+                data-value={item.value}
+                className="relative min-w-[118px] min-h-[48px] px-4 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                {item.label}
+                {recommendation.section === item.value && activeOwnerTab !== item.value && (
+                  <span className="absolute top-1 right-1.5 text-[9px] font-bold uppercase text-primary">Next</span>
+                )}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </div>
-        <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none md:hidden" />
       </div>
 
-      <TabsContent value="command">
-        <CommandCenter competitionId={id!} />
-      </TabsContent>
-
-      <TabsContent value="registrations">
-        <RegistrationManager competitionId={id!} canAdmin={effectiveCanAdmin} />
-      </TabsContent>
-
-      <TabsContent value="setup">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <TabsContent value="overview">
+        <div className="space-y-6">
+          <CommandCenter competitionId={id!} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {competition && (
             <div className="lg:col-span-2">
               <CompetitionEditPanel competition={competition} canEdit={effectiveCanAdmin} />
             </div>
           )}
           <DivisionsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
-          <TeamsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
-          <WorkoutsPanel competitionId={id!} workouts={[]} setWorkouts={() => {}} isOwner={effectiveCanAdmin} />
           {canAdmin && competition && (
             <div className="lg:col-span-2">
               <CompetitionSettingsPanel
@@ -317,11 +265,6 @@ export default function CompetitionDashboard() {
               />
             </div>
           )}
-          <div className="bg-card border border-border rounded-xl p-6">
-            <h3 className="text-lg font-bold text-foreground uppercase mb-4">Score Locks</h3>
-            <ScoreLockControls competitionId={id!} canAdmin={effectiveCanAdmin} isSuperUser={isSuperUser} />
-          </div>
-
           {competition && (
             <div className="bg-card border border-border rounded-xl p-6">
               <h3 className="text-lg font-bold text-foreground uppercase mb-4">Poster</h3>
@@ -333,40 +276,61 @@ export default function CompetitionDashboard() {
             </div>
           )}
         </div>
+        </div>
       </TabsContent>
 
-      <TabsContent value="judges">
+      <TabsContent value="workouts">
+        {isQuickMode
+          ? <QuickWorkoutsPanel competitionId={id!} isOwner={effectiveCanAdmin} scoringMode={settings?.scoring_method === "auto" ? "auto" : "points"} />
+          : <WorkoutsPanel competitionId={id!} workouts={[]} setWorkouts={() => {}} isOwner={effectiveCanAdmin} />}
+      </TabsContent>
+
+      <TabsContent value="people">
         <div className="space-y-6">
-          <JudgesPanelLazy competitionId={id!} canAdmin={effectiveCanAdmin} />
-          <JudgeAssignmentPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
+          {isQuickMode
+            ? <PeopleTab competitionId={id!} canAdmin={effectiveCanAdmin} derivedStatus={derivedStatus} />
+            : <>
+                <RegistrationManager competitionId={id!} canAdmin={effectiveCanAdmin} />
+                <TeamsPanel competitionId={id!} isOwner={effectiveCanAdmin} />
+                <JudgesPanelLazy competitionId={id!} canAdmin={effectiveCanAdmin} />
+                <JudgeAssignmentPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
+                {showRoster && <ParticipantsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />}
+              </>}
         </div>
       </TabsContent>
 
       <TabsContent value="heats">
-        <HeatManagementPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
+        <div className="space-y-6">
+          <HeatManagementPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
+          {!isQuickMode && <BracketsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />}
+        </div>
       </TabsContent>
 
-      <TabsContent value="brackets">
-        <BracketsPanel competitionId={id!} canAdmin={effectiveCanAdmin} />
+      <TabsContent value="scoring">
+        <div className="space-y-6">
+          <ScoreTab />
+          {!isQuickMode && (
+            <div className="bg-card border border-border rounded-xl p-6">
+              <h3 className="text-lg font-bold text-foreground uppercase mb-4">Score Locks</h3>
+              <ScoreLockControls competitionId={id!} canAdmin={effectiveCanAdmin} isSuperUser={isSuperUser} />
+            </div>
+          )}
+        </div>
       </TabsContent>
-
-      <TabsContent value="scores"><ScoreTab /></TabsContent>
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
-      {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={effectiveCanAdmin} /></TabsContent>}
-
     </Tabs>
   );
 
   const renderJudgeTabs = () => (
-    <Tabs defaultValue="scores" className="w-full">
+    <Tabs defaultValue="scoring" className="w-full">
       <TabsList className={`w-full grid ${showRoster ? "grid-cols-4" : "grid-cols-3"} mb-6`}>
-        <TabsTrigger value="scores">Scores</TabsTrigger>
+        <TabsTrigger value="scoring">Scoring</TabsTrigger>
         <TabsTrigger value="brackets">Brackets</TabsTrigger>
         <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
         {showRoster && <TabsTrigger value="roster">Roster</TabsTrigger>}
       </TabsList>
 
-      <TabsContent value="scores"><ScoreTab /></TabsContent>
+      <TabsContent value="scoring"><ScoreTab /></TabsContent>
       <TabsContent value="brackets"><BracketsPanel competitionId={id!} canAdmin={false} /></TabsContent>
       <TabsContent value="leaderboard"><LeaderboardPanel competitionId={id!} /></TabsContent>
       {showRoster && <TabsContent value="roster"><ParticipantsPanel competitionId={id!} canAdmin={false} /></TabsContent>}
@@ -441,8 +405,7 @@ export default function CompetitionDashboard() {
   };
 
   const renderTabs = () => {
-    if (effectiveCanAdmin && isQuickMode) return renderQuickModeTabs();
-    if (effectiveCanAdmin) return renderOwnerTabs();
+    if (canAdmin) return renderOwnerTabs();
     if (isJudge) return renderJudgeTabs();
     return renderViewerTabs();
   };
@@ -474,7 +437,30 @@ export default function CompetitionDashboard() {
           </>
         )}
         <CompetitionStatusBar status={derivedStatus} />
-        <CompetitionStatusActions competitionId={id!} currentStatus={derivedStatus} canAdmin={canAdmin} />
+        {canAdmin && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 mb-6 rounded-lg bg-card border border-border">
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-foreground">{recommendation.label}</p>
+              <p className="text-xs text-muted-foreground">Recommended from the competition’s current progress.</p>
+            </div>
+            <div className={`grid ${recommendation.action !== "publish" && (derivedStatus === "published" || derivedStatus === "live") ? "grid-cols-2" : "grid-cols-1"} gap-2 w-full sm:flex sm:w-auto sm:items-center shrink-0`}>
+              <Button
+                size="sm"
+                className="gap-1.5 whitespace-nowrap px-3"
+                onClick={() => recommendation.action === "publish" ? setStatusActionRequest((value) => value + 1) : setActiveOwnerTab(recommendation.section)}
+              >
+                {recommendation.actionLabel}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              {recommendation.action !== "publish" && (derivedStatus === "published" || derivedStatus === "live") && (
+                <Button size="sm" variant="outline" className="whitespace-nowrap px-3" onClick={() => setStatusActionRequest((value) => value + 1)}>
+                  {derivedStatus === "published" ? "Go Live" : "Mark Completed"}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+        <CompetitionStatusActions competitionId={id!} currentStatus={derivedStatus} canAdmin={canAdmin} compact openRequest={statusActionRequest} />
 
         {compError && (
           <div className="flex items-start gap-3 p-3 mb-6 rounded-lg bg-destructive/10 border border-destructive/20">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,8 @@ interface CompetitionStatusActionsProps {
   competitionId: string;
   currentStatus: CompetitionStatus;
   canAdmin: boolean;
+  compact?: boolean;
+  openRequest?: number;
 }
 
 const TRANSITIONS: Record<string, { next: CompetitionStatus; label: string; icon: React.ReactNode; description: string }> = {
@@ -83,11 +85,15 @@ async function fetchTransitionContext(competitionId: string): Promise<Transition
   };
 }
 
-export function CompetitionStatusActions({ competitionId, currentStatus, canAdmin }: CompetitionStatusActionsProps) {
+export function CompetitionStatusActions({ competitionId, currentStatus, canAdmin, compact = false, openRequest = 0 }: CompetitionStatusActionsProps) {
   const { mutate: updateStatus, isPending } = useUpdateCompetitionStatus();
   const [open, setOpen] = useState(false);
 
   const transition = TRANSITIONS[currentStatus];
+
+  useEffect(() => {
+    if (openRequest > 0 && canAdmin && transition) setOpen(true);
+  }, [openRequest, canAdmin, transition]);
 
   const { data: ctx, isFetching } = useQuery({
     queryKey: ["competition-transition-context", competitionId, currentStatus],
@@ -126,22 +132,24 @@ export function CompetitionStatusActions({ competitionId, currentStatus, canAdmi
 
   return (
     <>
-      <div className="flex items-center gap-3 p-3 mb-6 rounded-lg bg-card border border-border">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant="secondary" className="text-xs">
-              {getStatusLabel(currentStatus)}
-            </Badge>
-            <span className="text-muted-foreground text-xs">→</span>
-            <Badge className="text-xs">{getStatusLabel(transition.next)}</Badge>
+      {!compact && (
+        <div className="flex items-center gap-3 p-3 mb-6 rounded-lg bg-card border border-border">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <Badge variant="secondary" className="text-xs">
+                {getStatusLabel(currentStatus)}
+              </Badge>
+              <span className="text-muted-foreground text-xs">→</span>
+              <Badge className="text-xs">{getStatusLabel(transition.next)}</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">{transition.description}</p>
           </div>
-          <p className="text-xs text-muted-foreground">{transition.description}</p>
+          <Button size="sm" onClick={() => setOpen(true)} disabled={isPending} className="shrink-0 gap-1.5">
+            {transition.icon}
+            {transition.label}
+          </Button>
         </div>
-        <Button size="sm" onClick={() => setOpen(true)} disabled={isPending} className="shrink-0 gap-1.5">
-          {transition.icon}
-          {transition.label}
-        </Button>
-      </div>
+      )}
 
       <AlertDialog open={open} onOpenChange={(o) => !isPending && setOpen(o)}>
         <AlertDialogContent className="max-h-[85vh] overflow-y-auto">
