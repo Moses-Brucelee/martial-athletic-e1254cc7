@@ -14,6 +14,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatTimeMMSS, ordinal } from "@/utils/format";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { globalTieBreakerLabels, workoutTieBreakerLabels } from "@/domain/tieBreakerDisplay";
+
+type DisplayMode = "colour" | "bw";
+const DISPLAY_KEY = "ma-leaderboard-display";
+const TB_EXPLAIN = "Tie breaker applied to resolve equal primary scores.";
 
 interface LeaderboardPanelProps {
   competitionId: string;
@@ -37,6 +43,31 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [exporting, setExporting] = useState(false);
   const whiteboardRef = useRef<HTMLDivElement>(null);
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(() => {
+    try { return localStorage.getItem(DISPLAY_KEY) === "bw" ? "bw" : "colour"; } catch { return "colour"; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(DISPLAY_KEY, displayMode); } catch { /* ignore */ }
+  }, [displayMode]);
+  const bw = displayMode === "bw";
+
+  const DisplayToggle = ({ size = "sm" }: { size?: "sm" | "md" }) => (
+    <div role="group" aria-label="Display mode" className="inline-flex rounded-md border border-border overflow-hidden">
+      {(["colour", "bw"] as DisplayMode[]).map((m) => (
+        <button
+          key={m}
+          type="button"
+          aria-pressed={displayMode === m}
+          onClick={() => setDisplayMode(m)}
+          className={`${size === "md" ? "h-9 px-3 text-sm" : "h-8 px-2.5 text-xs"} font-semibold transition-colors ${
+            displayMode === m ? "bg-foreground text-background" : "bg-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {m === "colour" ? "Colour" : "Black & White"}
+        </button>
+      ))}
+    </div>
+  );
 
   const handleDownload = async (format: "png" | "jpeg") => {
     if (!whiteboardRef.current) return;
@@ -67,7 +98,12 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
     return rawEntries;
   }, [rawEntries, settings?.ranking_direction]);
 
-  const medalColors = ["text-yellow-500", "text-gray-400", "text-amber-700"];
+  // Shared palette: red / foreground / muted. B&W relies on weight + borders instead.
+  const medalColors = bw
+    ? ["text-foreground", "text-foreground", "text-foreground"]
+    : ["text-primary", "text-foreground", "text-muted-foreground"];
+  const topRowCls = bw ? "border-2 border-foreground bg-transparent" : "border-primary/30 bg-primary/5";
+  const topTrCls = bw ? "border-b-2 border-foreground" : "bg-primary/5";
 
   const ageCategoryLabel = competition
     ? getAgeCategoryLabel(competition.age_category_type, competition.min_age, competition.max_age)
@@ -132,6 +168,64 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
     return map;
   }, [scoreRows, workouts, teams]);
 
+  // Tie-breaker transparency — explains the existing ranking, never re-ranks.
+  const { globalTB, workoutTB } = useMemo(() => {
+    const teamDiv: Record<string, string> = {};
+    teams.forEach((t: any) => { teamDiv[t.id] = t.division_id || "__nodiv__"; });
+    const counts: Record<string, number[]> = {};
+    scoreRows.forEach((s) => {
+      if (s.rank == null || s.rank < 1) return;
+      const arr = (counts[s.team_id] ||= []);
+      while (arr.length < s.rank) arr.push(0);
+      arr[s.rank - 1] += 1;
+    });
+    const globalTB = globalTieBreakerLabels(
+      rawEntries.map((e) => ({
+        team_id: e.team_id,
+        division_key: e.division_id || e.division_name || "__nodiv__",
+        total_points: Number(e.total_points),
+        placement_counts: counts[e.team_id] || [],
+      })),
+      (settings as any)?.global_tie_breaker
+    );
+    const typeMap: Record<string, string> = {};
+    const tbMap: Record<string, string | null> = {};
+    workouts.forEach((w: any) => { typeMap[w.id] = w.scoring_type || "points"; tbMap[w.id] = w.tie_breaker_type; });
+    const workoutTB = workoutTieBreakerLabels(
+      scoreRows.map((s) => {
+        const t = typeMap[s.workout_id];
+        const primary =
+          t === "time" ? s.time_seconds ?? s.score :
+          t === "reps" ? s.reps_completed ?? s.score :
+          t === "load" ? s.load_value ?? s.score :
+          s.points_awarded ?? s.score;
+        return {
+          team_id: s.team_id, workout_id: s.workout_id,
+          division_key: teamDiv[s.team_id] || "__nodiv__",
+          primary: primary == null ? null : Number(primary),
+          work_completed: s.work_completed, tie_breaker_seconds: s.tie_breaker_seconds,
+        };
+      }),
+      tbMap
+    );
+    return { globalTB, workoutTB };
+  }, [scoreRows, teams, workouts, rawEntries, settings]);
+
+  const TBBadge = ({ teamId, large }: { teamId: string; large?: boolean }) => {
+    const tb = globalTB[teamId];
+    if (!tb) return null;
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={`inline-flex items-center rounded border ${bw ? "border-foreground text-foreground" : "border-primary/50 text-primary"} font-bold uppercase tracking-wide tabular-nums cursor-help ${large ? "text-sm px-2 py-0.5" : "text-[10px] px-1.5 py-0"}`}>
+            {tb.label}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent><p className="text-xs">{TB_EXPLAIN}</p><p className="text-[10px] text-muted-foreground mt-1">{tb.detail}</p></TooltipContent>
+      </Tooltip>
+    );
+  };
+
   // Helper: render a workout cell (display + ordinal rank in parens)
   const renderCell = (teamId: string, workoutId: string) => {
     const cell = workoutScoreMap[teamId]?.[workoutId];
@@ -140,6 +234,11 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
       <span className="inline-flex items-baseline gap-1 tabular-nums">
         <span className="font-semibold text-foreground">{cell.display}</span>
         <span className="text-[10px] text-muted-foreground">({ordinal(cell.rank)})</span>
+        {workoutTB[`${teamId}::${workoutId}`] && (
+          <span title={TB_EXPLAIN} className={`text-[10px] font-bold border rounded px-1 ${bw ? "border-foreground text-foreground" : "border-primary/50 text-primary"}`}>
+            {workoutTB[`${teamId}::${workoutId}`]}
+          </span>
+        )}
       </span>
     );
   };
@@ -245,6 +344,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                 </SelectContent>
               </Select>
             )}
+            <DisplayToggle size="md" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" disabled={exporting}>
@@ -275,11 +375,11 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
           {Object.entries(grouped).map(([divName, divEntries]) => (
             <div key={divName} className="mb-10">
               {Object.keys(grouped).length > 1 && (
-                <h2 className="text-2xl font-black text-primary uppercase mb-4">{divName}</h2>
+                <h2 className={`text-2xl font-black uppercase mb-4 ${bw ? "text-foreground border-b-4 border-primary inline-block" : "text-primary"}`}>{divName}</h2>
               )}
               <table className="w-full">
                 <thead>
-                  <tr className="border-b-2 border-primary">
+                  <tr className={`border-b-2 ${bw ? "border-foreground" : "border-primary"}`}>
                     <th className="text-left py-3 px-4 text-lg font-black text-foreground uppercase">Rank</th>
                     <th className="text-left py-3 px-4 text-lg font-black text-foreground uppercase">Athlete</th>
                     {workouts.map((w) => (
@@ -293,11 +393,13 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                 <tbody>
                   {divEntries.map((entry, i) => (
                     <tr key={entry.team_id}
-                      className={`border-b border-border/50 transition-colors ${i < 3 ? "bg-primary/5" : ""}`}>
+                      className={`border-b border-border/50 transition-colors ${i < 3 ? topTrCls : ""}`}>
                       <td className={`py-4 px-4 text-2xl font-black ${i < 3 ? medalColors[i] : "text-muted-foreground"}`}>
                         {entry.overall_rank ?? i + 1}
                       </td>
-                      <td className="py-4 px-4 text-xl font-bold text-foreground">{entry.team_name}</td>
+                      <td className="py-4 px-4 text-xl font-bold text-foreground">
+                        <span className="inline-flex items-center gap-2 flex-wrap">{entry.team_name}<TBBadge teamId={entry.team_id} large /></span>
+                      </td>
                       {workouts.map((w) => (
                         <td key={w.id} className="py-4 px-4 text-center text-lg text-foreground tabular-nums">
                           {renderCell(entry.team_id, w.id)}
@@ -346,6 +448,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
               </SelectContent>
             </Select>
           )}
+          <DisplayToggle />
           <Button variant="outline" size="sm" onClick={() => setWhiteboardMode(true)}
             className="flex items-center gap-1">
             <Maximize2 className="h-3.5 w-3.5" />
@@ -364,7 +467,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
           {Object.entries(grouped).map(([divName, divEntries]) => (
             <div key={divName} className="mb-6 last:mb-0">
               {Object.keys(grouped).length > 1 && (
-                <div className="bg-destructive/80 text-destructive-foreground text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-t-lg text-center mb-0">
+                <div className={`${bw ? "bg-foreground text-background" : "bg-destructive/80 text-destructive-foreground"} text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-t-lg text-center mb-0`}>
                   {divName}
                 </div>
               )}
@@ -372,13 +475,13 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                 {divEntries.map((entry, i) => (
                   <div key={entry.team_id}
                     className={`flex items-center gap-3 p-3 rounded-lg border ${
-                      i < 3 ? "border-primary/30 bg-primary/5" : "border-border bg-background"
+                      i < 3 ? topRowCls : "border-border bg-background"
                     }`}>
                     <span className={`text-lg font-black w-8 text-center ${i < 3 ? medalColors[i] : "text-muted-foreground"}`}>
                       {entry.overall_rank ?? i + 1}
                     </span>
                     <div className="flex-1">
-                      <p className="font-bold text-foreground text-sm">{entry.team_name}</p>
+                      <p className="font-bold text-foreground text-sm flex items-center gap-2 flex-wrap">{entry.team_name}<TBBadge teamId={entry.team_id} /></p>
                       {entry.division_name && (
                         <p className="text-[10px] text-muted-foreground">{entry.division_name}</p>
                       )}
@@ -426,7 +529,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                       {entry.overall_rank ?? i + 1}
                     </td>
                     <td className="py-2 px-2 font-semibold text-foreground text-xs">
-                      {entry.team_name}
+                      <span className="inline-flex items-center gap-1.5 flex-wrap">{entry.team_name}<TBBadge teamId={entry.team_id} /></span>
                       {entry.division_name && (
                         <span className="block text-[10px] text-muted-foreground font-normal">{entry.division_name}</span>
                       )}
