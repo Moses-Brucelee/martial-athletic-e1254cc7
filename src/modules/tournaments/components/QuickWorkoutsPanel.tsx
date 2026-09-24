@@ -156,6 +156,13 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
   const { data: workouts = [], isLoading } = useWorkouts(competitionId);
   const qc = useQueryClient();
   const [showPreview, setShowPreview] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   // Inline editing
   const [editingId, setEditingId] = useState<string | null>(null);
