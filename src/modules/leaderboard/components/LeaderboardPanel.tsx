@@ -327,6 +327,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
   // Whiteboard / TV mode with auto-refresh
   if (whiteboardMode) {
     return (
+      <TooltipProvider>
       <div className="fixed inset-0 z-50 bg-background overflow-auto">
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
           <Badge variant="outline" className="text-xs animate-pulse">
@@ -417,10 +418,12 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
           </div>
         </div>
       </div>
+      </TooltipProvider>
     );
   }
 
   return (
+    <TooltipProvider>
     <div className="bg-card border border-border rounded-xl p-6">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
@@ -550,5 +553,6 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
         </TabsContent>
       </Tabs>
     </div>
+    </TooltipProvider>
   );
 }
