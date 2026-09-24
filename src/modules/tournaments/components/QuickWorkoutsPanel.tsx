@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dumbbell, Plus, Trash2, Eye, EyeOff, Clock, Calendar,
-  Timer, Repeat, Weight, Trophy, ArrowUp, Undo2, Check
+  Timer, Repeat, Weight, Trophy, ArrowUp, Undo2, Check, ChevronDown
 } from "lucide-react";
 import { toast } from "sonner";
 import { useWorkouts } from "@/modules/tournaments/hooks";
@@ -156,6 +156,13 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
   const { data: workouts = [], isLoading } = useWorkouts(competitionId);
   const qc = useQueryClient();
   const [showPreview, setShowPreview] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   // Inline editing
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -561,9 +568,34 @@ export function QuickWorkoutsPanel({ competitionId, isOwner, scoringMode = "poin
                           </div>
                           <p className="font-bold text-foreground text-sm mt-1">{w.name || `Workout ${w.workout_number}`}</p>
                           {w.description && (
-                            <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap line-clamp-3">{w.description}</p>
+                            <p className={`text-xs text-muted-foreground mt-1 whitespace-pre-wrap ${expandedIds.has(w.id) ? "" : "line-clamp-2"}`}>{w.description}</p>
                           )}
-                          <WorkoutVideo url={(w as any).video_url} compact />
+                          {expandedIds.has(w.id) && (
+                            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] animate-fade-in">
+                              <dt className="text-muted-foreground uppercase tracking-wide">Scoring</dt>
+                              <dd className="text-foreground font-semibold">{sc.label}</dd>
+                              <dt className="text-muted-foreground uppercase tracking-wide">Time cap</dt>
+                              <dd className="text-foreground font-semibold">{timeCap ? `${Math.floor(timeCap / 60)}:${String(timeCap % 60).padStart(2, "0")}` : "None"}</dd>
+                              {(w as any).target_work != null && (<>
+                                <dt className="text-muted-foreground uppercase tracking-wide">Target work</dt>
+                                <dd className="text-foreground font-semibold">{(w as any).target_work} {(w as any).target_unit || ""}</dd>
+                              </>)}
+                              <dt className="text-muted-foreground uppercase tracking-wide">Tie breaker</dt>
+                              <dd className="text-foreground font-semibold">{(w as any).tie_breaker_type === "time" ? "Time to checkpoint" : "None"}</dd>
+                              <dt className="text-muted-foreground uppercase tracking-wide">Visibility</dt>
+                              <dd className="text-foreground font-semibold">{visConfig.label}</dd>
+                            </dl>
+                          )}
+                          {expandedIds.has(w.id) && <WorkoutVideo url={(w as any).video_url} compact />}
+                          <button
+                            type="button"
+                            onClick={() => toggleExpanded(w.id)}
+                            aria-expanded={expandedIds.has(w.id)}
+                            className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-primary hover:underline"
+                          >
+                            {expandedIds.has(w.id) ? "Show less" : "Show details"}
+                            <ChevronDown className={`h-3 w-3 transition-transform ${expandedIds.has(w.id) ? "rotate-180" : ""}`} />
+                          </button>
 
                         </div>
 
