@@ -38,8 +38,8 @@ describe("workoutTieBreakerLabels", () => {
       ],
       { w: "time" }
     );
-    expect(r["a::w"]).toBe("TB: 08:42");
-    expect(r["b::w"]).toBe("TB: 09:15");
+    expect(r["a::w"]).toBe("TB: 8:42");
+    expect(r["b::w"]).toBe("TB: 9:15");
     expect(r["c::w"]).toBeUndefined();
   });
 });
