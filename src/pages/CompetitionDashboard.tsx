@@ -153,8 +153,14 @@ export default function CompetitionDashboard() {
 
   useEffect(() => {
     if (!activeOwnerTab || !ownerNavRef.current) return;
-    ownerNavRef.current.querySelector<HTMLElement>(`[data-value="${activeOwnerTab}"]`)?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-  }, [activeOwnerTab]);
+    const navigation = ownerNavRef.current;
+    const selectedTab = navigation.querySelector<HTMLElement>(`[data-value="${activeOwnerTab}"]`);
+    if (!selectedTab) return;
+    navigation.scrollTo({
+      left: selectedTab.offsetLeft - (navigation.clientWidth - selectedTab.clientWidth) / 2,
+      behavior: "smooth",
+    });
+  }, [activeOwnerTab, isMobile]);
 
   if (profileLoading || compLoading || roleLoading || settingsLoading || workflowLoading) {
     return (
@@ -432,22 +438,22 @@ export default function CompetitionDashboard() {
         )}
         <CompetitionStatusBar status={derivedStatus} />
         {canAdmin && (
-          <div className="flex items-center justify-between gap-3 p-3 mb-6 rounded-lg bg-card border border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 mb-6 rounded-lg bg-card border border-border">
             <div className="min-w-0">
               <p className="text-sm font-bold text-foreground">{recommendation.label}</p>
               <p className="text-xs text-muted-foreground">Recommended from the competition’s current progress.</p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className={`grid ${recommendation.action !== "publish" && (derivedStatus === "published" || derivedStatus === "live") ? "grid-cols-2" : "grid-cols-1"} gap-2 w-full sm:flex sm:w-auto sm:items-center shrink-0`}>
               <Button
                 size="sm"
-                className="gap-1.5"
+                className="gap-1.5 whitespace-nowrap px-3"
                 onClick={() => recommendation.action === "publish" ? setStatusActionRequest((value) => value + 1) : setActiveOwnerTab(recommendation.section)}
               >
                 {recommendation.actionLabel}
                 <ArrowRight className="h-4 w-4" />
               </Button>
               {recommendation.action !== "publish" && (derivedStatus === "published" || derivedStatus === "live") && (
-                <Button size="sm" variant="outline" onClick={() => setStatusActionRequest((value) => value + 1)}>
+                <Button size="sm" variant="outline" className="whitespace-nowrap px-3" onClick={() => setStatusActionRequest((value) => value + 1)}>
                   {derivedStatus === "published" ? "Go Live" : "Mark Completed"}
                 </Button>
               )}
