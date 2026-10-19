@@ -49,7 +49,7 @@ const Index = () => {
             <img src={logoCompact} alt="Martial Athletic seal" className="w-28 drop-shadow-2xl sm:w-36" />
             <Eyebrow>Where the FITNESS Industry CONVERGE.</Eyebrow>
             <h1 className="mt-5 text-4xl font-bold uppercase leading-[1.02] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-              Where the <span className="text-primary">fitness</span> world meets on game day
+              The Ultimate <span className="text-primary">Fitness</span> Network
             </h1>
             <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               Host the event, score it from the floor and put the results on the big screen. Athletes, judges and gyms work from the same board.
