@@ -47,7 +47,7 @@ const Index = () => {
           <div className="pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
           <div className="relative mx-auto flex w-full max-w-4xl flex-col items-center px-4 pb-16 pt-14 text-center sm:px-6 sm:pt-20">
             <img src={logoCompact} alt="Martial Athletic seal" className="w-28 drop-shadow-2xl sm:w-36" />
-            <Eyebrow>Train harder. Compete smarter.</Eyebrow>
+            <Eyebrow>Where the FITNESS Industry CONVERGE.</Eyebrow>
             <h1 className="mt-5 text-4xl font-bold uppercase leading-[1.02] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
               Where the <span className="text-primary">fitness</span> world meets on game day
             </h1>
