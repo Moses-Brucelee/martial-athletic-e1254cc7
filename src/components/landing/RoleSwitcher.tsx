@@ -16,7 +16,7 @@ const ROLES = {
   judge: {
     label: "Judge",
     title: "You score the floor",
-    points: ["Get your lane assignment per heat", "Enter reps, time or load on your phone", "Partial For Time scores handled properly", "No paper sheets to collect afterwards"],
+    points: ["See your lane assignment for each heat", "Record results on the paper score sheet", "Hand the sheet to the host, who captures it", "Partial For Time results are ranked correctly"],
   },
 } as const;
 
