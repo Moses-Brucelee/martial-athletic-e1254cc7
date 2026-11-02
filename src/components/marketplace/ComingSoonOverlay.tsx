@@ -24,7 +24,7 @@ export function ComingSoonOverlay({
   if (launched) return <>{children}</>;
   return (
     <div className="relative">
-      <div aria-hidden="true" inert={"" as unknown as boolean} className="pointer-events-none select-none opacity-40 blur-[1px]">
+      <div aria-hidden="true" {...({ inert: "" } as Record<string, string>)} className="pointer-events-none select-none opacity-40 blur-[1px]">
         {children}
       </div>
       <div className="absolute inset-0 flex items-center justify-center p-4">
