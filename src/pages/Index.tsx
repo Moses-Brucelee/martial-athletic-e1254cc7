@@ -84,7 +84,7 @@ const Index = () => {
             <Eyebrow accent>Live demo</Eyebrow>
             <h2 className="mt-4 text-3xl font-bold uppercase leading-[1.05] tracking-tight text-foreground sm:text-5xl">Watch the board move.</h2>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-              This is what your crowd sees. Every score a judge enters re-ranks the board within seconds. Flip on venue screen to see how it reads on a gym TV.
+              This is what your crowd sees. Every score the host captures re-ranks the board within seconds. Flip on venue screen to see how it reads on a gym TV.
             </p>
           </div>
           <LiveLeaderboardSim />

@@ -86,7 +86,7 @@ export function LiveLeaderboardSim() {
         ))}
       </ol>
       <p className="px-4 py-3 text-[11px] text-muted-foreground sm:px-5">
-        Demo data. In a real event this board moves as judges submit from the floor.
+        Demo data. In a real event this board moves as the host captures score sheets from the floor.
       </p>
     </div>
   );

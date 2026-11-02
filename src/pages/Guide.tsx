@@ -149,7 +149,7 @@ const sections = [
     title: "Judges & Judge Assignments",
     content: (
       <ul className="space-y-2 list-disc list-inside text-muted-foreground">
-        <li>Judges enter and update team scores per workout, using a mobile-friendly view.</li>
+        <li>The host enters and updates team scores per workout from the judges' paper score sheets, using a mobile-friendly view.</li>
         <li><strong className="text-foreground">Add a judge</strong> — Search for a registered user by name on the Judges tab.</li>
         <li>For bigger events, assign judges to specific workouts, heats, or lanes.</li>
         <li>Judges can only score. Only the owner can add/remove teams or change competition status.</li>
