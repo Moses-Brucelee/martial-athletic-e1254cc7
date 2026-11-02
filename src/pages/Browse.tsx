@@ -125,6 +125,7 @@ export default function Browse() {
         .from("competitions")
         .select("id, name, date, venue, host_gym, type")
         .neq("status", "draft")
+        .eq("visibility", "public")
         .gte("date", today)
         .order("date", { ascending: true })
         .limit(9);
