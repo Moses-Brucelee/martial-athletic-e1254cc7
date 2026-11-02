@@ -290,8 +290,7 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
                             <td key={n} className="py-3 px-3 text-center align-middle">
                               <div className="flex flex-col items-center leading-tight">
                                 <span
-                                  className="text-xs md:text-sm font-black uppercase tracking-wider"
-                                  className="text-foreground"
+                                  className="text-xs md:text-sm font-black uppercase tracking-wider text-foreground"
                                 >
                                   {entry ? entry.label : <span className="text-muted-foreground">Unassigned</span>}
                                 </span>
