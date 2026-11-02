@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,7 +91,12 @@ export function CompetitionStatusActions({ competitionId, currentStatus, canAdmi
 
   const transition = TRANSITIONS[currentStatus];
 
+  // Open only for a NEW explicit request. A status change (e.g. after publishing)
+  // must never re-trigger the dialog for the next transition (Go Live).
+  const handledRequest = useRef(openRequest);
   useEffect(() => {
+    if (openRequest === handledRequest.current) return;
+    handledRequest.current = openRequest;
     if (openRequest > 0 && canAdmin && transition) setOpen(true);
   }, [openRequest, canAdmin, transition]);
 

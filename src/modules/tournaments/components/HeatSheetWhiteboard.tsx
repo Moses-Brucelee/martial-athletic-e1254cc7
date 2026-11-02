@@ -43,6 +43,13 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
 
   const [selectedDivision, setSelectedDivision] = useState<string>("all");
   const [exporting, setExporting] = useState(false);
+  const [displayMode, setDisplayMode] = useState<"colour" | "bw">(() => {
+    try { return localStorage.getItem("ma-heatsheet-display") === "bw" ? "bw" : "colour"; } catch { return "colour"; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("ma-heatsheet-display", displayMode); } catch { /* ignore */ }
+  }, [displayMode]);
+  const modeClass = displayMode === "bw" ? "wb-bw" : "wb-colour";
   const boardRef = useRef<HTMLDivElement>(null);
 
   // Auto-refresh every 5s
@@ -165,7 +172,7 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
 
 
   return (
-    <div className="fixed inset-0 z-50 bg-background overflow-auto">
+    <div className={`fixed inset-0 z-50 overflow-auto ${modeClass}`}>
       {/* Controls */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
@@ -188,6 +195,19 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
               </SelectContent>
             </Select>
           )}
+          <div role="group" aria-label="Whiteboard display" className="inline-flex rounded-md border border-border overflow-hidden">
+            {(["colour", "bw"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setDisplayMode(m)}
+                aria-pressed={displayMode === m}
+                className={`px-3 h-9 text-xs font-bold uppercase tracking-wide ${displayMode === m ? "bg-primary text-primary-foreground" : "bg-background text-foreground"}`}
+              >
+                {m === "colour" ? "Colour" : "Black & White"}
+              </button>
+            ))}
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" disabled={exporting}>
@@ -206,7 +226,7 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
       </div>
 
       {/* Board (captured for export) */}
-      <div ref={boardRef} className="bg-background p-8">
+      <div ref={boardRef} className={`p-8 ${modeClass}`}>
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-3 mb-8">
             <Trophy className="h-8 w-8 text-primary" />
@@ -270,10 +290,9 @@ export function HeatSheetWhiteboard({ competitionId, onExit }: HeatSheetWhiteboa
                             <td key={n} className="py-3 px-3 text-center align-middle">
                               <div className="flex flex-col items-center leading-tight">
                                 <span
-                                  className="text-xs md:text-sm font-black uppercase tracking-wider"
-                                  style={{ color: entry ? color.text : undefined }}
+                                  className="text-xs md:text-sm font-black uppercase tracking-wider text-foreground"
                                 >
-                                  {entry ? entry.label : <span className="text-muted-foreground/60">Unassigned</span>}
+                                  {entry ? entry.label : <span className="text-muted-foreground">Unassigned</span>}
                                 </span>
                                 {divLabel && (
                                   <span className="mt-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-muted text-muted-foreground">

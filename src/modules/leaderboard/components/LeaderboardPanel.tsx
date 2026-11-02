@@ -328,7 +328,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
   if (whiteboardMode) {
     return (
       <TooltipProvider>
-      <div className="fixed inset-0 z-50 bg-background overflow-auto">
+      <div className={`fixed inset-0 z-50 overflow-auto ${bw ? "wb-bw" : "wb-colour"}`}>
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
           <Badge variant="outline" className="text-xs animate-pulse">
             <RefreshCw className="h-3 w-3 mr-1" /> Auto-refreshing
@@ -363,7 +363,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
           </div>
         </div>
 
-        <div ref={whiteboardRef} className="bg-background p-8">
+        <div ref={whiteboardRef} className={`p-8 ${bw ? "wb-bw" : "wb-colour"}`}>
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center gap-3 mb-8">
               <Trophy className="h-8 w-8 text-primary" />

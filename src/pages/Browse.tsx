@@ -1,3 +1,4 @@
+import { ComingSoonOverlay, MARKETPLACE_LAUNCHED } from "@/components/marketplace/ComingSoonOverlay";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -125,6 +126,7 @@ export default function Browse() {
         .from("competitions")
         .select("id, name, date, venue, host_gym, type")
         .neq("status", "draft")
+        .eq("visibility", "public")
         .gte("date", today)
         .order("date", { ascending: true })
         .limit(9);
@@ -264,6 +266,8 @@ export default function Browse() {
             </h2>
           </div>
 
+          <ComingSoonOverlay launched={MARKETPLACE_LAUNCHED.programs}>
+          <div className="space-y-4">
           {programsQuery.isLoading ? (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {[0, 1, 2].map((i) => (
@@ -309,9 +313,12 @@ export default function Browse() {
           <Button variant="outline" size="sm" onClick={() => navigate("/programs")}>
             View all programs
           </Button>
+          </div>
+          </ComingSoonOverlay>
         </section>
 
         {/* Apparel */}
+        <ComingSoonOverlay launched={MARKETPLACE_LAUNCHED.apparel}>
         <MarketplaceSection
           icon={<Shirt className="h-4 w-4 text-primary" />}
           title="Apparel"
@@ -319,8 +326,10 @@ export default function Browse() {
           items={itemsQuery.data?.filter((i) => i.category === "apparel") ?? []}
           isLoading={itemsQuery.isLoading}
         />
+        </ComingSoonOverlay>
 
         {/* Equipment */}
+        <ComingSoonOverlay launched={MARKETPLACE_LAUNCHED.equipment}>
         <MarketplaceSection
           icon={<Package className="h-4 w-4 text-primary" />}
           title="Equipment"
@@ -328,6 +337,7 @@ export default function Browse() {
           items={itemsQuery.data?.filter((i) => i.category === "equipment") ?? []}
           isLoading={itemsQuery.isLoading}
         />
+        </ComingSoonOverlay>
 
         <div className="pt-2">
           <Button variant="outline" onClick={() => navigate(backPath)}>

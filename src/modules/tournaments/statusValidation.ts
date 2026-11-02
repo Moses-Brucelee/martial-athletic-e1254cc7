@@ -46,7 +46,7 @@ const COPY: Record<string, { title: string; description: string; confirmLabel: s
   "published>live": {
     title: "Take this competition live?",
     description:
-      "Judges and organizers can start submitting scores, and the leaderboard and heats become visible to everyone.",
+      "Scoring opens. Judges record results on paper score sheets and you capture them here. The leaderboard and heats become visible to everyone.",
     confirmLabel: "Go Live",
   },
   "live>completed": {
@@ -92,14 +92,14 @@ export function validateTransition(
         {
           label: "Registration deadline is before the start date",
           level: "blocker",
-          passed: !deadline || !start || deadline <= start,
+          passed: !deadline || !start || deadline < start,
         },
         {
           label: "Registration deadline is still in the future",
-          level: "warning",
+          level: "blocker",
           passed: !deadline || deadline > now,
         },
-        { label: "At least one workout is added", level: "warning", passed: ctx.workoutCount > 0 },
+        { label: "At least one workout is added", level: "blocker", passed: ctx.workoutCount > 0 },
         { label: "Venue is set", level: "warning", passed: !!ctx.venue?.trim() },
         { label: "Poster uploaded", level: "warning", passed: !!ctx.posterUrl },
       ],

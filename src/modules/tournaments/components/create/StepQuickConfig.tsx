@@ -75,7 +75,7 @@ export function StepQuickConfig({ config, setConfig, disabled }: StepQuickConfig
 
         <div className="grid grid-cols-2 gap-3">
           {([
-            { key: "points" as const, icon: Zap, title: "Points", desc: "Judges enter points per workout" },
+            { key: "points" as const, icon: Zap, title: "Points", desc: "Host enters points per workout" },
             { key: "auto" as const, icon: Settings2, title: "Automatic", desc: "Set scoring type per workout" },
           ]).map(({ key, icon: Icon, title, desc }) => {
             const isSelected = config.scoringMode === key;

@@ -94,7 +94,7 @@ export function StepSportType({ selected, onSelect, setupMode, onSetupModeChange
           <p className="text-xs font-bold text-foreground uppercase tracking-wider">Setup Mode</p>
           <div className="grid grid-cols-2 gap-3">
             {([
-              { key: "quick" as const, icon: <Zap className="h-5 w-5" />, label: "Quick Setup", desc: "Simple points-based scoring. Judges enter points directly per workout." },
+              { key: "quick" as const, icon: <Zap className="h-5 w-5" />, label: "Quick Setup", desc: "Simple points-based scoring. The host enters points per workout." },
               { key: "advanced" as const, icon: <Settings2 className="h-5 w-5" />, label: "Advanced", desc: "Full workout builder with movements, scoring types, heats & lanes." },
             ]).map((mode) => {
               const isSelected = setupMode === mode.key;
@@ -129,7 +129,7 @@ export function StepSportType({ selected, onSelect, setupMode, onSetupModeChange
         <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mt-4">
           <p className="text-xs text-foreground font-semibold uppercase tracking-wider mb-1">Quick Setup — Points Mode</p>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Create divisions and text-based workouts. Judges enter points per team per workout. 
+            Create divisions and text-based workouts. The host enters points per team per workout. 
             Leaderboard auto-ranks by total points. Perfect for simple throwdowns and community events.
           </p>
         </div>

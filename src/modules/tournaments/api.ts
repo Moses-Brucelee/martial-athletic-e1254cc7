@@ -26,12 +26,12 @@ export async function fetchCompetition(id: string): Promise<Competition | null> 
 }
 
 export async function fetchCompetitions(): Promise<Competition[]> {
-  // Filter: only competitions where end_date >= now - 30 days OR end_date is null (drafts)
+  // Hide only long-finished events. Drafts, published and live events are never dropped by date.
   const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("competitions")
     .select("*")
-    .or(`end_date.gte.${cutoff},end_date.is.null`)
+    .or(`end_date.gte.${cutoff},end_date.is.null,status.eq.live,status.eq.published,status.eq.draft`)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as Competition[];

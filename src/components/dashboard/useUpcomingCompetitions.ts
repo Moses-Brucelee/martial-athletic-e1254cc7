@@ -23,7 +23,9 @@ export function useUpcomingCompetitions(limit = 10) {
       const { data: upcoming, error: upErr } = await supabase
         .from("competitions")
         .select(COLUMNS)
-        .gte("date", today)
+        // Live events stay visible even when their scheduled date has passed,
+        // so creating a new future event never pushes an ongoing one off the dashboard.
+        .or(`date.gte.${today},status.eq.live`)
         .order("date", { ascending: true })
         .limit(limit);
 

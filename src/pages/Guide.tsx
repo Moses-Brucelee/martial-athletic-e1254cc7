@@ -149,7 +149,7 @@ const sections = [
     title: "Judges & Judge Assignments",
     content: (
       <ul className="space-y-2 list-disc list-inside text-muted-foreground">
-        <li>Judges enter and update team scores per workout, using a mobile-friendly view.</li>
+        <li>The host enters and updates team scores per workout from the judges' paper score sheets, using a mobile-friendly view.</li>
         <li><strong className="text-foreground">Add a judge</strong> — Search for a registered user by name on the Judges tab.</li>
         <li>For bigger events, assign judges to specific workouts, heats, or lanes.</li>
         <li>Judges can only score. Only the owner can add/remove teams or change competition status.</li>
@@ -204,7 +204,7 @@ const sections = [
         <ul className="space-y-2 list-disc list-inside">
           <li><strong className="text-foreground">Draft</strong> — Set up teams, workouts, divisions, and judges. Nobody else can see it yet.</li>
           <li><strong className="text-foreground">Published</strong> — Athletes can see it and register. Approve or reject sign-ups from the Registrations tab.</li>
-          <li><strong className="text-foreground">Live</strong> — Scoring is open. Judges enter scores, heats run, bouts get resolved, and the leaderboard updates as it happens.</li>
+          <li><strong className="text-foreground">Live</strong> — Scoring is open. Judges record results on paper score sheets, the host captures them, heats run, bouts get resolved, and the leaderboard updates as it happens.</li>
           <li><strong className="text-foreground">Completed</strong> — The leaderboard is locked. It stays viewable for 30 days.</li>
           <li><strong className="text-foreground">Expired</strong> — 30 days after the end date, it becomes read-only.</li>
         </ul>
@@ -232,7 +232,7 @@ const sections = [
             <li><strong className="text-foreground">Publish</strong> — Makes the competition visible and opens registration</li>
             <li>Accept athlete registrations from the Registrations tab</li>
             <li><strong className="text-foreground">Go Live</strong> — Activates scoring</li>
-            <li>Have judges enter scores for each team per workout</li>
+            <li>Judges record each lane on a paper score sheet; the host enters the sheets per workout</li>
             <li>View the leaderboard for real-time rankings</li>
             <li><strong className="text-foreground">Complete</strong> — Locks the final leaderboard</li>
           </ol>

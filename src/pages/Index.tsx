@@ -13,7 +13,7 @@ import { useUpcomingCompetitions } from "@/components/dashboard/useUpcomingCompe
 
 const FAQ = [
   { q: "Can I run a private competition?", a: "Yes. Events stay in draft until you publish them, and only people you invite can see a draft." },
-  { q: "What if the venue Wi-Fi is bad?", a: "Judges enter scores on their phones. Each score is a small request, so a weak mobile signal is usually enough." },
+  { q: "What if the venue Wi-Fi is bad?", a: "Judges write results on paper score sheets and the host types them in. Each score is a small request, so one laptop or phone on a weak signal is usually enough." },
   { q: "Do judges need an account?", a: "No. You can type a judge's name in manually. If they already have an account at your gym, it shows up after three letters." },
   { q: "How are ties broken?", a: "You choose per competition: no tie breaker, or most wins then top placements. Workouts can have their own tie breaker too." },
   { q: "Can athletes register as a team?", a: "Yes, if the division's team size is more than one. A team can register with just a name and fill the roster later." },
@@ -84,7 +84,7 @@ const Index = () => {
             <Eyebrow accent>Live demo</Eyebrow>
             <h2 className="mt-4 text-3xl font-bold uppercase leading-[1.05] tracking-tight text-foreground sm:text-5xl">Watch the board move.</h2>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-              This is what your crowd sees. Every score a judge enters re-ranks the board within seconds. Flip on venue screen to see how it reads on a gym TV.
+              This is what your crowd sees. Every score the host captures re-ranks the board within seconds. Flip on venue screen to see how it reads on a gym TV.
             </p>
           </div>
           <LiveLeaderboardSim />
