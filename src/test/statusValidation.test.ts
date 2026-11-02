@@ -32,10 +32,27 @@ describe("validateTransition", () => {
     expect(v.blockers.length).toBe(2);
   });
 
-  it("warns when publishing without workouts or poster", () => {
-    const v = validateTransition("draft", "published", { ...base, workoutCount: 0, posterUrl: null });
+  it("blocks publishing without a workout", () => {
+    const v = validateTransition("draft", "published", { ...base, workoutCount: 0 });
+    expect(v.canProceed).toBe(false);
+    expect(v.blockers).toContain("At least one workout is added");
+  });
+
+  it("blocks publishing when the registration deadline has passed", () => {
+    const v = validateTransition("draft", "published", { ...base, registrationDeadline: "2028-12-01T09:00:00.000Z" });
+    expect(v.canProceed).toBe(false);
+  });
+
+  it("blocks publishing when the deadline equals the start date", () => {
+    const v = validateTransition("draft", "published", { ...base, registrationDeadline: base.startDate });
+    expect(v.canProceed).toBe(false);
+  });
+
+  it("allows publishing with no participants, teams, judges or heats", () => {
+    const v = validateTransition("draft", "published", {
+      ...base, registrationCount: 0, teamCount: 0, judgeCount: 0, heatCount: 0, posterUrl: null,
+    });
     expect(v.canProceed).toBe(true);
-    expect(v.warnings.length).toBe(2);
   });
 
   it("blocks going live without workouts or participants", () => {
