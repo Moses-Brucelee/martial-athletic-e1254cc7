@@ -49,11 +49,6 @@ export function getCompetitionWorkflowRecommendation(
   if (workoutCount === 0) {
     return { section: "workouts", label: "Next: Create Workouts", actionLabel: "Create Workouts", action: "navigate" };
   }
-  if (eligibleEntrantCount === 0) {
-    return { section: "people", label: "Next: Add People / Teams", actionLabel: "Manage People", action: "navigate" };
-  }
-  if (heatCount === 0) {
-    return { section: "heats", label: "Next: Configure Heats", actionLabel: "Manage Heats", action: "navigate" };
-  }
+  // Participants, teams, judges and heats come after publishing — never block it.
   return { section: "overview", label: "Competition Ready", actionLabel: "Publish Competition", action: "publish" };
 }

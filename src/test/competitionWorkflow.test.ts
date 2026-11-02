@@ -14,12 +14,10 @@ describe("getCompetitionWorkflowRecommendation", () => {
     expect(getCompetitionWorkflowRecommendation({ ...context, workoutCount: 0 }).section).toBe("workouts");
   });
 
-  it("guides a draft with workouts to people", () => {
-    expect(getCompetitionWorkflowRecommendation({ ...context, eligibleEntrantCount: 0 }).section).toBe("people");
-  });
-
-  it("guides a populated draft to heats", () => {
-    expect(getCompetitionWorkflowRecommendation({ ...context, heatCount: 0 }).section).toBe("heats");
+  it("offers publishing for a draft with workouts but no participants or heats", () => {
+    expect(
+      getCompetitionWorkflowRecommendation({ ...context, eligibleEntrantCount: 0, heatCount: 0 }),
+    ).toMatchObject({ action: "publish" });
   });
 
   it("offers publishing when draft setup is ready", () => {
