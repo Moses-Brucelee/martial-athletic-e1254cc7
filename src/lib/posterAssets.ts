@@ -8,6 +8,9 @@ export interface SponsorAsset {
   url: string;
   websiteUrl: string | null;
   clickCount: number;
+  /** Set when this sponsor is a linked platform shop (logo comes from the shop profile). */
+  shopId?: string | null;
+  shopName?: string | null;
 }
 
 export const MAX_SPONSORS = 6;
@@ -18,13 +21,14 @@ function publicUrl(path: string) {
 }
 
 export async function listSponsors(competitionId: string): Promise<SponsorAsset[]> {
+  const linked = await listLinkedShopSponsors(competitionId);
   const { data, error } = await supabase.storage
     .from(BUCKET)
     .list(`${competitionId}/sponsors`, {
       limit: 100,
       sortBy: { column: "name", order: "asc" },
     });
-  if (error || !data) return [];
+  if (error || !data) return linked;
 
   const items = data
     .filter((f) => f.name && !f.name.startsWith("."))
@@ -36,7 +40,7 @@ export async function listSponsors(competitionId: string): Promise<SponsorAsset[
       return { name: f.name, path, url: publicUrl(path) };
     });
 
-  if (items.length === 0) return [];
+  if (items.length === 0) return linked;
 
   const { data: meta } = await supabase
     .from("competition_sponsors_meta")
@@ -47,7 +51,7 @@ export async function listSponsors(competitionId: string): Promise<SponsorAsset[
     (meta ?? []).map((m: any) => [m.storage_path, m])
   );
 
-  return items.map((i) => {
+  const uploaded = items.map((i) => {
     const m = metaByPath.get(i.path);
     return {
       ...i,
@@ -55,6 +59,39 @@ export async function listSponsors(competitionId: string): Promise<SponsorAsset[
       clickCount: m?.click_count ?? 0,
     };
   });
+  return [...linked, ...uploaded];
+}
+
+/** Linked shop sponsors, ordered by shop name for deterministic rendering. */
+export async function listLinkedShopSponsors(competitionId: string): Promise<SponsorAsset[]> {
+  const { data } = await supabase
+    .from("competition_sponsors_meta")
+    .select("storage_path, website_url, click_count, shop_id, shop_profiles(shop_name, logo_url, website_url)")
+    .eq("competition_id", competitionId)
+    .not("shop_id", "is", null);
+  return ((data ?? []) as any[])
+    .filter((r) => r.shop_profiles?.logo_url)
+    .map((r) => ({
+      name: r.shop_profiles.shop_name,
+      path: r.storage_path,
+      url: r.shop_profiles.logo_url,
+      websiteUrl: r.website_url ?? r.shop_profiles.website_url ?? null,
+      clickCount: r.click_count ?? 0,
+      shopId: r.shop_id,
+      shopName: r.shop_profiles.shop_name,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function linkShopSponsor(competitionId: string, shop: { id: string; website_url: string | null }) {
+  const path = `shop:${competitionId}:${shop.id}`;
+  const { error } = await supabase.from("competition_sponsors_meta").insert({
+    competition_id: competitionId,
+    storage_path: path,
+    website_url: shop.website_url,
+    shop_id: shop.id,
+  });
+  if (error) throw error;
 }
 
 export async function uploadSponsor(
@@ -72,6 +109,11 @@ export async function uploadSponsor(
 }
 
 export async function removeSponsor(competitionId: string, path: string) {
+  if (path.startsWith("shop:")) {
+    const { error } = await supabase.from("competition_sponsors_meta").delete().eq("storage_path", path);
+    if (error) throw error;
+    return;
+  }
   const { error } = await supabase.storage.from(BUCKET).remove([path]);
   if (error) throw error;
   await supabase.from("competition_sponsors_meta").delete().eq("storage_path", path);

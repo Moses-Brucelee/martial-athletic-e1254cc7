@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Link as LinkIcon } from "lucide-react";
 import { useTier } from "@/hooks/useTier";
+import { ShopSponsorPicker } from "@/components/shop/ShopSponsorPicker";
 
 const STYLES = [
   { value: "bold", label: "Bold" },
@@ -315,6 +316,9 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
                   <img src={s.url} alt="sponsor" className="absolute inset-0 w-full h-full object-contain p-1" />
                 </div>
                 <div className="flex-1 min-w-0 space-y-1">
+                  {s.shopId ? (
+                    <p className="text-xs font-medium truncate">{s.shopName} <span className="text-muted-foreground font-normal">· linked shop</span></p>
+                  ) : (
                   <div className="relative">
                     <LinkIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                     <Input
@@ -327,6 +331,7 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
                       className="h-8 pl-7 text-xs"
                     />
                   </div>
+                  )}
                   <p className="text-[10px] text-muted-foreground">
                     {s.clickCount} click{s.clickCount === 1 ? "" : "s"}
                   </p>
@@ -341,6 +346,13 @@ export function PosterUpload({ competitionId, currentPosterUrl, onPosterUpdated 
                 </button>
               </div>
             ))}
+            {sponsors.length < MAX_SPONSORS && (
+              <ShopSponsorPicker
+                competitionId={competitionId}
+                linkedShopIds={sponsors.map((x) => x.shopId).filter(Boolean) as string[]}
+                onLinked={() => listSponsors(competitionId).then(setSponsors).catch(() => {})}
+              />
+            )}
             {sponsors.length < MAX_SPONSORS && (
               <label className="cursor-pointer flex items-center justify-center gap-2 h-12 rounded-lg border-2 border-dashed border-border hover:border-primary/40 hover:bg-muted/40 transition text-muted-foreground text-xs">
                 {sponsorBusy ? (

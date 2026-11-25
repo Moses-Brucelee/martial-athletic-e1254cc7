@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatTimeMMSS, ordinal } from "@/utils/format";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { SoloIdentity, useSoloAvatars } from "./CompetitorIdentity";
 import { globalTieBreakerLabels, workoutTieBreakerLabels } from "@/domain/tieBreakerDisplay";
 
 type DisplayMode = "colour" | "bw";
@@ -37,6 +38,14 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
   const { data: scoreRows = [] } = useScores(competitionId);
   const { data: settings } = useCompetitionSettings(competitionId);
   const { data: heats = [] } = useHeats(competitionId);
+  const soloTeamIds = useMemo(() => {
+    const soloDivs = new Set(divisions.filter((d: any) => Number(d.team_size ?? 1) === 1).map((d: any) => d.id));
+    return teams.filter((t: any) => t.division_id && soloDivs.has(t.division_id)).map((t: any) => t.id as string);
+  }, [divisions, teams]);
+  const soloSet = useMemo(() => new Set(soloTeamIds), [soloTeamIds]);
+  const { data: soloAvatars = {} } = useSoloAvatars(competitionId, soloTeamIds);
+  const nameOf = (entry: { team_id: string; team_name: string }, large?: boolean) =>
+    soloSet.has(entry.team_id) ? <SoloIdentity name={entry.team_name} avatarUrl={soloAvatars[entry.team_id]} large={large} /> : entry.team_name;
   const [whiteboardMode, setWhiteboardMode] = useState(false);
   const [selectedDivision, setSelectedDivision] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("rank");
@@ -399,7 +408,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                         {entry.overall_rank ?? i + 1}
                       </td>
                       <td className="py-4 px-4 text-xl font-bold text-foreground">
-                        <span className="inline-flex items-center gap-2 flex-wrap">{entry.team_name}<TBBadge teamId={entry.team_id} large /></span>
+                        <span className="inline-flex items-center gap-2 flex-wrap">{nameOf(entry, true)}<TBBadge teamId={entry.team_id} large /></span>
                       </td>
                       {workouts.map((w) => (
                         <td key={w.id} className="py-4 px-4 text-center text-lg text-foreground tabular-nums">
@@ -484,7 +493,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                       {entry.overall_rank ?? i + 1}
                     </span>
                     <div className="flex-1">
-                      <p className="font-bold text-foreground text-sm flex items-center gap-2 flex-wrap">{entry.team_name}<TBBadge teamId={entry.team_id} /></p>
+                      <p className="font-bold text-foreground text-sm flex items-center gap-2 flex-wrap">{nameOf(entry)}<TBBadge teamId={entry.team_id} /></p>
                       {entry.division_name && (
                         <p className="text-[10px] text-muted-foreground">{entry.division_name}</p>
                       )}
@@ -532,7 +541,7 @@ export function LeaderboardPanel({ competitionId }: LeaderboardPanelProps) {
                       {entry.overall_rank ?? i + 1}
                     </td>
                     <td className="py-2 px-2 font-semibold text-foreground text-xs">
-                      <span className="inline-flex items-center gap-1.5 flex-wrap">{entry.team_name}<TBBadge teamId={entry.team_id} /></span>
+                      <span className="inline-flex items-center gap-1.5 flex-wrap">{nameOf(entry)}<TBBadge teamId={entry.team_id} /></span>
                       {entry.division_name && (
                         <span className="block text-[10px] text-muted-foreground font-normal">{entry.division_name}</span>
                       )}

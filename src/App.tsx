@@ -43,6 +43,7 @@ import Terms from "./pages/Terms";
 import InviteResponse from "./pages/InviteResponse";
 import { lazy, Suspense } from "react";
 
+const ShopProfileEditor = lazy(() => import("./pages/ShopProfileEditor"));
 const Programs = lazy(() => import("./pages/Programs"));
 const ProgramDetail = lazy(() => import("./pages/ProgramDetail"));
 const WorkoutSessionPage = lazy(() => import("./pages/WorkoutSessionPage"));
@@ -90,6 +91,7 @@ const App = () => (
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/invite/:id" element={<InviteResponse />} />
               <Route path="/event/:id/results" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
+              <Route path="/shop/edit" element={<ProtectedRoute><ShopProfileEditor /></ProtectedRoute>} />
               <Route path="/programs" element={<ProtectedRoute><Programs /></ProtectedRoute>} />
               <Route path="/programs/session/:id" element={<ProtectedRoute><WorkoutSessionPage /></ProtectedRoute>} />
               <Route path="/programs/:id" element={<ProtectedRoute><ProgramDetail /></ProtectedRoute>} />

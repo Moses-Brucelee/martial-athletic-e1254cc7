@@ -343,7 +343,10 @@ export default function ViewProfile() {
             </div>
 
             <div className="flex justify-between mt-8 sticky bottom-0 bg-card py-4 -mx-6 px-6 sm:-mx-8 sm:px-8 border-t border-border/50 md:static md:border-0 md:py-0 md:mx-0 md:px-0 md:bg-transparent z-10">
-              <Button variant="outline" onClick={() => navigate("/dashboard")} className="min-h-[44px]">Back to Menu</Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => navigate("/dashboard")} className="min-h-[44px]">Back to Menu</Button>
+                <Button variant="ghost" onClick={() => navigate("/shop/edit")} className="min-h-[44px]">My shop</Button>
+              </div>
               <Button onClick={handleSave} disabled={saving || !isFormValid} className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8 min-h-[44px]">
                 {saving ? <div className="w-5 h-5 border-2 border-accent-foreground border-t-transparent rounded-full animate-spin" /> : "Save Changes"}
               </Button>

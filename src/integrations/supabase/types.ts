@@ -920,6 +920,7 @@ export type Database = {
           competition_id: string
           created_at: string
           id: string
+          shop_id: string | null
           storage_path: string
           updated_at: string
           website_url: string | null
@@ -929,6 +930,7 @@ export type Database = {
           competition_id: string
           created_at?: string
           id?: string
+          shop_id?: string | null
           storage_path: string
           updated_at?: string
           website_url?: string | null
@@ -938,6 +940,7 @@ export type Database = {
           competition_id?: string
           created_at?: string
           id?: string
+          shop_id?: string | null
           storage_path?: string
           updated_at?: string
           website_url?: string | null
@@ -948,6 +951,13 @@ export type Database = {
             columns: ["competition_id"]
             isOneToOne: false
             referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_sponsors_meta_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shop_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2774,6 +2784,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shop_profiles: {
+        Row: {
+          available_for_sponsorship: boolean
+          banner_url: string | null
+          bio: string | null
+          category: string | null
+          created_at: string
+          featured_products: Json
+          id: string
+          logo_url: string | null
+          owner_user_id: string
+          shop_name: string
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          available_for_sponsorship?: boolean
+          banner_url?: string | null
+          bio?: string | null
+          category?: string | null
+          created_at?: string
+          featured_products?: Json
+          id?: string
+          logo_url?: string | null
+          owner_user_id: string
+          shop_name: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          available_for_sponsorship?: boolean
+          banner_url?: string | null
+          bio?: string | null
+          category?: string | null
+          created_at?: string
+          featured_products?: Json
+          id?: string
+          logo_url?: string | null
+          owner_user_id?: string
+          shop_name?: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
       }
       subscription_events: {
         Row: {
