@@ -3419,6 +3419,10 @@ export type Database = {
         Args: { p_program_id: string; p_user_id: string }
         Returns: boolean
       }
+      can_view_competition: {
+        Args: { p_competition_id: string; p_user_id: string }
+        Returns: boolean
+      }
       current_user_email: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
