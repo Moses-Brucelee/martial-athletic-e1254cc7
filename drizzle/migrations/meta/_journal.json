@@ -8,6 +8,13 @@
       "when": 1793626542911,
       "tag": "0000_private_competition_visibility",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795619974005,
+      "tag": "0001_solo_competitor_units",
+      "breakpoints": true
     }
   ]
 }

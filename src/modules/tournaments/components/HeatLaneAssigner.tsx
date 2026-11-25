@@ -19,6 +19,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRegistrations } from "@/modules/athletes/hooks";
 import type { Team } from "@/domain/competition";
 
+/** Pure helper: a solo competitor unit is a team row holding at most one athlete whose name matches the team. */
+export function isSoloUnit(teamName: string, athleteNames: string[]): boolean {
+  if (athleteNames.length === 0) return false;
+  return athleteNames.length === 1 && athleteNames[0].trim().toLowerCase() === teamName.trim().toLowerCase();
+}
+
 export interface DivisionGroup {
   label: string;
   teams: Team[];
@@ -163,7 +169,7 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {lanes.map(({ lane, assignment, teamName }) => {
           const athletes = assignment?.team_id ? getTeamAthletes(assignment.team_id) : [];
-          const isSolo = !!(assignment as any)?.athlete_registration_id;
+          const isSolo = !!(assignment as any)?.athlete_registration_id || (!!teamName && isSoloUnit(teamName, athletes));
 
           return (
             <div key={lane} className={`flex items-start gap-2 p-2.5 rounded-lg border transition-colors ${
@@ -192,7 +198,7 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
                       </Button>
                     )}
                   </div>
-                  {athletes.length > 0 && (
+                  {athletes.length > 0 && !isSolo && (
                     <div className="flex flex-wrap gap-1 mt-1">
                       {athletes.slice(0, 3).map((name, i) => (
                         <Badge key={i} variant="outline" className="text-[9px] h-4 px-1.5 bg-background">
@@ -230,7 +236,9 @@ export function HeatLaneAssigner({ heatId, competitionId, laneCount, teams, canA
                                 <SelectItem key={t.id} value={`team::${t.id}`}>
                                   <div className="flex items-center gap-2">
                                     <span>{t.team_name}</span>
-                                    {tAthletes.length > 0 && (
+                                    {isSoloUnit(t.team_name, tAthletes) ? (
+                                      <span className="text-muted-foreground text-[10px]">(solo)</span>
+                                    ) : tAthletes.length > 0 && (
                                       <span className="text-muted-foreground text-[10px]">
                                         ({tAthletes.length} athletes)
                                       </span>

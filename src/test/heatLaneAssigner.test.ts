@@ -60,3 +60,18 @@ describe("groupTeamsByDivision", () => {
     expect(groups[0].teams).toHaveLength(1);
   });
 });
+
+import { isSoloUnit, groupTeamsByDivision as groupSolo } from "@/modules/tournaments/components/HeatLaneAssigner";
+describe("solo competitor units", () => {
+  it("treats a one-athlete unit named after the athlete as solo", () => {
+    expect(isSoloUnit("Jane Doe", ["Jane Doe"])).toBe(true);
+    expect(isSoloUnit("Red Team", ["Jane Doe", "Sam"])).toBe(false);
+  });
+  it("groups solo units under their division name", () => {
+    const g = groupSolo([
+      { id: "1", team_name: "Jane", division: "Women RX" },
+      { id: "2", team_name: "Tom", division: "Men RX" },
+    ] as any);
+    expect(g.map((x) => x.label)).toEqual(["Men RX", "Women RX"]);
+  });
+});
